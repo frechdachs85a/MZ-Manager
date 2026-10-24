@@ -1,4 +1,4 @@
-// Erzeugt APP_PASSWORD_HASH und bei Bedarf SESSION_SECRET für .env.local
+// Erzeugt APP_PASSWORD_HASH, SESSION_SECRET und MZ_TRESOR_KEY für .env.local
 // Aufruf: npm run hash-password
 import { randomBytes, scrypt } from "node:crypto";
 import { createInterface } from "node:readline";
@@ -18,5 +18,6 @@ rl.question("Neues App-Passwort: ", (password) => {
     console.log("\nIn .env.local eintragen:\n");
     console.log(`APP_PASSWORD_HASH='${hash}'`);
     console.log(`SESSION_SECRET='${randomBytes(48).toString("base64url")}'`);
+    console.log(`MZ_TRESOR_KEY='${randomBytes(32).toString("base64")}'`);
   });
 });

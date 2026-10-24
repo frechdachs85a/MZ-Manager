@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Card, Section, Unavailable } from "@/components/ui";
+import { Card, List, Row, Section, Unavailable } from "@/components/ui";
+import { getDb } from "@/lib/db";
+import { letzteAenderungen } from "@/lib/db/kader";
+import { datumZeit } from "@/lib/format";
 import { naechsterLigaspieltag, TEAM } from "@/lib/wissen/startbasis";
 
 function heuteInBerlin(): Date {
@@ -15,6 +18,7 @@ function heuteInBerlin(): Date {
 export default async function Uebersicht() {
   await connection(); // Datum pro Anfrage, nicht beim Build
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const aenderungen = letzteAenderungen(getDb(), 8);
   const datum = new Intl.DateTimeFormat("de-DE", {
     weekday: "long",
     day: "numeric",
@@ -57,7 +61,20 @@ export default async function Uebersicht() {
         </Section>
 
         <Section title="Letzte Skill-Änderungen">
-          <Unavailable title="Änderungsliste" reason="Entsteht ab dem ersten Kaderabruf, jede Änderung wird mit Datum gespeichert." />
+          {aenderungen.length ? (
+            <List>
+              {aenderungen.map((a, i) => (
+                <Row
+                  key={i}
+                  title={`${a.name}: ${a.feld}`}
+                  detail={datumZeit(a.datum)}
+                  value={<span className="tabular-nums">{a.alt ?? "?"} → {a.neu ?? "?"}</span>}
+                />
+              ))}
+            </List>
+          ) : (
+            <Unavailable title="Änderungsliste" reason="Entsteht ab dem zweiten Kaderabruf, jede Änderung wird mit Datum gespeichert." />
+          )}
         </Section>
       </div>
     </>

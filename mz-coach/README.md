@@ -21,4 +21,5 @@ npm run dev             # http://localhost:3000
 
 ## Stand
 
-Etappe 1 fertig: Gerüst, iOS-Design, PWA, Login-Schutz.
+- Etappe 1 fertig: Gerüst, iOS-Design, PWA, Login-Schutz.
+- Etappe 2 teilweise: SQLite, MZ-Formel, Koordinaten-Umrechnung, verschlüsselter MZ-Zugang, Kader- und Spieleransicht, Änderungsverlauf. Offen: Abruf von ManagerZone (Netzwerkfreigabe nötig).
