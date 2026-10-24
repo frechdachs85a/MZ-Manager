@@ -43,6 +43,10 @@ npm run dev             # http://localhost:3000
   Taktik `?p=tactics` (Kegel = nicht aufstellbar).
   Übersicht zeigt fürs nächste Ligaspiel, wer fehlt und wann er frühestens zurück ist.
   Offen: Transfermarkt-Status.
+- Taktik-Prüfer (Teil von Etappe 5): Seite „Taktik“, XML aus dem Editor einfügen. Prüfliste aus
+  mz-wissen.md, Abschnitt 5, als Code: Fehler (eindeutig verletzt) und Hinweise (Regel ohne genaue Grenze).
+  Spielfeld mit allen drei Aufstellungen, Kegel-Spieler rot. Noch nicht an einer echten exportierten Taktik geprüft.
+- Spielfeld-Ansicht (Teil von Etappe 3): Grenzen aus der Umrechnung in mz-wissen.md, Abschnitt 3.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
 

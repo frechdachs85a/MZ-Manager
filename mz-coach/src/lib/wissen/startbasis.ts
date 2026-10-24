@@ -44,12 +44,36 @@ export const KADER_START: StartSpieler[] = [
   { nr: 21, name: "Vranken", alter: 27, pid: 227322975, info: "Sp9 Au9 Kb9 Zk9" },
 ];
 
-export type TaktikReiter = { name: string; inhalt: string; einsatz: string };
+export type TaktikReiter = {
+  name: string;
+  inhalt: string;
+  einsatz: string;
+  // Feldspieler-Koordinaten im Editor, nur wo in mz-wissen.md angegeben (ohne Torwart)
+  koordinaten?: { x: number; y: number; rolle: string }[];
+};
 
 export const TAKTIKEN: TaktikReiter[] = [
-  { name: "außenR", inhalt: "4-2-1-3, Eckstürmer rechts, Flügel/offensiv/normal, Template der Topteams", einsatz: "Standard" },
+  {
+    name: "außenR",
+    inhalt: "4-2-1-3, Eckstürmer rechts, Flügel/offensiv/normal, Template der Topteams",
+    einsatz: "Standard",
+    koordinaten: [
+      { x: 26, y: 224, rolle: "AV" }, { x: 76, y: 224, rolle: "IV" }, { x: 125, y: 224, rolle: "IV" }, { x: 175, y: 224, rolle: "AV" },
+      { x: 101, y: 183, rolle: "6" }, { x: 151, y: 183, rolle: "6" }, { x: 101, y: 135, rolle: "10" },
+      { x: 129, y: 95, rolle: "ST" }, { x: 82, y: 77, rolle: "ST" }, { x: 200, y: 63, rolle: "Ecke" },
+    ],
+  },
   { name: "außenL", inhalt: "gespiegelt, Ecke links", einsatz: "Variante" },
-  { name: "kupass", inhalt: "4-2-1-3 ohne Eckstürmer, 3 zentrale Stürmer, Kurzpass/normal", einsatz: "gegen Fünferkette und dichte Mitte" },
+  {
+    name: "kupass",
+    inhalt: "4-2-1-3 ohne Eckstürmer, 3 zentrale Stürmer, Kurzpass/normal",
+    einsatz: "gegen Fünferkette und dichte Mitte",
+    koordinaten: [
+      { x: 33, y: 222, rolle: "AV" }, { x: 79, y: 235, rolle: "IV" }, { x: 127, y: 235, rolle: "IV" }, { x: 175, y: 222, rolle: "AV" },
+      { x: 79, y: 186, rolle: "6" }, { x: 127, y: 186, rolle: "6" }, { x: 103, y: 142, rolle: "10" },
+      { x: 72, y: 100, rolle: "ST" }, { x: 134, y: 100, rolle: "ST" }, { x: 103, y: 63, rolle: "ST" },
+    ],
+  },
   { name: "3313of", inhalt: "3-3-1-3 offensiv, ohne Führungsregel", einsatz: "gegen Schwache" },
   { name: "532de", inhalt: "5-2-3 Lyon-Kopie, Flügel/offensiv/normal (trotz Name nicht defensiv)", einsatz: "gegen Übermächtige" },
   { name: "indivi", inhalt: "Essen-Kopie 3-1-2-1-3, Kurzpass/normal/passiv", einsatz: "gegen Schwache (nur 1 Scoutspiel belegt)" },
