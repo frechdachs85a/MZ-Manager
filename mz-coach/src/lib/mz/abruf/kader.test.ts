@@ -17,6 +17,7 @@ const TABELLE = lies("kader-alt-2026-10-24.html");
 const UNAVAILABLE = lies("unavailable-2026-10-24.html");
 const TRAININGSLAGER = lies("trainingslager-2026-10-24.html");
 const TAKTIK = lies("taktik-2026-10-24.html");
+const SPIELER = lies("spieler-2026-10-24.html");
 
 // Die echte Kaderseite enthält die Serverzeit in einem Skript, die Fixture nur die Tabelle.
 const kader = (zeit: string) => ({ name: "kader.html", html: `<script>server_time = new Date(${zeit});</script>${TABELLE}` });
@@ -123,6 +124,43 @@ describe.skipIf(!TABELLE || !UNAVAILABLE || !TRAININGSLAGER || !TAKTIK)("Status-
     expect(letzteAenderungen(db, 5)).toContainEqual(
       expect.objectContaining({ pid: 229926290, feld: "Aufstellbar", alt: "nein", neu: "ja" }),
     );
+  });
+
+  it.skipIf(!SPIELER)("Spieleransicht: Scout-Sterne und Markierungen, bleiben beim Kader-Upload erhalten", () => {
+    const db = frischeDb();
+    const r = dateienEinlesen(db, [{ name: "spieler.html", html: SPIELER! }, kader("2026, 9, 24, 22, 48, 40")]);
+    expect(r.ok).toBe(true);
+    expect(r.meldung).toContain("Spieleransicht (Scoutbericht): eingelesen");
+    const nach = (pid: number) => ladeKader(db).find((s) => s.pid === pid)!;
+    expect(nach(229926290)).toMatchObject({
+      scoutSterne: { hoch: 3, niedrig: 2 },
+      scoutTraining: 3,
+      scoutMarkierung: { passen: 1, kopfball: 1, schuss: 2, torwart: 2 },
+    });
+    // ohne Scoutbericht
+    expect(nach(227393631).scoutSterne).toBeUndefined();
+    expect(ladeKader(db).filter((s) => s.scoutSterne)).toHaveLength(37);
+
+    dateienEinlesen(db, [kader("2026, 9, 25, 9, 0, 0")]);
+    expect(nach(229926290).scoutMarkierung).toEqual({ passen: 1, kopfball: 1, schuss: 2, torwart: 2 });
+  });
+
+  it.skipIf(!SPIELER)("Regel aus mz-wissen.md bei ausgemaxten 1-Skills: 4 Sterne mind. eine 10, 3 Sterne 9 oder 10", () => {
+    const db = frischeDb();
+    dateienEinlesen(db, [{ name: "spieler.html", html: SPIELER! }, kader("2026, 9, 24, 22, 48, 40")]);
+    // Nur wo alle 1-Skills ausgemaxt sind, ist der heutige Wert auch das Potenzial (Jugend nicht prüfbar)
+    const geprueft = ladeKader(db).flatMap((s) => {
+      const eins = Object.entries(s.scoutMarkierung ?? {})
+        .filter(([, m]) => m === 1)
+        .map(([k]) => s.skills[k as keyof typeof s.skills]!);
+      if (!s.scoutSterne?.hoch || eins.length === 0 || !eins.every((x) => x.gemaxt)) return [];
+      return [{ hoch: s.scoutSterne.hoch, max: Math.max(...eins.map((x) => x.wert)) }];
+    });
+    expect(geprueft.length).toBeGreaterThanOrEqual(10);
+    for (const g of geprueft) {
+      if (g.hoch === 4) expect(g.max).toBe(10);
+      if (g.hoch === 3) expect([9, 10]).toContain(g.max);
+    }
   });
 
   it("Status-Seite ohne Kader: klare Meldung", () => {

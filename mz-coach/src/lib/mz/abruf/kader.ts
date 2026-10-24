@@ -4,21 +4,31 @@ import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
 import { speichereKader } from "@/lib/db/kader";
 import { KaderSeiteUnbekannt, parseKaderSeite } from "@/lib/mz/parser/kader";
 import {
+  istSpielerSeite,
   istTaktikSeite,
   istTrainingslagerSeite,
   istUnavailableSeite,
+  parseSpielerSeite,
   parseTaktikSeite,
   parseTrainingslagerSeite,
   parseUnavailableSeite,
 } from "@/lib/mz/parser/status";
 import { mitMzSitzung, MZ_BASIS, MzFehler } from "./sitzung";
-import { speichereTaktik, speichereTrainingslager, speichereUnavailable, StatusFehler, type StatusErgebnis } from "./status";
+import {
+  speichereSpielerSeite,
+  speichereTaktik,
+  speichereTrainingslager,
+  speichereUnavailable,
+  StatusFehler,
+  type StatusErgebnis,
+} from "./status";
 
 // Eigene Seiten, eingeloggt (Aufbau geprüft am 24.10.2026, docs/mz-seiten.md).
 export const KADER_PFAD = "/?p=players&sub=alt";
 export const UNAVAILABLE_PFAD = "/?p=players&sub=unavailable";
 export const TRAININGSLAGER_PFAD = "/?p=training_camp";
 export const TAKTIK_PFAD = "/?p=tactics";
+export const SPIELER_PFAD = "/?p=players";
 
 export type Ergebnis = { ok: boolean; meldung: string };
 
@@ -49,6 +59,9 @@ export function seiteEinlesen(db: Database.Database, html: string, herkunft: { u
   if (/id="playerAltViewTable"/.test(html)) {
     return speichereKaderSeite(db, html, herkunft.url, herkunft.quelle, herkunft.htmlDom ?? null);
   }
+  if (istSpielerSeite(html)) {
+    return statusText("Spieleransicht (Scoutbericht)", speichereSpielerSeite(db, parseSpielerSeite(html), { url: herkunft.url, html }, herkunft.quelle));
+  }
   if (istUnavailableSeite(html)) {
     return statusText("Verletzt / Gesperrt", speichereUnavailable(db, parseUnavailableSeite(html), { url: herkunft.url, html }, herkunft.quelle));
   }
@@ -61,7 +74,7 @@ export function seiteEinlesen(db: Database.Database, html: string, herkunft: { u
     return statusText("Taktik (aufstellbar)", r) + unbekannt;
   }
   throw new KaderSeiteUnbekannt(
-    "Unbekannte Seite. Erwartet: Kaderübersicht (?p=players&sub=alt), Verletzt / Gesperrt (?p=players&sub=unavailable), Trainingslager (?p=training_camp) oder Taktik (?p=tactics).",
+    "Unbekannte Seite. Erwartet: Kaderübersicht (?p=players&sub=alt), Spieleransicht (?p=players), Verletzt / Gesperrt (?p=players&sub=unavailable), Trainingslager (?p=training_camp) oder Taktik (?p=tactics).",
   );
 }
 
@@ -81,7 +94,7 @@ export async function kaderAbrufen(db: Database.Database, opt = { manuell: false
     await mitMzSitzung(
       db,
       async (s) => {
-        for (const pfad of [KADER_PFAD, UNAVAILABLE_PFAD, TRAININGSLAGER_PFAD, TAKTIK_PFAD]) {
+        for (const pfad of [KADER_PFAD, SPIELER_PFAD, UNAVAILABLE_PFAD, TRAININGSLAGER_PFAD, TAKTIK_PFAD]) {
           const seite = await s.holeSeite(pfad);
           try {
             const html = seite.htmlDom ?? seite.htmlRoh ?? "";

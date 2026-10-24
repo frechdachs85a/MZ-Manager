@@ -22,10 +22,23 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
     <>
       <PageHeader title={s.name} subtitle={[s.nr && `Nr. ${s.nr}`, s.alter !== undefined && `${s.alter} Jahre`].filter(Boolean).join(" · ")} />
       <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
-        <Section title="Skills" footer="Rot = ausgemaxt, blau = trainierbar, grau = nicht trainierbar (Erfahrung, Form). Markierung 1/2 (stärkste Skills/Schwächen): nicht verfügbar, steht nicht auf der Kaderübersicht.">
+        <Section
+          title="Skills"
+          footer={`Rot = ausgemaxt, blau = trainierbar, grau = nicht trainierbar (Erfahrung, Form). ${
+            s.scoutMarkierung
+              ? "Hochgestellt 1 = Hoch, 2 = Niedrig laut Scoutbericht."
+              : s.statusStand?.scout
+                ? "Kein Scoutbericht für diesen Spieler."
+                : "Markierung 1/2: Spieleransicht (?p=players) noch nicht eingelesen."
+          }`}
+        >
           <Card className="px-4 py-2">
             {ALLE_SKILLS.map((k) => (
-              <SkillKugeln key={k} label={SKILL_LABEL[k]} skill={s.skills[k]} />
+              <SkillKugeln
+                key={k}
+                label={SKILL_LABEL[k]}
+                skill={s.skills[k] && { ...s.skills[k], markierung: s.scoutMarkierung?.[k] }}
+              />
             ))}
           </Card>
         </Section>
@@ -63,13 +76,15 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
           <List>
             <Row title="Marktwert" value={s.marktwert !== undefined ? euro(s.marktwert) : "nicht verfügbar"} />
             <Row
-              title="Scout-Sterne"
-              value={
-                s.scoutSterne?.hoch !== undefined || s.scoutSterne?.niedrig !== undefined
-                  ? `${s.scoutSterne?.hoch ?? "?"}/${s.scoutSterne?.niedrig ?? "?"}`
-                  : "nicht verfügbar"
+              title="Scoutbericht"
+              value={s.scoutSterne ? `Hoch ${s.scoutSterne.hoch ?? "?"} · Niedrig ${s.scoutSterne.niedrig ?? "?"}` : "nicht verfügbar"}
+              detail={
+                s.scoutSterne
+                  ? `Sterne${s.scoutTraining !== undefined ? `, Tr. Geschwindigkeit ${s.scoutTraining}` : ""} · Stand ${datumZeit(s.statusStand!.scout!)}`
+                  : s.statusStand?.scout
+                    ? "kein Scoutbericht für diesen Spieler"
+                    : "Spieleransicht (?p=players) noch nicht eingelesen"
               }
-              detail={s.scoutSterne ? undefined : "steht nicht auf der Kaderübersicht"}
             />
 
             <Row title="pid" value={<span className="tabular-nums">{s.pid}</span>} />

@@ -117,6 +117,7 @@ Standards, Form, Alter, Größe zählen nicht.
 ## 7. Spieler-Regeln von Marcus
 
 - Skillanzeige: rot = ausgemaxt, schwarz = trainierbar. Markierung "1" = stärkste Skills, "2" = Schwächen. Hoch 4 Sterne = mind. eine 10, 3 Sterne = 9 oder 10. Kein Skill wird höher als die stärksten.
+  Ergänzung 24.10.2026 (an der Spieleransicht geprüft): Auf der Seite heißen die Markierungen "Hoch" (1) und "Niedrig" (2). Die Sterne-Regel gilt für das Potenzial: bei allen Spielern mit ausgemaxten 1-Skills bestätigt, bei Jugendspielern sind die 1-Skills oft noch niedrig.
 - Ausdauer unter 8: muss ca. 60. bis 80. raus (fällt nicht um, wird schlechter). Ab 8 hält er 90 Minuten.
 - Torwart ohne Ausdauer 8 = K.-o.-Kriterium
 - Ab 30 Jahren: erst 1 Ball Sprint weg, dann 1 Ausdauer. Beim Einkauf "99-Regel": Sprint und Ausdauer je 9+. Ausnahme: Ausdauer 8 bei sehr günstigen Spielern oder geplanten Einwechslern.

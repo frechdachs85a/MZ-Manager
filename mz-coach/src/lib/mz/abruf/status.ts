@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { speichereRohseite } from "@/lib/db/abruf";
 import { aktualisiereSpieler } from "@/lib/db/kader";
 import type { SpielerDaten } from "@/lib/mz/spieler";
-import type { TaktikSeite, TrainingslagerSeite, UnavailableSeite } from "@/lib/mz/parser/status";
+import type { SpielerSeite, TaktikSeite, TrainingslagerSeite, UnavailableSeite } from "@/lib/mz/parser/status";
 
 // Überträgt die Status-Seiten auf die gespeicherten Spieler. Jeder Status bekommt den Stand
 // seiner Quellseite, damit sichtbar bleibt, wie aktuell er ist.
@@ -136,4 +136,41 @@ export function speichereTaktik(
     stand,
   );
   return { ...r, nichtImKader, unbekannt, stand };
+}
+
+export function speichereSpielerSeite(
+  db: Database.Database,
+  seite: SpielerSeite,
+  roh: { url: string; html: string },
+  quelle: string,
+): StatusErgebnis {
+  const stand = seite.serverzeit ?? new Date().toISOString();
+  pruefeStand(db, "scout", stand);
+  const nachPid = new Map(seite.spieler.map((s) => [s.pid, s]));
+  const aktiv = aktivePids(db);
+  const nichtImKader = seite.spieler.filter((s) => !aktiv.has(s.pid)).map((s) => s.name);
+
+  speichereRohseite(db, { art: "spieler", url: roh.url, status: null, htmlRoh: roh.html, htmlDom: null }, stand);
+  const r = aktualisiereSpieler(
+    db,
+    (alt) => {
+      const neu: SpielerDaten = { ...alt, statusStand: { ...alt.statusStand, scout: stand } };
+      const sc = nachPid.get(alt.pid)?.scout;
+      if (sc) {
+        neu.scoutSterne = { hoch: sc.hoch, niedrig: sc.niedrig };
+        neu.scoutMarkierung = sc.markierung;
+        if (sc.training !== undefined) neu.scoutTraining = sc.training;
+        else delete neu.scoutTraining;
+      } else {
+        // Kein Scoutbericht auf der Seite: keine Aussage
+        delete neu.scoutSterne;
+        delete neu.scoutMarkierung;
+        delete neu.scoutTraining;
+      }
+      return neu;
+    },
+    quelle,
+    stand,
+  );
+  return { ...r, nichtImKader, stand };
 }

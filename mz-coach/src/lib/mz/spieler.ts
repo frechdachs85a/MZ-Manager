@@ -1,4 +1,4 @@
-import { ALLE_SKILLS, SKILL_LABEL, type Skills } from "./skills";
+import { ALLE_SKILLS, SKILL_LABEL, type Skill, type Skills } from "./skills";
 
 // Alles, was über einen eigenen Spieler gespeichert wird. Felder ohne echten Wert bleiben leer.
 export type SpielerDaten = {
@@ -19,7 +19,11 @@ export type SpielerDaten = {
     aufstellbar?: boolean;
   };
   // Stand (ISO) der Seite, aus der der jeweilige Status stammt
-  statusStand?: { verletzt?: string; gesperrt?: string; trainingslager?: string; aufstellbar?: string };
+  statusStand?: { verletzt?: string; gesperrt?: string; trainingslager?: string; aufstellbar?: string; scout?: string };
+  // Aus dem Scoutbericht der Spieleransicht (?p=players): 1 = Hoch, 2 = Niedrig, je Skill.
+  // Getrennt von den Skills gespeichert, weil die Kaderübersicht sie nicht enthält.
+  scoutMarkierung?: Partial<Record<Skill, 1 | 2>>;
+  scoutTraining?: number; // Sterne "Tr. Geschwindigkeit"
   sperren?: Sperre[];
   trainingslagerInfo?: TrainingslagerInfo;
 };

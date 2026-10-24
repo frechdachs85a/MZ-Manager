@@ -50,7 +50,15 @@ export function speichereKader(
   return { neu, aenderungen: anzahl };
 }
 
-const STATUS_FELDER = ["status", "statusStand", "sperren", "trainingslagerInfo"] as const;
+const STATUS_FELDER = [
+  "status",
+  "statusStand",
+  "sperren",
+  "trainingslagerInfo",
+  "scoutSterne",
+  "scoutMarkierung",
+  "scoutTraining",
+] as const;
 
 function behalteStatus(alt: SpielerDaten, neu: SpielerDaten): SpielerDaten {
   const out = { ...neu };

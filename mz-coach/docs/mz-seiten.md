@@ -115,3 +115,23 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
 - Am 24.10.: 7 mit Kegel, 3 weitere im Trainingslager ohne Kegel aufgestellt, 2 aus dem Jugendaufbau-Lager frei.
 - Verletzte oder Gesperrte tragen am 24.10. keine eigene Klasse (ein Spieler mit Pokalsperre: `on_field`).
   Andere Klassen sind unbekannt, die Webseite meldet sie, statt sie zu werten.
+
+## Spieleransicht: `/?p=players` (24.10.2026, von Marcus gespeichert, 1,9 MB)
+
+- Je Spieler `div#thePlayers_<n>` mit `.player_name` und `.player_id_span` (pid).
+- Skill-Tabelle `table.player_skills` (steht je Spieler zweimal, Desktop und Mobil; die erste reicht).
+  Markierung am Skill-Namen: `<span class="skill_name"><span>Passen</span><span class="sup">1</span></span>`.
+  Laut Legende im Scoutbericht: 1 = "Hoch", 2 = "Niedrig". Je Spieler zwei Skills mit 1 und zwei mit 2.
+- Die grünen, gelben und roten Fähnchen in den schmalen Zellen setzt Marcus selbst als Notiz, sie werden ignoriert.
+- Scoutbericht `tr.scout_report_row`: Gruppen `.high-stars` (Hoch), `.low-stars` (Niedrig) und eine dritte
+  mit Namen "Tr. Geschwindigkeit". Sternzahl = Anzahl der `i`-Elemente. Deren Klassen wiederholen sich in der
+  gespeicherten Seite fortlaufend (Nebenwirkung des Seiten-JavaScripts), daher nicht die Klassen zählen.
+  Deaktivierte Sterne (`scout_report_star--disabled`) gab es nur im Suchfilter oben, nicht bei Spielern.
+- 37 von 47 Spielern mit Scoutbericht.
+- Prüfung gegen mz-wissen.md, Abschnitt 7: Bei allen Spielern, deren 1-Skills ausgemaxt sind, gilt
+  4 hohe Sterne = mindestens eine 10, 3 hohe Sterne = 9 oder 10. Bei nicht ausgemaxten 1-Skills (Jugend)
+  zeigen die Sterne das Potenzial; ein 1-Skill kann aktuell niedrig sein (gesehen: Kopfball 5 mit Markierung 1).
+- `tc-status-icon` (Kegel) bedeutet hier laut Tooltip "Spieler hat diese Saison ein Trainingslager besucht",
+  nicht "nicht aufstellbar". Dafür gilt die Taktikseite.
+- Enthält auch einen leeren Reiter `#squad_unavailable`; die Erkennung von "Verletzt / Gesperrt" verlangt
+  deshalb zusätzlich die Überschrift "Verletzungen".

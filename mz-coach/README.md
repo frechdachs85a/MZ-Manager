@@ -37,11 +37,12 @@ npm run dev             # http://localhost:3000
   hochgeladen (mehrere auf einmal) oder automatisch per Playwright abgerufen (gegen echtes ManagerZone noch
   nicht getestet):
   Kaderübersicht `?p=players&sub=alt` (Skills, Rot/Schwarz, Alter, Marktwert),
+  Spieleransicht `?p=players` (Scoutbericht: Sterne Hoch/Niedrig/Training, Markierung 1/2),
   Verletzt / Gesperrt `?p=players&sub=unavailable` (Sperren je Wettbewerb),
   Trainingslager `?p=training_camp` (Paket, Enddatum),
   Taktik `?p=tactics` (Kegel = nicht aufstellbar).
   Übersicht zeigt fürs nächste Ligaspiel, wer fehlt und wann er frühestens zurück ist.
-  Offen: Scout-Sterne und Markierung 1/2 (normale Spieleransicht `?p=players`), Transfermarkt-Status.
+  Offen: Transfermarkt-Status.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
 

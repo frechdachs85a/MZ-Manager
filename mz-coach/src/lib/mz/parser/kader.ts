@@ -10,7 +10,7 @@ import type { SpielerDaten } from "@/lib/mz/spieler";
 export class KaderSeiteUnbekannt extends Error {}
 
 // Überschriften-Titel (deutsche Seite) der Skill-Spalten
-const SKILL_SPALTEN: Record<string, Skill> = {
+export const SKILL_SPALTEN: Record<string, Skill> = {
   Sprint: "sprint",
   Ausdauer: "ausdauer",
   Spielübersicht: "spieluebersicht",
