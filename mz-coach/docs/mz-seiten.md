@@ -52,3 +52,14 @@ Nur, was direkt von managerzone.com abgerufen und angesehen wurde. Mit Datum.
 - Strafen: "Warning, Temporary transfer ban, Team fine, Removal of transferred player, Club closure,
   Account suspension"
 - Eine ausdrückliche Regel zu Bots, Skripten oder Abrufhäufigkeit steht in beiden Texten nicht.
+
+## Umsetzung im Abruf (Stand 24.10.2026)
+
+- Login: `#login_username` und `#login_password` füllen, Enter im Passwortfeld (laut HTML
+  `onkeypress` keyCode 13 → `$('#logindata').submit()`). Erfolg wird geprüft, indem `/?p=players`
+  danach keine Abmeldeseite mehr liefert. Fehler über die Sichtbarkeit von
+  `.wrong_username_or_password` und `.too_many_failed_login_attempts`.
+- Nicht gesehen und deshalb offen: ob ManagerZone beim Login ein reCAPTCHA zeigt (das Skript
+  `recaptcha/api.js` ist auf der Startseite eingebunden), wie die Seite nach erfolgreichem Login
+  aussieht, und der Aufbau der eingeloggten Kaderseite.
+- Getestet nur gegen einen lokalen Nachbau mit den beobachteten Merkmalen, noch nicht gegen managerzone.com.

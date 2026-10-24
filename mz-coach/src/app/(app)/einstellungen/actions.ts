@@ -24,3 +24,12 @@ export async function zugangLoeschen() {
   loescheZugang(getDb());
   revalidatePath("/einstellungen");
 }
+
+export type AbrufState = { meldung?: string; ok?: boolean };
+
+export async function kaderJetztAbrufen(): Promise<AbrufState> {
+  const { kaderAbrufen } = await import("@/lib/mz/abruf/kader");
+  const r = await kaderAbrufen(getDb(), { manuell: true });
+  revalidatePath("/einstellungen");
+  return r.ok ? { ok: true, meldung: `Kaderseite abgerufen und gespeichert (${r.bytes} Zeichen).` } : { meldung: r.meldung };
+}

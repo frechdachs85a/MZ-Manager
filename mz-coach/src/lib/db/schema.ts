@@ -52,6 +52,29 @@ const MIGRATIONEN: string[] = [
     auswertung_json TEXT
   );
   `,
+  `
+  -- jede von ManagerZone abgerufene Seite unverändert, als Beleg und für den Parser
+  CREATE TABLE rohseite (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    art TEXT NOT NULL,             -- z. B. kader
+    url TEXT NOT NULL,
+    abgerufen TEXT NOT NULL,
+    status INTEGER,                -- HTTP-Status der Antwort
+    html_roh TEXT,                 -- Antwort des Servers
+    html_dom TEXT                  -- Seite nach dem JavaScript im Browser
+  );
+  CREATE INDEX rohseite_art ON rohseite(art, abgerufen);
+
+  -- Protokoll jedes Abrufs: gestartet, Ergebnis, Fehlermeldung (nie Zugangsdaten)
+  CREATE TABLE abruf_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    art TEXT NOT NULL,
+    gestartet TEXT NOT NULL,
+    beendet TEXT,
+    ok INTEGER,
+    meldung TEXT
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

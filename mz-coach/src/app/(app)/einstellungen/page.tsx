@@ -6,12 +6,17 @@ import { getDb } from "@/lib/db";
 import { datumZeit } from "@/lib/format";
 import { zugangStatus } from "@/lib/mz/zugang";
 import { TEAM } from "@/lib/wissen/startbasis";
+import { letzteRohseite, letzterAbruf } from "@/lib/db/abruf";
+import { AbrufButton } from "./abruf-button";
 import { zugangLoeschen } from "./actions";
 import { ZugangForm } from "./zugang-form";
 
 export default async function Einstellungen() {
   await connection();
-  const zugang = zugangStatus(getDb());
+  const db = getDb();
+  const zugang = zugangStatus(db);
+  const abruf = letzterAbruf(db, "kader");
+  const roh = letzteRohseite(db, "kader");
   return (
     <>
       <PageHeader title="Einstellungen" />
@@ -42,6 +47,45 @@ export default async function Einstellungen() {
             <ZugangForm />
           )}
         </Section>
+        {zugang.eingerichtet && (
+          <Section
+            title="Abruf von ManagerZone"
+            footer="Login im echten Browser (Playwright), Sitzungs-Cookie verschlüsselt gespeichert. Höchstens 2 Anfragen gleichzeitig, 2 bis 4 Sekunden Pause. Nach einem fehlgeschlagenen Login kein automatischer neuer Versuch. Die Seite wird vorerst nur gespeichert, das Auslesen der Spieler folgt."
+          >
+            {abruf && (
+              <div className="mb-3">
+                <List>
+                  <Row
+                    title="Letzter Abruf"
+                    value={
+                      abruf.ok === null ? (
+                        <span>läuft</span>
+                      ) : abruf.ok ? (
+                        <span className="text-green">ok</span>
+                      ) : (
+                        <span className="text-red">Fehler</span>
+                      )
+                    }
+                    detail={`${datumZeit(abruf.gestartet)}${abruf.meldung ? ` · ${abruf.meldung}` : ""}`}
+                  />
+                  {roh && (
+                    <Row
+                      title="Gespeicherte Kaderseite"
+                      detail={`${datumZeit(roh.abgerufen)} · ${roh.bytes} Zeichen`}
+                      value={
+                        <span className="flex gap-3 text-[15px]">
+                          <a className="text-tint" href={`/api/rohseite/${roh.id}`}>Seite</a>
+                          <a className="text-tint" href={`/api/rohseite/${roh.id}?v=roh`}>Roh</a>
+                        </span>
+                      }
+                    />
+                  )}
+                </List>
+              </div>
+            )}
+            <AbrufButton />
+          </Section>
+        )}
         <Section>
           <Card>
             <form action={logout}>
