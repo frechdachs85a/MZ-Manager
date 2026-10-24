@@ -83,7 +83,7 @@ export default async function Einstellungen() {
         </Section>
         <Section
           title="Von Hand (ohne automatischen Abruf)"
-          footer="Auf managerzone.com eingeloggt die Kaderübersicht öffnen (www.managerzone.com/?p=players&sub=alt), mit Strg+S (Mac: Cmd+S) als „Webseite, nur HTML“ speichern und hier hochladen."
+          footer="Auf managerzone.com eingeloggt diese Seiten öffnen, jeweils mit Strg+S (Mac: Cmd+S) speichern und hier hochladen: Kaderübersicht (?p=players&sub=alt), Verletzt / Gesperrt (?p=players&sub=unavailable), Trainingslager (?p=training_camp), Taktik (?p=tactics, zeigt wer aufstellbar ist). Die Seitenart wird erkannt."
         >
           <HochladenForm />
         </Section>

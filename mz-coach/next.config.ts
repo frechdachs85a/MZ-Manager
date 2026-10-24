@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   // Persönliche Webseite mit Daten pro Anfrage aus der eigenen Datenbank:
   // klassisches dynamisches Rendern, kein Cache-Components-Modell.
   poweredByHeader: false,
+  // Upload der von Hand gespeicherten ManagerZone-Seiten (Taktikseite allein ca. 750 KB)
+  experimental: {
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   async headers() {
     return [
       {

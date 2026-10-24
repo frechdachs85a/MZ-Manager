@@ -33,12 +33,16 @@ npm run dev             # http://localhost:3000
 
 - Etappe 1 fertig: Gerüst, Design, Login-Schutz. Responsive für Desktop und Handy.
 - Etappe 2 teilweise: SQLite, MZ-Formel, Koordinaten-Umrechnung, verschlüsselter MZ-Zugang, Kader- und Spieleransicht, Änderungsverlauf.
-- Kader (Etappe 2): Kaderübersicht `?p=players&sub=alt` wird ausgelesen (alle Skills, Rot/Schwarz,
-  Alter, Marktwert), mit MZ-Werten je Position und Änderungsverlauf. Zwei Wege:
-  von Hand gespeicherte Seite in den Einstellungen hochladen, oder automatischer Abruf per Playwright
-  (Login, Sitzungs-Cookie verschlüsselt, max. 2 parallel, 2 bis 4 s Pause; gegen echtes ManagerZone noch nicht getestet).
-  Offen: Status (verletzt, gesperrt, Trainingslager, Transfermarkt), Scout-Sterne und Markierung 1/2,
-  weil sie nicht auf der Kaderübersicht stehen.
+- Kader (Etappe 2): vier eigene Seiten werden ausgelesen, von Hand gespeichert und in den Einstellungen
+  hochgeladen (mehrere auf einmal) oder automatisch per Playwright abgerufen (gegen echtes ManagerZone noch
+  nicht getestet):
+  Kaderübersicht `?p=players&sub=alt` (Skills, Rot/Schwarz, Alter, Marktwert),
+  Verletzt / Gesperrt `?p=players&sub=unavailable` (Sperren je Wettbewerb),
+  Trainingslager `?p=training_camp` (Paket, Enddatum),
+  Taktik `?p=tactics` (Kegel = nicht aufstellbar).
+  Übersicht zeigt fürs nächste Ligaspiel, wer fehlt und wann er frühestens zurück ist.
+  Offen: Scout-Sterne und Markierung 1/2 (normale Spieleransicht `?p=players`), Transfermarkt-Status.
+- Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
 
 ## Sicherheit

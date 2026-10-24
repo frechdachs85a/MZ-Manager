@@ -84,3 +84,34 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
   `?p=players&sub=unavailable` ("Verletzt / Gesperrt") und `?p=training_camp` ("Trainingslager"). Noch nicht gesehen.
 - Abgleich mit mz-wissen.md, Abschnitt 11: alle notierten Skills der 20 Profis stimmen, und die MZ-Formel
   ergibt für Peschke MF 8,37 und VT 8,36 wie notiert.
+
+## Verletzt / Gesperrt: `/?p=players&sub=unavailable` (24.10.2026, von Marcus gespeichert)
+
+- Bereich `#squad_unavailable` mit zwei Abschnitten `<h3>Verletzungen</h3>` und `<h3>Platzverweise</h3>`.
+- Verletzungen: nur der leere Fall gesehen: `<p>keine verletzten Spieler</p>`. Aufbau mit Einträgen unbekannt,
+  die Webseite meldet dann "nicht verfügbar" statt zu raten.
+- Platzverweise: `table#suspensionsList`, Kopfzeile mit `td`: Name, "Platzverw. Liga-/Pokalname", Spiele,
+  Begegnungsart, Datum. Erste Zelle: `img` mit `title="Rote Karte"` und Link `a.switch_to_squad_tab` (pid),
+  dazu eine Mobil-Liste `dl.hitlist-compact-list` mit denselben Werten.
+- Am 24.10.: zwei Einträge, je Rote Karte, 1 Spiel, Begegnungsart "Offizieller Pokal", Wettbewerb als Link
+  (`?p=cup&sub=schedule&...`). Sperre also je Wettbewerb. Wie die leere Liste aussieht: nicht gesehen.
+
+## Trainingslager: `/?p=training_camp` (24.10.2026, von Marcus gespeichert)
+
+- Zusammenfassung `.training_camp_stats table`: Spalte "Derzeit im Trainingslager", Zeile je Lagerart
+  (Bildtitel "Trainingslager" 10, "Jugendaufbautrainingslager" 2).
+- Liste `#training_camp_players_container`, je Spieler `.tc_table_container` mit `a.player_link` (pid),
+  `.tc_table_package_text strong` (Paket, z. B. "Torjägerpaket Nr. 5", "Jugendaufbautrainingslager"),
+  Zeilen "Aktuelle Eigenschaft:", "Dauer (Wochen):", "Verbleibende Tage:", "Startdatum:", "Enddatum:" (JJJJ-MM-TT).
+- Laut Hilfetext gilt das Enddatum, "bis du entweder selbst das Trainingslager beendest oder der Spieler sein
+  maximales Potential in allen Fertigkeiten, die er im Trainingslager trainiert, erreicht hat".
+- 12 Einträge = 10 + 2 laut Zusammenfassung.
+
+## Taktik: `/?p=tactics` (24.10.2026, von Marcus gespeichert)
+
+- Spielerliste als `dd#n_<pid>` mit `.full-name` und `.pitch-position` (z. B. "Torw.", "Vert.", "Ausw. St.").
+- Klassen der `dd`: `on_field` (in der Aufstellung, Feld oder Bank), `draggable ui-draggable` (frei),
+  `tc ui-draggable` (Kegel: nicht aufstellbar). Nach Marcus: Kegel = Trainingslager ohne Chip.
+- Am 24.10.: 7 mit Kegel, 3 weitere im Trainingslager ohne Kegel aufgestellt, 2 aus dem Jugendaufbau-Lager frei.
+- Verletzte oder Gesperrte tragen am 24.10. keine eigene Klasse (ein Spieler mit Pokalsperre: `on_field`).
+  Andere Klassen sind unbekannt, die Webseite meldet sie, statt sie zu werten.

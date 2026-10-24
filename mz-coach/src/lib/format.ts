@@ -18,3 +18,12 @@ export function euro(wert: number): string {
 export function zahl(wert: number): string {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(wert);
 }
+
+// Heutiger Kalendertag in Europe/Berlin (Date auf lokale Mitternacht)
+export function heuteInBerlin(): Date {
+  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" })
+    .format(new Date())
+    .split("-")
+    .map(Number);
+  return new Date(y, m - 1, d);
+}

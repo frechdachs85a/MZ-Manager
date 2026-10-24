@@ -5,9 +5,12 @@ import { SkillKugeln } from "@/components/skill-kugeln";
 import { Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
-import { datumZeit, euro } from "@/lib/format";
+import { datumZeit, euro, heuteInBerlin } from "@/lib/format";
+import { datumKurz, einsatzImLigaspiel, tag } from "@/lib/mz/einsatz";
+import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 import { GEWICHTE, mzWert, POSITIONEN } from "@/lib/mz/formel";
 import { ALLE_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
+import type { SpielerDaten } from "@/lib/mz/spieler";
 
 export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
   await connection();
@@ -52,6 +55,10 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
           </List>
         </Section>
 
+        <Section title="Status">
+          <StatusListe s={s} />
+        </Section>
+
         <Section title="Details" footer={`Quelle: ${s.quelle}, abgerufen ${datumZeit(s.abgerufen)}`}>
           <List>
             <Row title="Marktwert" value={s.marktwert !== undefined ? euro(s.marktwert) : "nicht verfügbar"} />
@@ -64,15 +71,47 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
               }
               detail={s.scoutSterne ? undefined : "steht nicht auf der Kaderübersicht"}
             />
-            <Row
-              title="Status"
-              value={s.status ? "siehe Kader" : "nicht verfügbar"}
-              detail={s.status ? undefined : "verletzt, gesperrt, Trainingslager, Transfermarkt: steht nicht auf der Kaderübersicht"}
-            />
+
             <Row title="pid" value={<span className="tabular-nums">{s.pid}</span>} />
           </List>
         </Section>
       </div>
     </>
+  );
+}
+
+const stand = (iso?: string) => (iso ? `Stand ${datumZeit(iso)}` : "Seite noch nicht eingelesen");
+
+function StatusListe({ s }: { s: SpielerDaten }) {
+  const st = s.status ?? {};
+  const ss = s.statusStand ?? {};
+  const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const einsatz = einsatzImLigaspiel(s, spieltag);
+  const tl = s.trainingslagerInfo;
+  const jaNein = (v?: boolean) => (v === undefined ? "nicht verfügbar" : v ? "ja" : "nein");
+  return (
+    <List>
+      <Row title={`Nächstes Ligaspiel (${datumKurz(tag(spieltag))})`} detail={einsatz.text} />
+      <Row title="Aufstellbar" value={jaNein(st.aufstellbar)} detail={`Taktikseite, ${stand(ss.aufstellbar)}`} />
+      <Row
+        title="Trainingslager"
+        value={jaNein(st.trainingslager)}
+        detail={
+          tl
+            ? `${tl.paket}${tl.eigenschaft ? `, trainiert ${tl.eigenschaft}` : ""}, ${tl.start ? datumKurz(tl.start) : "?"} bis ${tl.ende ? datumKurz(tl.ende) : "?"}${tl.verbleibendeTage !== undefined ? `, noch ${tl.verbleibendeTage} Tage` : ""} · ${stand(ss.trainingslager)}`
+            : stand(ss.trainingslager)
+        }
+      />
+      <Row title="Verletzt" value={jaNein(st.verletzt)} detail={stand(ss.verletzt)} />
+      <Row
+        title="Gesperrt"
+        value={jaNein(st.gesperrt)}
+        detail={[
+          ...(s.sperren ?? []).map((x) => `${x.karte}, ${x.spiele} Spiel(e), ${x.art}: ${x.wettbewerb} (${x.datum})`),
+          stand(ss.gesperrt),
+        ].join(" · ")}
+      />
+      <Row title="Transfermarkt" value="nicht verfügbar" detail="Quelle noch nicht eingebunden" />
+    </List>
   );
 }

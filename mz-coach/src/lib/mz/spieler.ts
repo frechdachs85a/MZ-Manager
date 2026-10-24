@@ -14,7 +14,33 @@ export type SpielerDaten = {
     verletzt?: boolean;
     gesperrt?: boolean;
     transfermarkt?: boolean;
+    // Taktikseite: Spieler mit Kegel (Klasse "tc") sind nicht aufstellbar. Trainingslager allein
+    // reicht dafür nicht: mit Chip oder im Jugendaufbau-Trainingslager bleibt er aufstellbar (Marcus, 24.10.2026).
+    aufstellbar?: boolean;
   };
+  // Stand (ISO) der Seite, aus der der jeweilige Status stammt
+  statusStand?: { verletzt?: string; gesperrt?: string; trainingslager?: string; aufstellbar?: string };
+  sperren?: Sperre[];
+  trainingslagerInfo?: TrainingslagerInfo;
+};
+
+// Zeile aus "Platzverweise" auf ?p=players&sub=unavailable. Eine Sperre gilt je Wettbewerb.
+export type Sperre = {
+  karte: string; // Bildtitel auf der Seite, z. B. "Rote Karte"
+  wettbewerb: string; // z. B. "Tag der Deutschen Einheit Pokal 2026"
+  spiele: number;
+  art: string; // Begegnungsart, z. B. "Offizieller Pokal"
+  datum: string; // JJJJ-MM-TT
+};
+
+// Block auf ?p=training_camp
+export type TrainingslagerInfo = {
+  paket: string; // z. B. "Torjägerpaket Nr. 5" oder "Jugendaufbautrainingslager"
+  eigenschaft?: string; // aktuell trainierter Skill
+  dauerWochen?: number;
+  verbleibendeTage?: number;
+  start?: string;
+  ende?: string;
 };
 
 export type Aenderung = { feld: string; alt: string | null; neu: string | null };
@@ -40,7 +66,7 @@ export function aenderungen(alt: SpielerDaten, neu: SpielerDaten): Aenderung[] {
   if (alt.alter !== undefined && neu.alter !== undefined && alt.alter !== neu.alter) {
     out.push({ feld: "Alter", alt: txt(alt.alter), neu: txt(neu.alter) });
   }
-  const st = ["trainingslager", "verletzt", "gesperrt", "transfermarkt"] as const;
+  const st = ["trainingslager", "verletzt", "gesperrt", "transfermarkt", "aufstellbar"] as const;
   for (const k of st) {
     const a = alt.status?.[k];
     const n = neu.status?.[k];

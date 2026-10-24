@@ -1,16 +1,13 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Badge, Card, List, Row, Section } from "@/components/ui";
+import { StatusBadges, statusHinweis } from "@/components/status";
+import { Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader, type KaderEintrag } from "@/lib/db/kader";
 import { alleMzWerte, POSITIONEN } from "@/lib/mz/formel";
 import { KADER_START, QUELLE_KADER } from "@/lib/wissen/startbasis";
 import { datumZeit } from "@/lib/format";
-
-// Status steht nicht auf der Kaderübersicht (?p=players&sub=alt). Ohne Angabe nie "einsatzbereit" behaupten.
-const STATUS_HINWEIS =
-  "Status (verletzt, gesperrt, Trainingslager, Transfermarkt): nicht verfügbar, steht nicht auf der Kaderübersicht.";
 
 export default async function Kader() {
   await connection();
@@ -53,12 +50,12 @@ export default async function Kader() {
       <div className="seite">
         {/* Desktop: Tabelle mit dem MZ-Wert jeder Position, bester Wert hervorgehoben */}
         <div className="hidden lg:block">
-          <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. ${STATUS_HINWEIS}`}>
+          <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. ${statusHinweis(kader)}`}>
             <KaderTabelle kader={kader} />
           </Section>
         </div>
         <div className="lg:hidden">
-        <Section footer={`Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6). ${STATUS_HINWEIS}`}>
+        <Section footer={`Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6). ${statusHinweis(kader)}`}>
           <List>
             {kader.map((s) => {
               const werte = alleMzWerte(s.skills);
@@ -66,7 +63,6 @@ export default async function Kader() {
                 const w = werte[p];
                 return w.ok ? [{ p, wert: w.wert }] : [];
               }).sort((a, b) => b.wert - a.wert)[0];
-              const st = s.status ?? {};
               return (
                 <li key={s.pid} className="!ml-0 !pr-0">
                   <Link href={`/kader/${s.pid}`} className="pressable flex min-h-11 items-center gap-3 py-2.5 pl-4 pr-3">
@@ -74,10 +70,7 @@ export default async function Kader() {
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-medium">
                         {s.name}
-                        {st.verletzt && <Badge tone="red">verletzt</Badge>}
-                        {st.gesperrt && <Badge tone="red">gesperrt</Badge>}
-                        {st.trainingslager && <Badge tone="orange">Trainingslager</Badge>}
-                        {st.transfermarkt && <Badge tone="tint">Markt</Badge>}
+                        <StatusBadges s={s} />
                       </span>
                       <span className="block text-[13px] text-label-2">
                         {s.alter !== undefined ? `${s.alter} J.` : "Alter nicht verfügbar"}
@@ -127,7 +120,6 @@ function KaderTabelle({ kader }: { kader: KaderEintrag[] }) {
           {kader.map((s) => {
             const werte = alleMzWerte(s.skills);
             const max = Math.max(...POSITIONEN.map((p) => { const w = werte[p]; return w.ok ? w.wert : -1; }));
-            const st = s.status ?? {};
             return (
               <tr key={s.pid} className="transition-colors hover:bg-fill">
                 <td className="py-2.5 pl-4 text-right tabular-nums text-label-2">{s.nr ?? ""}</td>
@@ -145,10 +137,7 @@ function KaderTabelle({ kader }: { kader: KaderEintrag[] }) {
                 })}
                 <td className="py-2.5 pr-4 pl-4">
                   <span className="flex flex-wrap gap-1">
-                    {st.verletzt && <Badge tone="red">verletzt</Badge>}
-                    {st.gesperrt && <Badge tone="red">gesperrt</Badge>}
-                    {st.trainingslager && <Badge tone="orange">Trainingslager</Badge>}
-                    {st.transfermarkt && <Badge tone="tint">Markt</Badge>}
+                    <StatusBadges s={s} />
                   </span>
                 </td>
               </tr>

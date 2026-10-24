@@ -55,6 +55,8 @@ Zeigt Alter und Marktwert, Skills nur bei Spielern, deren Skills öffentlich sic
 ### Eigene Spieler
 `/?p=players` (eingeloggt): alle Skills mit Rot/Schwarz (Klasse "maxed"), Scout-Sterne, Trainingslager-Status, Verletzungen/Sperren (Reiter "Verletzt / Gesperrt").
 Im Taktik-Editor haben Spieler im Trainingslager die Klasse `tc` und Opazität 0.6 (ausgegraut, nicht einsetzbar).
+Ergänzung 24.10.2026 (Marcus, an den Seiten bestätigt): Trainingslager heißt nicht automatisch "nicht einsetzbar". Mit einem Chip ausgestattete Spieler im Trainingslager sind trotzdem aufstellbar, Spieler im Jugendaufbau-Trainingslager (1 Woche) ebenfalls. Maßgeblich ist der Kegel auf der Taktikseite (`dd.tc`). Am 24.10. waren 12 Spieler im Trainingslager, davon 7 mit Kegel; 3 mit Chip und 2 im Jugendaufbau-Trainingslager waren aufstellbar.
+Sperren (`?p=players&sub=unavailable`, "Platzverweise") gelten je Wettbewerb, z. B. Rote Karte im Pokal nur für den Pokal.
 
 ### Scoutspiele
 Laufen gegen die Aufstellung aus dem letzten Ligaspiel des Gegners. Der Gegner sieht sie nicht. Lohnen sich nur, wenn der Gegner stabil gleich spielt. Kosten Geld.
@@ -98,7 +100,7 @@ x/y = Startaufstellung, x1/y1 = Alternative 1, x2/y2 = Alternative 2. Führung h
 7. Rote-Karte-Regel in jeder Taktik; Fall abdecken, dass genau der Rot-Auswechselspieler Rot sieht. Rot-Logik: 2 Stürmer = Flügel (einer außen, einer zentral), 1 Stürmer = zentral + Kurzpass. Eckstürmer ohne guten Flankengeber rückt in die Mitte + Kurzpass.
 8. Bank nach Position, subgoalie nie Regel-Einwechsler
 9. Kopfball bei Innenverteidigern und Mittelstürmer beachten (Marcus' Regel, zählt in der Formel kaum)
-10. Spieler im Trainingslager (ausgegraut) oder gesperrt/verletzt nicht aufstellen
+10. Spieler mit Kegel auf der Taktikseite (Trainingslager ohne Chip) oder gesperrt/verletzt nicht aufstellen. Trainingslager mit Chip oder Jugendaufbau-Trainingslager ist erlaubt. Sperre nur für den Wettbewerb, für den sie gilt.
 11. Immer kompletten XML-Code ausgeben, nie Einzelzeilen
 
 ## 6. MZ-Formel (mzlive "MZ Manager"-Wert = Summe Skill × Gewicht)
