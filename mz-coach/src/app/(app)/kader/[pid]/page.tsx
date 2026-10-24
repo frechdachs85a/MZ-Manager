@@ -5,7 +5,7 @@ import { SkillKugeln } from "@/components/skill-kugeln";
 import { Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
-import { datumZeit, zahl } from "@/lib/format";
+import { datumZeit, euro } from "@/lib/format";
 import { GEWICHTE, mzWert, POSITIONEN } from "@/lib/mz/formel";
 import { ALLE_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
 
@@ -19,7 +19,7 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
     <>
       <PageHeader title={s.name} subtitle={[s.nr && `Nr. ${s.nr}`, s.alter !== undefined && `${s.alter} Jahre`].filter(Boolean).join(" · ")} />
       <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
-        <Section title="Skills" footer="Rot = ausgemaxt, blau = trainierbar. 1 = stärkste Skills, 2 = Schwächen.">
+        <Section title="Skills" footer="Rot = ausgemaxt, blau = trainierbar, grau = nicht trainierbar (Erfahrung, Form). Markierung 1/2 (stärkste Skills/Schwächen): nicht verfügbar, steht nicht auf der Kaderübersicht.">
           <Card className="px-4 py-2">
             {ALLE_SKILLS.map((k) => (
               <SkillKugeln key={k} label={SKILL_LABEL[k]} skill={s.skills[k]} />
@@ -54,14 +54,20 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
 
         <Section title="Details" footer={`Quelle: ${s.quelle}, abgerufen ${datumZeit(s.abgerufen)}`}>
           <List>
-            <Row title="Marktwert" value={s.marktwert !== undefined ? zahl(s.marktwert) : "nicht verfügbar"} />
+            <Row title="Marktwert" value={s.marktwert !== undefined ? euro(s.marktwert) : "nicht verfügbar"} />
             <Row
-              title="Scout"
+              title="Scout-Sterne"
               value={
                 s.scoutSterne?.hoch !== undefined || s.scoutSterne?.niedrig !== undefined
                   ? `${s.scoutSterne?.hoch ?? "?"}/${s.scoutSterne?.niedrig ?? "?"}`
                   : "nicht verfügbar"
               }
+              detail={s.scoutSterne ? undefined : "steht nicht auf der Kaderübersicht"}
+            />
+            <Row
+              title="Status"
+              value={s.status ? "siehe Kader" : "nicht verfügbar"}
+              detail={s.status ? undefined : "verletzt, gesperrt, Trainingslager, Transfermarkt: steht nicht auf der Kaderübersicht"}
             />
             <Row title="pid" value={<span className="tabular-nums">{s.pid}</span>} />
           </List>

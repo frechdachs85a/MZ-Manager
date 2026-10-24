@@ -8,6 +8,10 @@ import { alleMzWerte, POSITIONEN } from "@/lib/mz/formel";
 import { KADER_START, QUELLE_KADER } from "@/lib/wissen/startbasis";
 import { datumZeit } from "@/lib/format";
 
+// Status steht nicht auf der Kaderübersicht (?p=players&sub=alt). Ohne Angabe nie "einsatzbereit" behaupten.
+const STATUS_HINWEIS =
+  "Status (verletzt, gesperrt, Trainingslager, Transfermarkt): nicht verfügbar, steht nicht auf der Kaderübersicht.";
+
 export default async function Kader() {
   await connection();
   const kader = ladeKader(getDb());
@@ -49,12 +53,12 @@ export default async function Kader() {
       <div className="seite">
         {/* Desktop: Tabelle mit dem MZ-Wert jeder Position, bester Wert hervorgehoben */}
         <div className="hidden lg:block">
-          <Section footer="MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. n. v. = nicht alle gewichteten Skills bekannt.">
+          <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. ${STATUS_HINWEIS}`}>
             <KaderTabelle kader={kader} />
           </Section>
         </div>
         <div className="lg:hidden">
-        <Section footer="Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6).">
+        <Section footer={`Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6). ${STATUS_HINWEIS}`}>
           <List>
             {kader.map((s) => {
               const werte = alleMzWerte(s.skills);

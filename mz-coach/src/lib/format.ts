@@ -11,7 +11,10 @@ export function datumZeit(iso: string): string {
   return ZEIT.format(new Date(iso));
 }
 
-// Ohne Währungszeichen: die Währung kommt mit dem echten Abruf von ManagerZone.
+export function euro(wert: number): string {
+  return `${zahl(wert)} EUR`;
+}
+
 export function zahl(wert: number): string {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(wert);
 }

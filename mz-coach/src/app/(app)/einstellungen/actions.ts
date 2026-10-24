@@ -30,6 +30,21 @@ export type AbrufState = { meldung?: string; ok?: boolean };
 export async function kaderJetztAbrufen(): Promise<AbrufState> {
   const { kaderAbrufen } = await import("@/lib/mz/abruf/kader");
   const r = await kaderAbrufen(getDb(), { manuell: true });
-  revalidatePath("/einstellungen");
-  return r.ok ? { ok: true, meldung: `Kaderseite abgerufen und gespeichert (${r.bytes} Zeichen).` } : { meldung: r.meldung };
+  revalidatePath("/", "layout");
+  return r.ok ? { ok: true, meldung: ergebnisText(r) } : { meldung: r.meldung };
+}
+
+export async function kaderHochladen(_prev: AbrufState, formData: FormData): Promise<AbrufState> {
+  const datei = formData.get("datei");
+  if (!(datei instanceof File) || datei.size === 0) return { meldung: "Keine Datei ausgewählt." };
+  // Server Actions nehmen standardmäßig höchstens 1 MB an, die Kaderseite hat ca. 180 KB.
+  if (datei.size > 950_000) return { meldung: "Datei zu groß (über 950 KB). Bitte als \"Webseite, nur HTML\" speichern." };
+  const { kaderAusDatei } = await import("@/lib/mz/abruf/kader");
+  const r = kaderAusDatei(getDb(), await datei.text(), datei.name);
+  revalidatePath("/", "layout");
+  return r.ok ? { ok: true, meldung: ergebnisText(r) } : { meldung: r.meldung };
+}
+
+function ergebnisText(r: { spieler: number; neu: number; aenderungen: number }) {
+  return `${r.spieler} Spieler gelesen, ${r.neu} neu, ${r.aenderungen} Änderungen gespeichert.`;
 }

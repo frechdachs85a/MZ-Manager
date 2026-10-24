@@ -63,3 +63,24 @@ Nur, was direkt von managerzone.com abgerufen und angesehen wurde. Mit Datum.
   `recaptcha/api.js` ist auf der Startseite eingebunden), wie die Seite nach erfolgreichem Login
   aussieht, und der Aufbau der eingeloggten Kaderseite.
 - Getestet nur gegen einen lokalen Nachbau mit den beobachteten Merkmalen, noch nicht gegen managerzone.com.
+
+## Kaderübersicht eingeloggt: `/?p=players&sub=alt` (24.10.2026, von Marcus gespeichert)
+
+Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle liegt nur lokal unter `src/lib/mz/parser/fixtures/kader-alt-2026-10-24.html` (nicht im öffentlichen Repo).
+
+- Tabelle `table#playerAltViewTable`, 47 Zeilen (Profis, Nachwuchs und Jugend gemeinsam, Nr 1 bis 207).
+- Spalten (Überschrift, Skills zusätzlich mit `title`): Nr, Name, Wert, Gehalt, Alter, Geboren (Saison),
+  Sp (Sprint), Au (Ausdauer), Sü (Spielübersicht), Pa (Passen), Sch (Schuss), Ko (Kopfball), To (Torwart),
+  Te (Technik), Zw (Zweikampf), Fl (Flanken), St (Standards), Er (Erfahrung), Fo (Form), Checkbox.
+- Name-Zelle: Link `?p=players&pid=<PID>&tid=847159`.
+- Wert und Gehalt als `1&nbsp;084&nbsp;289 EUR`.
+- Ausgemaxt = Zelle mit `class="maxed"`. Erfahrung und Form tragen nie `maxed` (nicht trainierbar).
+- Zweite Tabelle `table.alt-view-table-mobile` mit gekürzten Namen ("L Chao Feng") und `data-value`,
+  `data-salary`, `data-born`; wird nicht gebraucht.
+- Im Kopf ein Skript mit `server_time = new Date(2026, 9, 24, 22, 48, 40);` (Monat ab 0) = Stand der Seite.
+  Die Seitenuhr zeigte am 24.10.2026 dieselbe Zeit wie Europe/Berlin (Startseite 22:18 bei 20:18 UTC).
+- NICHT auf dieser Seite: Scout-Sterne, Markierung 1/2 (stärkste Skills/Schwächen), Status
+  (verletzt, gesperrt, Trainingslager, Transfermarkt). Dafür gibt es Links zu
+  `?p=players&sub=unavailable` ("Verletzt / Gesperrt") und `?p=training_camp` ("Trainingslager"). Noch nicht gesehen.
+- Abgleich mit mz-wissen.md, Abschnitt 11: alle notierten Skills der 20 Profis stimmen, und die MZ-Formel
+  ergibt für Peschke MF 8,37 und VT 8,36 wie notiert.

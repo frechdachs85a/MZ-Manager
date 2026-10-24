@@ -2,6 +2,11 @@
 
 Kopiere alles ab "AUFTRAG" in Claude Code. Lege vorher die Datei `mz-wissen.md` in den Projektordner, sie enthält das komplette Fachwissen.
 
+> **Änderungen durch Marcus (24.10.2026), gehen dem Text unten vor:**
+> - Reine Webseite für Laptop und Handy (responsive), keine installierbare App, kein PWA, keine Splash-Bilder.
+> - Keine Push-Benachrichtigungen. Ergebnisse der Automatik erscheinen auf der Übersicht.
+> - Statt "fühlt sich an wie eine native iPhone-App": ruhige, moderne Optik, auf dem Handy wie am Desktop gut nutzbar.
+
 ---
 
 AUFTRAG

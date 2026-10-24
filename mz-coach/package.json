@@ -13,6 +13,7 @@
   "dependencies": {
     "better-sqlite3": "^13.0.3",
     "next": "16.4.3",
+    "node-html-parser": "9.0.4",
     "playwright": "^1.63.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",

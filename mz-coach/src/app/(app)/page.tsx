@@ -53,7 +53,7 @@ export default async function Uebersicht() {
         </Section>
 
         <Section title="Ausfälle">
-          <Unavailable title="Verletzt, gesperrt, Trainingslager" reason="Wird mit dem Kaderabruf von ManagerZone geladen (Etappe 2)." />
+          <Unavailable title="Verletzt, gesperrt, Trainingslager" reason="Steht nicht auf der Kaderübersicht. Dafür werden die Seiten „Verletzt / Gesperrt“ und „Trainingslager“ gebraucht." />
         </Section>
 
         <Section title="Tabelle">

@@ -7,7 +7,8 @@ import { ladeRohseite } from "@/lib/db/abruf";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const variante = request.nextUrl.searchParams.get("v") === "roh" ? "roh" : "dom";
-  const seite = ladeRohseite(getDb(), Number(id), variante);
+  // Von Hand hochgeladene Seiten haben nur die Rohfassung.
+  const seite = ladeRohseite(getDb(), Number(id), variante) ?? ladeRohseite(getDb(), Number(id), "roh");
   if (!seite) return new Response("nicht vorhanden", { status: 404 });
   return new Response(seite.html, {
     headers: {

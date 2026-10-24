@@ -33,10 +33,12 @@ npm run dev             # http://localhost:3000
 
 - Etappe 1 fertig: Gerüst, Design, Login-Schutz. Responsive für Desktop und Handy.
 - Etappe 2 teilweise: SQLite, MZ-Formel, Koordinaten-Umrechnung, verschlüsselter MZ-Zugang, Kader- und Spieleransicht, Änderungsverlauf.
-- ManagerZone-Abruf (Etappe 2, Teil 2): Login per Playwright, Sitzungs-Cookie verschlüsselt, gedrosselte Abrufe
-  (max. 2 parallel, 2 bis 4 s Pause), Kaderseite wird als Rohseite gespeichert (Einstellungen, "Kader jetzt abrufen").
-  Gegen echtes ManagerZone noch nicht getestet. Offen: Auslesen der Spieler aus der Kaderseite. Dafür muss
-  einmal echtes HTML der eingeloggten Seite vorliegen (Download "Seite" in den Einstellungen).
+- Kader (Etappe 2): Kaderübersicht `?p=players&sub=alt` wird ausgelesen (alle Skills, Rot/Schwarz,
+  Alter, Marktwert), mit MZ-Werten je Position und Änderungsverlauf. Zwei Wege:
+  von Hand gespeicherte Seite in den Einstellungen hochladen, oder automatischer Abruf per Playwright
+  (Login, Sitzungs-Cookie verschlüsselt, max. 2 parallel, 2 bis 4 s Pause; gegen echtes ManagerZone noch nicht getestet).
+  Offen: Status (verletzt, gesperrt, Trainingslager, Transfermarkt), Scout-Sterne und Markierung 1/2,
+  weil sie nicht auf der Kaderübersicht stehen.
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
 
 ## Sicherheit
