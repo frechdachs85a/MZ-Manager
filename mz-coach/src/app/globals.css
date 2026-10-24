@@ -74,19 +74,32 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* Abstände für Notch und Home-Indicator */
-.pt-safe {
+/* Abstände für Notch und Home-Indicator. Als @utility, damit Varianten wie lg: greifen. */
+@utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
-.pb-tabbar {
+@utility pb-tabbar {
   padding-bottom: calc(env(safe-area-inset-bottom) + 64px);
 }
-.pb-safe {
+@utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
-.px-safe {
+@utility px-safe {
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* Inhaltsbreite: auf dem Handy volle Breite mit Rand, ab Desktop breiter mit mehr Luft */
+@utility seite {
+  margin-inline: auto;
+  max-width: 42rem;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  @media (width >= 64rem) {
+    max-width: 72rem;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
 }
 
 /* Sanftes Einblenden beim Seitenwechsel */
@@ -111,6 +124,12 @@ body {
 .pressable:active {
   transform: scale(0.97);
   opacity: 0.7;
+}
+@media (hover: hover) {
+  a.pressable:hover,
+  button.pressable:not(:disabled):hover {
+    opacity: 0.85;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

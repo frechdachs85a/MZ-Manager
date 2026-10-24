@@ -5,7 +5,7 @@ export default function Markt() {
   return (
     <>
       <PageHeader title="Markt" />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite">
         <Section title="Transfermarkt-Scout">
           <Unavailable title="Verbesserungen für deinen Kader" reason="Folgt in Etappe 8 (99-Regel, Alter, Budget, MZ-Wert-Vergleich)." />
         </Section>

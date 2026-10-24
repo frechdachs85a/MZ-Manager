@@ -1,6 +1,10 @@
 # MZ Coach
 
-Persönliche Web-App (PWA) für das ManagerZone-Team FC Toho (tid 847159).
+Persönliche Webseite für das ManagerZone-Team FC Toho (tid 847159). Läuft im normalen Browser,
+für Desktop und Handy optimiert: ab 1024 px Breite Seitenleiste links und mehrspaltige Inhalte
+(Kader als Tabelle mit MZ-Wert je Position), darunter Tab-Leiste unten und einspaltige Ansicht.
+Die PWA-Teile (Manifest, Service Worker, Icons) bleiben im Hintergrund, weil Web-Push auf dem iPhone
+(Etappe 7) nur funktioniert, wenn die Seite zum Home-Bildschirm hinzugefügt wurde.
 Fachgrundlage: `mz-wissen.md`. Auftrag: `docs/auftrag.md`.
 
 ## Start lokal
@@ -22,7 +26,7 @@ npm run dev             # http://localhost:3000
 
 ## Stand
 
-- Etappe 1 fertig: Gerüst, iOS-Design, PWA, Login-Schutz.
+- Etappe 1 fertig: Gerüst, Design, Login-Schutz. Responsive für Desktop und Handy.
 - Etappe 2 teilweise: SQLite, MZ-Formel, Koordinaten-Umrechnung, verschlüsselter MZ-Zugang, Kader- und Spieleransicht, Änderungsverlauf.
 - ManagerZone-Abruf (Etappe 2, Teil 2): Login per Playwright, Sitzungs-Cookie verschlüsselt, gedrosselte Abrufe
   (max. 2 parallel, 2 bis 4 s Pause), Kaderseite wird als Rohseite gespeichert (Einstellungen, "Kader jetzt abrufen").

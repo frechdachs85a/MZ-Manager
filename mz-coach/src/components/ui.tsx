@@ -57,7 +57,7 @@ export function Row({
   );
 }
 
-// "Nicht verfügbar" mit Grund. Grundregel der App: nie Werte erfinden.
+// "Nicht verfügbar" mit Grund. Grundregel der Webseite: nie Werte erfinden.
 export function Unavailable({ title, reason }: { title: string; reason: string }) {
   return (
     <Card className="p-4">

@@ -6,7 +6,7 @@ export default function Taktik() {
   return (
     <>
       <PageHeader title="Taktik" />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
         <Section title="Taktik gegen Gegner">
           <Unavailable title="Taktik-Generator mit Prüfer" reason="Folgt in Etappe 5, inklusive komplettem XML-Code und automatischer Prüfliste." />
         </Section>

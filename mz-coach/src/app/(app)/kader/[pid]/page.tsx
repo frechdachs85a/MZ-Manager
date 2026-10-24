@@ -18,7 +18,7 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
   return (
     <>
       <PageHeader title={s.name} subtitle={[s.nr && `Nr. ${s.nr}`, s.alter !== undefined && `${s.alter} Jahre`].filter(Boolean).join(" · ")} />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
         <Section title="Skills" footer="Rot = ausgemaxt, blau = trainierbar. 1 = stärkste Skills, 2 = Schwächen.">
           <Card className="px-4 py-2">
             {ALLE_SKILLS.map((k) => (

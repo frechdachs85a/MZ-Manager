@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Badge, List, Row, Section } from "@/components/ui";
+import { Badge, Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
-import { ladeKader } from "@/lib/db/kader";
+import { ladeKader, type KaderEintrag } from "@/lib/db/kader";
 import { alleMzWerte, POSITIONEN } from "@/lib/mz/formel";
 import { KADER_START, QUELLE_KADER } from "@/lib/wissen/startbasis";
 import { datumZeit } from "@/lib/format";
@@ -16,7 +16,7 @@ export default async function Kader() {
     return (
       <>
         <PageHeader title="Kader" subtitle={`${KADER_START.length} Spieler, noch kein Live-Abruf`} />
-        <div className="px-safe mx-auto max-w-2xl">
+        <div className="seite">
           <Section
             title="Startbasis"
             footer={`Quelle: ${QUELLE_KADER}. Nur die dort notierten Skills, daher noch keine MZ-Werte. Alle Skills, Rot/Schwarz, Scout-Sterne und Status kommen mit dem ersten Abruf von ManagerZone.`}
@@ -46,7 +46,14 @@ export default async function Kader() {
   return (
     <>
       <PageHeader title="Kader" subtitle={`${kader.length} Spieler · Stand ${datumZeit(stand)}`} />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite">
+        {/* Desktop: Tabelle mit dem MZ-Wert jeder Position, bester Wert hervorgehoben */}
+        <div className="hidden lg:block">
+          <Section footer="MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. n. v. = nicht alle gewichteten Skills bekannt.">
+            <KaderTabelle kader={kader} />
+          </Section>
+        </div>
+        <div className="lg:hidden">
         <Section footer="Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6).">
           <List>
             {kader.map((s) => {
@@ -91,7 +98,60 @@ export default async function Kader() {
             })}
           </List>
         </Section>
+        </div>
       </div>
     </>
+  );
+}
+
+function KaderTabelle({ kader }: { kader: KaderEintrag[] }) {
+  return (
+    <Card>
+      <table className="w-full text-left text-[15px]">
+        <thead>
+          <tr className="border-b border-separator text-[13px] text-label-2">
+            <th className="w-12 py-2.5 pl-4 text-right font-normal">Nr</th>
+            <th className="py-2.5 pl-4 font-normal">Name</th>
+            <th className="py-2.5 pl-4 text-right font-normal">Alter</th>
+            {POSITIONEN.map((p) => (
+              <th key={p} className="py-2.5 pl-4 text-right font-normal">{p}</th>
+            ))}
+            <th className="py-2.5 pr-4 pl-4 font-normal">Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-separator">
+          {kader.map((s) => {
+            const werte = alleMzWerte(s.skills);
+            const max = Math.max(...POSITIONEN.map((p) => { const w = werte[p]; return w.ok ? w.wert : -1; }));
+            const st = s.status ?? {};
+            return (
+              <tr key={s.pid} className="transition-colors hover:bg-fill">
+                <td className="py-2.5 pl-4 text-right tabular-nums text-label-2">{s.nr ?? ""}</td>
+                <td className="py-2.5 pl-4 font-medium">
+                  <Link href={`/kader/${s.pid}`} className="hover:text-tint">{s.name}</Link>
+                </td>
+                <td className="py-2.5 pl-4 text-right tabular-nums">{s.alter ?? "n. v."}</td>
+                {POSITIONEN.map((p) => {
+                  const w = werte[p];
+                  return (
+                    <td key={p} className={`py-2.5 pl-4 text-right tabular-nums ${w.ok && w.wert === max ? "font-semibold" : "text-label-2"}`}>
+                      {w.ok ? w.wert.toFixed(2) : "n. v."}
+                    </td>
+                  );
+                })}
+                <td className="py-2.5 pr-4 pl-4">
+                  <span className="flex flex-wrap gap-1">
+                    {st.verletzt && <Badge tone="red">verletzt</Badge>}
+                    {st.gesperrt && <Badge tone="red">gesperrt</Badge>}
+                    {st.trainingslager && <Badge tone="orange">Trainingslager</Badge>}
+                    {st.transfermarkt && <Badge tone="tint">Markt</Badge>}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Card>
   );
 }

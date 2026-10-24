@@ -39,7 +39,7 @@ export default async function Uebersicht() {
           </Link>
         }
       />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
         <Section title="Nächstes Ligaspiel" footer="Datum aus der Regel: Ligaspiele immer mittwochs und sonntags. Gegner und Anstoß kommen mit dem Spielplan-Abruf.">
           <Card className="p-4">
             <div className="text-[13px] font-semibold uppercase tracking-wide text-tint">Ligaspieltag</div>

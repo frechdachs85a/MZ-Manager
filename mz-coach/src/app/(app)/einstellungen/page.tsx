@@ -20,7 +20,8 @@ export default async function Einstellungen() {
   return (
     <>
       <PageHeader title="Einstellungen" />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite">
+        <div className="lg:max-w-2xl">
         <Section title="Team">
           <List>
             <Row title="Team" value={TEAM.name} />
@@ -95,6 +96,7 @@ export default async function Einstellungen() {
             </form>
           </Card>
         </Section>
+        </div>
       </div>
     </>
   );

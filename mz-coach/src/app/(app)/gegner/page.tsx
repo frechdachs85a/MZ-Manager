@@ -6,7 +6,7 @@ export default function Gegner() {
   return (
     <>
       <PageHeader title="Gegner" />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
         <Section title="Analyse">
           <Unavailable title="Team analysieren" reason="Spielabruf, XML-Auswertung und Gegneranalyse folgen in Etappe 3 und 4." />
         </Section>
