@@ -71,7 +71,6 @@ body {
   background: var(--bg);
   color: var(--label);
   font-family: var(--font-sans);
-  overscroll-behavior-y: none;
 }
 
 /* Abstände für Notch und Home-Indicator. Als @utility, damit Varianten wie lg: greifen. */

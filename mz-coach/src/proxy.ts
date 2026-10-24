@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionSecret, SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 
-// Alles außer Login, PWA-Dateien und Icons ist nur mit gültiger Session erreichbar.
+// Alles außer Login und Icons ist nur mit gültiger Session erreichbar.
 export function proxy(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (verifySessionToken(token, getSessionSecret())) return NextResponse.next();
@@ -17,6 +17,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!login|_next/static|_next/image|manifest.webmanifest|sw.js|offline.html|icons/|splash/|apple-touch-icon.png|favicon.png).*)",
+    "/((?!login|_next/static|_next/image|icons/|apple-touch-icon.png|favicon.png).*)",
   ],
 };

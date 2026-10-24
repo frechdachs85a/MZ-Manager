@@ -2,10 +2,15 @@
 
 import { useEffect } from "react";
 
-export function ServiceWorker() {
+// Die Seite ist bewusst keine installierbare App mehr. Früher registrierte Service Worker
+// (aus der ersten Fassung) werden im Browser abgemeldet, damit nichts Altes zwischenspeichert.
+export function AlteServiceWorkerEntfernen() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => {});
   }, []);
   return null;
 }

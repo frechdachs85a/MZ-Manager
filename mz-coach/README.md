@@ -3,8 +3,13 @@
 Persönliche Webseite für das ManagerZone-Team FC Toho (tid 847159). Läuft im normalen Browser,
 für Desktop und Handy optimiert: ab 1024 px Breite Seitenleiste links und mehrspaltige Inhalte
 (Kader als Tabelle mit MZ-Wert je Position), darunter Tab-Leiste unten und einspaltige Ansicht.
-Die PWA-Teile (Manifest, Service Worker, Icons) bleiben im Hintergrund, weil Web-Push auf dem iPhone
-(Etappe 7) nur funktioniert, wenn die Seite zum Home-Bildschirm hinzugefügt wurde.
+
+## Abweichungen vom Auftrag (Entscheidung von Marcus, 24.10.2026)
+
+- Reine Webseite, keine installierbare App: kein Manifest, kein Service Worker, keine Splash-Bilder,
+  kein eigenes Pull-to-Refresh (der Browser lädt beim Herunterziehen selbst neu).
+- Keine Push-Benachrichtigungen. Die Automatik nach Ligaspielen (Etappe 7) zeigt ihre Ergebnisse
+  auf der Übersicht.
 Fachgrundlage: `mz-wissen.md`. Auftrag: `docs/auftrag.md`.
 
 ## Start lokal
@@ -22,7 +27,7 @@ npm run dev             # http://localhost:3000
 - `npm test` Tests (Vitest)
 - `npm run lint` ESLint
 - `npm run build && npm start` Produktionsbuild
-- `node scripts/make-icons.mjs` Icons und Splash-Bilder neu erzeugen (braucht Playwright)
+- `node scripts/make-icons.mjs` Logo und Favicons neu erzeugen (braucht Playwright)
 
 ## Stand
 

@@ -1,4 +1,4 @@
-// Erzeugt App-Icons und iOS-Splash-Bilder aus SVG (Chromium über Playwright).
+// Erzeugt Logo und Favicons aus SVG (Chromium über Playwright).
 // Aufruf: node scripts/make-icons.mjs
 import { createRequire } from "node:module";
 // Playwright ist global vorinstalliert, daher per require (berücksichtigt NODE_PATH)
@@ -21,7 +21,6 @@ const icon = (pad = 0) => `
 
 const out = process.cwd() + "/public";
 mkdirSync(out + "/icons", { recursive: true });
-mkdirSync(out + "/splash", { recursive: true });
 
 const browser = await chromium.launch();
 const page = await browser.newPage();
@@ -36,14 +35,7 @@ async function render(svg, size, file, bg = null, w = size, h = size) {
 }
 
 await render(icon(), 192, out + "/icons/icon-192.png");
-await render(icon(), 512, out + "/icons/icon-512.png");
-await render(icon(70), 512, out + "/icons/icon-maskable-512.png");
 await render(icon(), 180, out + "/apple-touch-icon.png");
 await render(icon(), 48, out + "/favicon.png");
-
-const SPLASH = [[375,667,2],[375,812,3],[390,844,3],[393,852,3],[402,874,3],[428,926,3],[430,932,3],[440,956,3]];
-for (const [w, h, r] of SPLASH) {
-  await render(icon(), 120 * r, `${out}/splash/splash-${w * r}x${h * r}.png`, "#f2f2f7", w * r, h * r);
-}
 await browser.close();
 console.log("fertig");
