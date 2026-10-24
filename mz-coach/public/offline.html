@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>MZ Coach offline</title>
+    <style>
+      :root { --bg: #f2f2f7; --label: #000; --label-2: rgba(60,60,67,.6); --tint: #007aff; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #000; --label: #fff; --label-2: rgba(235,235,245,.6); --tint: #0a84ff; } }
+      body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: var(--bg); color: var(--label);
+        font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; text-align: center; padding: 16px; box-sizing: border-box; }
+      h1 { font-size: 22px; margin: 16px 0 4px; }
+      p { color: var(--label-2); font-size: 15px; margin: 0 0 20px; }
+      button { font: inherit; font-size: 17px; color: var(--tint); background: none; border: 0; min-height: 44px; padding: 0 16px; }
+      img { border-radius: 18px; }
+    </style>
+  </head>
+  <body>
+    <div>
+      <img src="/icons/icon-192.png" width="72" height="72" alt="" />
+      <h1>Keine Verbindung</h1>
+      <p>MZ Coach braucht Internet, damit die Daten aktuell sind.</p>
+      <button onclick="location.reload()">Erneut versuchen</button>
+    </div>
+  </body>
+</html>

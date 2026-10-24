@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+/* iOS-Systemfarben (hell / dunkel) */
+:root {
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --card-2: #f2f2f7;
+  --label: #000000;
+  --label-2: rgba(60, 60, 67, 0.6);
+  --label-3: rgba(60, 60, 67, 0.3);
+  --separator: rgba(60, 60, 67, 0.29);
+  --fill: rgba(120, 120, 128, 0.12);
+  --bar: rgba(249, 249, 249, 0.82);
+  --tint: #007aff;
+  --green: #34c759;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --yellow: #ffcc00;
+  --pitch: #2e8b57;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --card-2: #2c2c2e;
+    --label: #ffffff;
+    --label-2: rgba(235, 235, 245, 0.6);
+    --label-3: rgba(235, 235, 245, 0.3);
+    --separator: rgba(84, 84, 88, 0.6);
+    --fill: rgba(120, 120, 128, 0.24);
+    --bar: rgba(22, 22, 23, 0.8);
+    --tint: #0a84ff;
+    --green: #30d158;
+    --red: #ff453a;
+    --orange: #ff9f0a;
+    --yellow: #ffd60a;
+    --pitch: #1f6b43;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-label: var(--label);
+  --color-label-2: var(--label-2);
+  --color-label-3: var(--label-3);
+  --color-separator: var(--separator);
+  --color-fill: var(--fill);
+  --color-bar: var(--bar);
+  --color-tint: var(--tint);
+  --color-green: var(--green);
+  --color-red: var(--red);
+  --color-orange: var(--orange);
+  --color-yellow: var(--yellow);
+  --color-pitch: var(--pitch);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--label);
+  font-family: var(--font-sans);
+  overscroll-behavior-y: none;
+}
+
+/* Abstände für Notch und Home-Indicator */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-tabbar {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 64px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.px-safe {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* Sanftes Einblenden beim Seitenwechsel */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-in {
+  animation: page-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Druckfeedback wie bei iOS */
+.pressable {
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.pressable:active {
+  transform: scale(0.97);
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-in {
+    animation: none;
+  }
+  .pressable:active {
+    transform: none;
+  }
+}
