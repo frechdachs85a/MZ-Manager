@@ -176,6 +176,18 @@ const MIGRATIONEN: string[] = [
   -- alte Muster verwerfen, der nächste Abruf holt die Stats-XML neu
   DELETE FROM top_spiel;
   `,
+  `
+  -- Von Marcus bestätigte zusätzliche Scoutbericht-Kombinationen (Sterne + Schlüsselwort -> Rang)
+  CREATE TABLE scout_kombi (
+    hoch INTEGER NOT NULL,
+    niedrig INTEGER NOT NULL,
+    schluessel TEXT NOT NULL,
+    rang INTEGER NOT NULL,
+    abzeichen TEXT NOT NULL,
+    bestaetigt TEXT NOT NULL,
+    PRIMARY KEY (hoch, niedrig, schluessel)
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

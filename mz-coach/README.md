@@ -71,6 +71,13 @@ npm run dev             # http://localhost:3000
   Beispiel-Startaufstellung und Regel-Kurzcheck. Gegnerseite zeigt, was die Top 10 gegen diesen Gegnertyp spielen.
 - Taktik-Archiv (Reiter mit XML, Prüfung gegen aktuellen Kader, Spiele je Taktik), Spieltag-Checkliste,
   Saisonstatistik, Jugend (Regel 4/1 oder 4/2 ab Nr. 195), Kaderwert-Vergleich, Ligatabelle.
+- Scoutbericht: Sterne Hoch/Niedrig/Training (nur gefüllte), Stärken (1) und Schwächen (2), wörtlicher Text des Scouts
+  (beim Kaderabruf per Klick auf „Scoutbericht“ gelesen, nur fehlende oder bei geänderten Sternen; Aufbau der Antwort noch
+  nicht an einer echten geprüft, die erste wird roh gespeichert). Einstufung Rang 1 bis 6 aus Sternen und Schlüsselwort,
+  sonst „Scoutbericht unbekannt“ mit Text und Bestätigen. Prognose je Skill. Loyale Spieler (Herz) ohne Bericht, nicht
+  verkaufbar. Kader nach Rang sortier- und filterbar. Jugend: Rang 1 bis 3 behalten, sonst Abgabekandidat.
+- Regelmuster je Team aus der Stats-XML (Wechsel mit Regelminute, Bedingung, Rolle des Ausgewechselten; Taktikwechsel mit
+  Spielstand; „sehr wahrscheinlich keine Regel“, wenn das Team in der Lage war und nichts auslöste).
 - Chat mit Claude (`ANTHROPIC_API_KEY`): 12 lesende Werkzeuge auf die eigene Datenbank, nichts wird erfunden.
 - Zeitplan (`src/lib/zeitplan.ts`): 4 Uhr Top 10 und eigene Spiele, 6 Uhr Markt, täglich Aufräumen, wöchentlich Sicherung.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).

@@ -12,6 +12,7 @@ import { ladeTopTeams } from "@/lib/db/top";
 import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { jugendAuswertung } from "@/lib/jugend";
 import { bewerteMarkt, schwachstellen } from "@/lib/mz/analyse/markt";
+import { ladeKombis, scoutEinstufung, skillPrognose } from "@/lib/scout";
 import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
 import { alleMzWerte, POSITIONEN } from "@/lib/mz/formel";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
@@ -67,7 +68,7 @@ const WERKZEUGE: Werkzeug[] = [
   {
     def: {
       name: "spieler",
-      description: "Alle Details eines eigenen Spielers: jeder Skill mit Wert, ausgemaxt ja/nein, Scout-Sterne und Markierungen, Sperren, Trainingslager. Suche über Name (Teil reicht) oder pid.",
+      description: "Alle Details eines eigenen Spielers: jeder Skill mit Wert, ausgemaxt ja/nein, Scoutbericht (Sterne, Stärken 1 / Schwächen 2, wörtlicher Text, Einstufung mit Rang 1 = beste oder „unbekannt“, Prognose je Skill), loyal (nicht verkaufbar), Sperren, Trainingslager. Suche über Name (Teil reicht) oder pid.",
       input_schema: {
         type: "object",
         properties: { suche: { type: "string", description: "Name oder pid" } },
@@ -78,7 +79,10 @@ const WERKZEUGE: Werkzeug[] = [
     run: (db, input) => {
       const q = String(input.suche ?? "").toLowerCase();
       const treffer = ladeKader(db).filter((s) => String(s.pid) === q || s.name.toLowerCase().includes(q));
-      return treffer.length ? treffer.map((s) => ({ ...s, mzWert: mzWerte(s.skills) })) : { fehler: `Kein Spieler zu „${input.suche}“.` };
+      const kombis = ladeKombis(db);
+      return treffer.length
+        ? treffer.map((s) => ({ ...s, mzWert: mzWerte(s.skills), scoutEinstufung: scoutEinstufung(s, kombis), scoutPrognose: skillPrognose(s) }))
+        : { fehler: `Kein Spieler zu „${input.suche}“.` };
     },
   },
   {
@@ -231,12 +235,12 @@ const WERKZEUGE: Werkzeug[] = [
   {
     def: {
       name: "jugend",
-      description: "Jugend nach der Regel von Marcus: Talente Nr. 100 bis 110, Ersetzen-Reihenfolge ab Nr. 195 (nur 4/1 oder 4/2 behalten), Scout-Sterne und Training.",
+      description: "Jugend nach der Regel von Marcus: Talente Nr. 100 bis 110, Ersetzen-Reihenfolge ab Nr. 195 (nur Scout-Rang 1 bis 3 behalten, sonst Abgabekandidat; loyale Spieler nicht verkaufbar), Scout-Einstufung mit Rang, Sterne und Training.",
       input_schema: ohneEingabe,
     },
     run: (db) => {
-      const j = jugendAuswertung(ladeKader(db));
-      const k = (x: (typeof j.talente)[number]) => ({ nr: x.s.nr, name: x.s.name, alter: x.s.alter, scout: x.sterne, einstufung: x.einstufung, regelOk: x.regelOk, training: x.s.scoutTraining, besterWert: x.besterWert });
+      const j = jugendAuswertung(ladeKader(db), ladeKombis(db));
+      const k = (x: (typeof j.talente)[number]) => ({ nr: x.s.nr, name: x.s.name, alter: x.s.alter, loyal: !!x.s.loyal, scout: x.sterne, einstufung: x.einstufung, rang: x.scout.rang, scoutStatus: x.scout.status, vorschlag: x.vorschlag, training: x.s.scoutTraining, besterWert: x.besterWert });
       return { talente: j.talente.map(k), ersetzenReihenfolge: j.ersetzen.map(k), weitere: j.weitere.map(k) };
     },
   },

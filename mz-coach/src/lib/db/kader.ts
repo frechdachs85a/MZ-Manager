@@ -69,6 +69,10 @@ const STATUS_FELDER = [
   "scoutSterne",
   "scoutMarkierung",
   "scoutTraining",
+  "scoutText",
+  "scoutTextStand",
+  "scoutTextSterne",
+  "loyal",
   "nationalitaet",
   "arbeitsbewilligung",
 ] as const;

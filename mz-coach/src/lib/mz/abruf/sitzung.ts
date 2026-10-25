@@ -1,6 +1,6 @@
 import "server-only";
 import type Database from "better-sqlite3";
-import { chromium, type Browser, type BrowserContext } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { entschluesseln, tresorSchluessel, verschluesseln } from "@/lib/crypto/tresor";
 import { ladeZugang } from "@/lib/mz/zugang";
 import { erzeugeDrossel } from "./drossel";
@@ -26,6 +26,8 @@ export type Seite = {
   htmlDom: string | null;
   // Skripte, die die Seite selbst geladen hat und die auf `skripte` passen (nur auf Wunsch)
   skripte?: { url: string; text: string }[];
+  // Ergebnis von `aufSeite` (nur auf Wunsch, nur bei eingeloggter Seite)
+  extra?: unknown;
 };
 
 type Cookie = Awaited<ReturnType<BrowserContext["cookies"]>>[number];
@@ -130,7 +132,9 @@ async function login(db: Database.Database, ctx: BrowserContext) {
 }
 
 export type MzSitzung = {
-  holeSeite: (pfad: string, opt?: { skripte?: RegExp }) => Promise<Seite>;
+  // aufSeite: läuft auf der fertig geladenen, eingeloggten Seite, bevor sie geschlossen wird (z. B. Klicks wie
+  // ein Mensch, die das Seiten-Skript selbst nachladen lässt)
+  holeSeite: (pfad: string, opt?: { skripte?: RegExp; aufSeite?: (page: Page, html: string) => Promise<unknown> }) => Promise<Seite>;
   // Antworttext ohne Browserseite (z. B. ajax.php), mit den Cookies der Sitzung. Loggt nicht
   // selbst ein: vorher eine Seite mit holeSeite laden.
   holeText: (pfad: string) => Promise<{ url: string; status: number; text: string }>;
@@ -163,7 +167,7 @@ export async function mitMzSitzung<T>(
     // Ein gemeinsamer Login je Sitzung, auch wenn zwei Abrufe gleichzeitig laufen.
     let loginLauf: Promise<void> | null = null;
 
-    async function lade(url: string, skriptMuster?: RegExp): Promise<Seite> {
+    async function lade(url: string, skriptMuster?: RegExp, aufSeite?: (page: Page, html: string) => Promise<unknown>): Promise<Seite> {
       const page = await ctx.newPage();
       // Was der Browser beim Laden ohnehin holt, mitlesen; keine zusätzliche Anfrage
       const skripte: Promise<{ url: string; text: string } | null>[] = [];
@@ -198,7 +202,8 @@ export async function mitMzSitzung<T>(
         await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
         const htmlDom = await page.content();
         const gelesen = (await Promise.all(skripte)).filter((x): x is { url: string; text: string } => x !== null);
-        return { url, status, htmlRoh, htmlDom, ...(skriptMuster ? { skripte: gelesen } : {}) };
+        const extra = aufSeite && istEingeloggt(htmlDom) ? await aufSeite(page, htmlDom) : undefined;
+        return { url, status, htmlRoh, htmlDom, ...(skriptMuster ? { skripte: gelesen } : {}), ...(aufSeite ? { extra } : {}) };
       } finally {
         await page.close();
       }
@@ -208,13 +213,13 @@ export async function mitMzSitzung<T>(
       holeSeite: (pfad, opt) =>
         drossel(async () => {
           const url = pfad.startsWith("http") ? pfad : `${MZ_BASIS}${pfad}`;
-          let seite = await lade(url, opt?.skripte);
+          let seite = await lade(url, opt?.skripte, opt?.aufSeite);
           if (!istEingeloggt(seite.htmlDom ?? seite.htmlRoh ?? "")) {
             // Höchstens ein Login je Sitzung: Läuft die Sitzung später erneut ab, wird nicht
             // noch einmal eingeloggt, die Prüfung unten meldet dann den Fehler.
             loginLauf ??= login(db, ctx);
             await loginLauf;
-            seite = await lade(url, opt?.skripte);
+            seite = await lade(url, opt?.skripte, opt?.aufSeite);
           }
           if (!istEingeloggt(seite.htmlDom ?? seite.htmlRoh ?? "")) {
             merkeLoginFehler(db, "unbestaetigt");

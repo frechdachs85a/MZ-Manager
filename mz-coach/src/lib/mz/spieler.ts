@@ -24,6 +24,12 @@ export type SpielerDaten = {
   // Getrennt von den Skills gespeichert, weil die Kaderübersicht sie nicht enthält.
   scoutMarkierung?: Partial<Record<Skill, 1 | 2>>;
   scoutTraining?: number; // Sterne "Tr. Geschwindigkeit"
+  // Wortlaut des Scoutberichts (Fenster nach Klick auf "Scoutbericht"), Abrufdatum und Sterne beim Abruf
+  scoutText?: string;
+  scoutTextStand?: string;
+  scoutTextSterne?: string; // "4/2" zum Zeitpunkt des Textabrufs; ändern sich die Sterne, wird neu gelesen
+  // Loyaler Spieler (Herz-Symbol): kein Scoutbericht, kann entlassen, aber nie verkauft werden
+  loyal?: boolean;
   sperren?: Sperre[];
   // Aus der Spieleransicht (?p=players). Arbeitsbewilligung nur, wenn die Zeile dort steht.
   nationalitaet?: string;

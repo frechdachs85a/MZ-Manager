@@ -124,8 +124,10 @@ Standards, Form, Alter, Größe zählen nicht.
 - Erfahrung steigt ca. 1 bis 1,2 Bälle pro Jahr, nur durch Spiele
 - Spielübersicht ist im Spiel sehr wichtig
 - Marktwert ist kein Preismaßstab. Beispiel: Flügelspieler 26 J., Fl10 Sch9 Sü9 Sp9 Au8, Marktwert 1,16 Mio, ging für 2,80 Mio weg.
-- Jugend: Nr. 100 bis 110 sind die Talente. Ab Nr. 195 nach und nach ersetzen (dienstags 3 neue losen). Nur Scout-Einstufung Elitespieler (4/1) oder Spitzenklasse (4/2).
-- Scout-Sätze: 4/2 "erstaunliches Potenzial ... Spitzenklasse"; 4/1 "großartiges Talent ... Elitespieler"; 3/2 "vielseitig ... Spitzenspieler"; 3/1 "vielversprechend ... Schlüsselfähigkeiten"; 2/2 "vielseitig, keine Hauptstärken"; 2/1 "etwas weniger Talent ... kein Platz im Kader"
+- Jugend: Nr. 100 bis 110 sind die Talente. Ab Nr. 195 nach und nach ersetzen (dienstags 3 neue losen). Behalten nur Scout-Rang 1 bis 3 (Spitzenklasse 4/2, Elite 4/1, Spitzenspieler 3/2), alle anderen sind Abgabekandidaten (Marcus, 25.10.2026; vorher nur 4/1 und 4/2).
+- Scout-Sätze: 4/2 "erstaunliches Potenzial ... Spitzenklasse"; 4/1 "großartiges Talent ... Elitespieler"; 3/2 "vielseitig ... Spitzenspieler"; 3/1 "vielversprechend ... Schlüsselfähigkeiten"; 2/2 "vielseitig, keine Hauptstärken"; 2/1 "etwas weniger Talent ... kein Platz im Kader". Rang 1 = 4/2 bis Rang 6 = 2/1, Hoch-Sterne zählen mehr. Passen Sterne und Satz nicht zusammen oder ist der Text unbekannt (z. B. "Weltklasse", 1 Stern Hoch): "Scoutbericht unbekannt", nicht raten.
+- Scout-Prognose: Hoch 4 = mindestens eine Stärke wird 10; Hoch 3 = Stärken enden bei 9 oder 10; Niedrig 1 = Schwächen ca. 4 bis 5; Niedrig 2 = Schwächen ca. 5 bis 6. Kein Skill wird höher als die Stärken, alle anderen offen. Nur rote Skills sind sicher ausgemaxt.
+- Loyale Spieler (Herz-Symbol, blau hinterlegt): kein Scoutbericht, nicht verkaufbar (nur entlassen), günstiges Gehalt, oft sehr gut.
 - Wichtige Spieler brauchen 4 Freundschaftsspiele pro Woche (Bank reicht), sonst sinkt die Form am Dienstag
 - Test- und Scoutspiele kosten Geld, neue Taktiken lieber live gegen schwache Ligagegner testen
 

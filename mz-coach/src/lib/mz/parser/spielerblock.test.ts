@@ -3,6 +3,7 @@ import { parse } from "node-html-parser";
 import { describe, expect, it } from "vitest";
 import { parseKaderSeite } from "./kader";
 import { parseSpielerBlock } from "./spielerblock";
+import { parseSpielerSeite, scoutTextAus } from "./status";
 
 // Echte Spieleransicht und Kaderübersicht vom 24.10.2026, nur lokal (siehe .gitignore).
 const SPIELER = new URL("./fixtures/spieler-2026-10-24.html", import.meta.url);
@@ -33,5 +34,22 @@ describe.skipIf(!vorhanden)("Spielerblock (div.playerContainer)", () => {
     expect(bloecke.find((b) => b.name === "Maksymilian Cytrynski")?.arbeitsbewilligung).toBeUndefined();
     expect(bloecke.filter((b) => b.nationalitaet !== "Deutschland").map((b) => b.name)).toHaveLength(7);
     expect(bloecke.filter((b) => b.arbeitsbewilligung)).toHaveLength(2);
+  });
+});
+
+describe.skipIf(!existsSync(SPIELER))("Loyale Spieler in der Spieleransicht", () => {
+  it("genau die 10 loyalen Spieler haben keinen Scoutbericht", () => {
+    const s = parseSpielerSeite(readFileSync(SPIELER, "utf8")).spieler;
+    expect(s.filter((x) => x.loyal)).toHaveLength(10);
+    expect(s.filter((x) => !x.scout).map((x) => x.pid).sort()).toEqual(s.filter((x) => x.loyal).map((x) => x.pid).sort());
+    expect(s.every((x) => x.loyal || x.hatScoutLink)).toBe(true);
+    expect(s.map((x) => x.block)).toEqual(s.map((_, i) => `thePlayers_${i}`));
+  });
+});
+
+describe("Text aus der Scoutbericht-Antwort", () => {
+  it("HTML und JSON, Leerraum zusammengefasst", () => {
+    expect(scoutTextAus("<div><p>Ein  großartiges&nbsp;Talent.</p><br>Zweite Zeile</div>")).toBe("Ein großartiges Talent.\nZweite Zeile");
+    expect(scoutTextAus(JSON.stringify({ html: "<b>Elitespieler</b>" }))).toBe("Elitespieler");
   });
 });

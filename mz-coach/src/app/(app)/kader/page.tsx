@@ -8,11 +8,16 @@ import { ladeKader, type KaderEintrag } from "@/lib/db/kader";
 import { alleMzWerte, POSITIONEN, type Position } from "@/lib/mz/formel";
 import { KADER_START, QUELLE_KADER } from "@/lib/wissen/startbasis";
 import { datumZeit } from "@/lib/format";
+import { ScoutAbzeichen } from "@/components/scout-abzeichen";
+import { ladeKombis, rangSortierung, scoutEinstufung, type ScoutEinstufung } from "@/lib/scout";
+import { ScoutBestaetigen } from "./scout-bestaetigen";
 
-// Sortierung der Desktop-Tabelle über ?sort=<Spalte> (Nr, Alter oder eine Position, absteigend)
-type Sortierung = "nr" | "alter" | Position;
-function sortiere(kader: KaderEintrag[], sort: Sortierung): KaderEintrag[] {
+// Sortierung der Desktop-Tabelle über ?sort=<Spalte> (Nr, Alter oder eine Position absteigend, Scout nach Rang)
+type Sortierung = "nr" | "alter" | "scout" | Position;
+type Zeile = KaderEintrag & { scout: ScoutEinstufung };
+function sortiere(kader: Zeile[], sort: Sortierung): Zeile[] {
   if (sort === "nr") return kader;
+  if (sort === "scout") return [...kader].sort((a, b) => rangSortierung(a.scout) - rangSortierung(b.scout) || (a.nr ?? 0) - (b.nr ?? 0));
   const wert = (s: KaderEintrag) => {
     if (sort === "alter") return s.alter ?? -1;
     const w = alleMzWerte(s.skills)[sort];
@@ -23,11 +28,20 @@ function sortiere(kader: KaderEintrag[], sort: Sortierung): KaderEintrag[] {
 
 export default async function Kader(props: PageProps<"/kader">) {
   await connection();
-  const kader = ladeKader(getDb());
-  const roh = (await props.searchParams).sort;
-  const sort: Sortierung = typeof roh === "string" && (roh === "alter" || (POSITIONEN as readonly string[]).includes(roh)) ? (roh as Sortierung) : "nr";
+  const db = getDb();
+  const kombis = ladeKombis(db);
+  const alleSpieler: Zeile[] = ladeKader(db).map((s) => ({ ...s, scout: scoutEinstufung(s, kombis) }));
+  const params = await props.searchParams;
+  const roh = params.sort;
+  const sort: Sortierung = typeof roh === "string" && (roh === "alter" || roh === "scout" || (POSITIONEN as readonly string[]).includes(roh)) ? (roh as Sortierung) : "nr";
+  // Filter ?scout=1…6 | unbekannt | loyal | keiner
+  const filter = typeof params.scout === "string" ? params.scout : undefined;
+  const passt = (z: Zeile) =>
+    !filter ? true : /^[1-9]$/.test(filter) ? z.scout.rang === Number(filter) && z.scout.status !== "unbekannt" : z.scout.status === filter;
+  const kader = alleSpieler.filter(passt);
+  const unbekannt = alleSpieler.filter((z) => z.scout.status === "unbekannt");
 
-  if (kader.length === 0) {
+  if (alleSpieler.length === 0) {
     return (
       <>
         <PageHeader title="Kader" subtitle={`${KADER_START.length} Spieler, noch kein Live-Abruf`} />
@@ -57,11 +71,41 @@ export default async function Kader(props: PageProps<"/kader">) {
     );
   }
 
-  const stand = kader.reduce((m, s) => (s.abgerufen > m ? s.abgerufen : m), "");
+  const stand = alleSpieler.reduce((m, s) => (s.abgerufen > m ? s.abgerufen : m), "");
+  const filterLink = (wert: string | undefined, label: string, n: number) => {
+    const q = new URLSearchParams();
+    if (sort !== "nr") q.set("sort", sort);
+    if (wert) q.set("scout", wert);
+    const aktiv = filter === wert;
+    return (
+      <Link key={label} href={`/kader${q.size ? `?${q}` : ""}`} scroll={false} className={`rounded-full border px-2.5 py-0.5 ${aktiv ? "border-tint text-tint" : "border-separator text-label-2 hover:text-label"}`}>
+        {label} <span className="tabular-nums text-label-3">{n}</span>
+      </Link>
+    );
+  };
+  const anzahl = (f: (z: Zeile) => boolean) => alleSpieler.filter(f).length;
   return (
     <>
-      <PageHeader title="Kader" subtitle={`${kader.length} Spieler · Stand ${datumZeit(stand)}`} />
+      <PageHeader title="Kader" subtitle={`${alleSpieler.length} Spieler · Stand ${datumZeit(stand)}`} />
       <div className="seite">
+        {unbekannt.length > 0 && (
+          <Section title="Scoutbericht unbekannt" footer="Sterne und Schlüsselwort passen nicht zusammen oder der Text ist unbekannt. Es wird nicht geraten: bitte prüfen und bei Bedarf als neue Kombination bestätigen.">
+            <ScoutBestaetigen
+              faelle={unbekannt.map((z) => ({ pid: z.pid, name: z.name, sterne: z.scout.sterne, grund: z.scout.grund ?? "", text: z.scoutText, hoch: z.scoutSterne?.hoch, niedrig: z.scoutSterne?.niedrig }))}
+            />
+          </Section>
+        )}
+        <div className="mb-4 flex flex-wrap items-center gap-1.5 text-[13px]">
+          <span className="mr-1 text-label-2">Scout:</span>
+          {filterLink(undefined, "Alle", alleSpieler.length)}
+          {kombis
+            .filter((k, i, a) => a.findIndex((x) => x.rang === k.rang) === i)
+            .sort((a, b) => a.rang - b.rang)
+            .map((k) => filterLink(String(k.rang), `${k.rang} ${k.abzeichen}`, anzahl((z) => z.scout.rang === k.rang && z.scout.status !== "unbekannt")))}
+          {filterLink("unbekannt", "Unbekannt", unbekannt.length)}
+          {filterLink("loyal", "Loyal", anzahl((z) => z.scout.status === "loyal"))}
+          {filterLink("keiner", "Ohne Bericht", anzahl((z) => z.scout.status === "keiner"))}
+        </div>
         {/* Desktop: Tabelle mit dem MZ-Wert jeder Position, bester Wert hervorgehoben */}
         <div className="hidden lg:block">
           <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. Hinterlegung: je kräftiger, desto höher der Wert im Vergleich zum ganzen Kader. ${statusHinweis(kader)}`}>
@@ -71,7 +115,7 @@ export default async function Kader(props: PageProps<"/kader">) {
         <div className="lg:hidden">
         <Section footer={`Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6). ${statusHinweis(kader)}`}>
           <List>
-            {kader.map((s) => {
+            {sortiere(kader, sort).map((s) => {
               const werte = alleMzWerte(s.skills);
               const beste = POSITIONEN.flatMap((p) => {
                 const w = werte[p];
@@ -84,6 +128,7 @@ export default async function Kader(props: PageProps<"/kader">) {
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-medium">
                         {s.name}
+                        <ScoutAbzeichen e={s.scout} />
                         <StatusBadges s={s} />
                       </span>
                       <span className="block text-[13px] text-label-2">
@@ -128,7 +173,7 @@ function SpaltenKopf({ label, wert, sort, rechts = true }: { label: string; wert
       href={wert === "nr" ? "/kader" : `/kader?sort=${encodeURIComponent(wert)}`}
       scroll={false}
       className={`inline-flex items-center gap-1 ${rechts ? "justify-end" : ""} ${aktiv ? "text-tint" : "hover:text-label"}`}
-      title={wert === "nr" ? "Nach Nummer" : `Nach ${label} sortieren (absteigend)`}
+      title={wert === "nr" ? "Nach Nummer" : wert === "scout" ? "Nach Scout-Rang (1 = beste)" : `Nach ${label} sortieren (absteigend)`}
     >
       {label}
       {aktiv && wert !== "nr" && <span aria-hidden>↓</span>}
@@ -136,7 +181,7 @@ function SpaltenKopf({ label, wert, sort, rechts = true }: { label: string; wert
   );
 }
 
-function KaderTabelle({ kader, sort }: { kader: KaderEintrag[]; sort: Sortierung }) {
+function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
   const alle = kader.flatMap((s) => {
     const w = alleMzWerte(s.skills);
     return POSITIONEN.flatMap((p) => (w[p].ok ? [w[p].wert] : []));
@@ -151,6 +196,7 @@ function KaderTabelle({ kader, sort }: { kader: KaderEintrag[]; sort: Sortierung
             <th className="w-12 py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Nr" wert="nr" sort={sort} /></th>
             <th className="py-2.5 pl-4 font-normal">Name</th>
             <th className="py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Alter" wert="alter" sort={sort} /></th>
+            <th className="py-2.5 pl-4 font-normal"><SpaltenKopf label="Scout" wert="scout" sort={sort} rechts={false} /></th>
             {POSITIONEN.map((p) => (
               <th key={p} className="py-2.5 pr-2 pl-2 text-right font-semibold"><SpaltenKopf label={p} wert={p} sort={sort} /></th>
             ))}
@@ -168,6 +214,7 @@ function KaderTabelle({ kader, sort }: { kader: KaderEintrag[]; sort: Sortierung
                   <Link href={`/kader/${s.pid}`} className="hover:text-tint">{s.name}</Link>
                 </td>
                 <td className="py-2.5 pl-4 text-right tabular-nums">{s.alter ?? "n. v."}</td>
+                <td className="py-2.5 pl-4 whitespace-nowrap"><ScoutAbzeichen e={s.scout} mitSternen /></td>
                 {POSITIONEN.map((p) => {
                   const w = werte[p];
                   return (
