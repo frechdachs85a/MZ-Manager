@@ -23,12 +23,13 @@ export default async function Markt() {
   const abgelehnt = ladeAblehnungen(db);
   const abruf = letzterAbruf(db, "markt");
   const schwach = start ? schwachstellen(start.elf, kader) : null;
-  const rahmenDa = rahmen.kapital !== undefined && rahmen.auslaenderFrei !== undefined;
+  const r = rahmen?.werte;
   const ergebnis =
-    schwach && suche && rahmenDa
+    schwach && suche && r
       ? bewerteMarkt(suche.spieler, schwach.liste, {
-          kapital: rahmen.kapital!.wert,
-          auslaenderFrei: rahmen.auslaenderFrei!.wert,
+          kapital: r.kapital,
+          auslaenderFrei: r.auslaenderMax - r.auslaender,
+          bewilligungenFrei: r.bewilligungenMax - r.bewilligungen,
           abgelehnt: new Set(abgelehnt.map((a) => a.pid)),
           eigene: new Set(kader.map((s) => s.pid)),
         })
@@ -46,8 +47,8 @@ export default async function Markt() {
           <Section title="Empfehlung">
             {!schwach ? (
               <Unavailable title="Empfehlung" reason="Kein eigenes Spiel mit Stats-XML gespeichert, daher keine Startelf." />
-            ) : !rahmenDa ? (
-              <Unavailable title="Empfehlung" reason="Kapital und freie Ausländerplätze unten eintragen. Ohne diese Grenzen wird nichts vorgeschlagen." />
+            ) : !r ? (
+              <Unavailable title="Empfehlung" reason="Rahmen unten eintragen (Saldo, Ausländer, Arbeitsbewilligungen). Ohne diese Grenzen wird nichts vorgeschlagen." />
             ) : !suche ? (
               <Unavailable title="Empfehlung" reason="Noch keine Marktsuche. Sie läuft täglich ab 6 Uhr automatisch, oder unten jetzt suchen." />
             ) : ergebnis?.empfehlung ? (
@@ -113,12 +114,9 @@ export default async function Markt() {
 
           <Section
             title="Dein Rahmen"
-            footer={[
-              rahmen.kapital ? `Zuletzt geändert ${datumZeit(rahmen.kapital.geaendert)}.` : "",
-              "Beide Werte trägst du selbst ein, so wie ManagerZone sie für dein Team zeigt. 0 freie Plätze = nur einheimische Spieler.",
-            ].join(" ")}
+            footer={`${rahmen ? `Zuletzt geändert ${datumZeit(rahmen.geaendert)}. ` : ""}Die Zahlen stehen oben im Gebotsfenster von ManagerZone. Ein Ausländer mit Arbeitsbewilligung zählt nicht als ausländischer Spieler; ist kein Ausländerplatz frei, braucht ein neuer Ausländer eine Arbeitsbewilligung (Kosten kommen dazu).`}
           >
-            <RahmenForm kapital={rahmen.kapital?.wert} auslaender={rahmen.auslaenderFrei?.wert} />
+            <RahmenForm werte={r} />
           </Section>
 
           <Section title="Nicht einheimisch im Kader" footer="Aus der Spieleransicht (?p=players). Fehlt die Seite, steht hier nichts.">

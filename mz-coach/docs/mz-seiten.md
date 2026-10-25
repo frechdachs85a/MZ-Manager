@@ -223,3 +223,15 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
   Spieler mit Work Permit zählen nicht; 6 Work Permits je Region, Kosten 10 × Wochengehalt.
   Passt nicht zum Kader (5 Ausländer ohne die Zeile), daher nicht als Regel übernommen: die freien
   Plätze trägt Marcus selbst ein.
+
+## Gebotsfenster Transfermarkt (Screenshot von Marcus, 25.10.2026)
+
+- Oben: „Einheimische Spieler: 42“, „Ausländische Spieler: 5 (maximum 5)“,
+  „Arbeitsbewilligungen: 2 (maximum 5)“, „Vereinsvermögen“, „Verfügbarer Saldo“, „Teamwert“.
+  Passt zum Kader vom 24.10.: 7 nicht deutsche Spieler, 2 mit Arbeitsbewilligung → 5 ausländische.
+  Ein Spieler mit Arbeitsbewilligung zählt also nicht als ausländischer Spieler.
+- Je Spieler: „Ungefähres Gehalt“, „Kosten für die Arbeitsbewilligung“ (eigener Betrag, im Beispiel nicht
+  das 10-Fache des angezeigten Gehalts, daher nicht berechnet), „Angebot endet“, „Startgebot“, „Letztes Gebot“.
+- Wörtlich: „Bei einem Gebot innerhalb der letzten 3 Minuten vor Verkaufsfrist wird die Frist um jeweils
+  3 Minuten verlängert, damit andere Manager noch einmal die Möglichkeit erhalten, das Gebot zu erhöhen.“
+- Die Webseite bietet nicht automatisch (Entscheidung 25.10.2026).

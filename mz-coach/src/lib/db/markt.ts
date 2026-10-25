@@ -45,31 +45,23 @@ export function ladeAblehnungen(db: Database.Database): { pid: number; name: str
   }[];
 }
 
-// Rahmen, den Marcus selbst einträgt (kein Wert wird geschätzt)
-const KAPITAL = "markt_kapital";
-const AUSLAENDER = "markt_auslaender_frei";
+// Rahmen wie im Gebotsfenster von ManagerZone (Verfügbarer Saldo, Ausländische Spieler n (maximum m),
+// Arbeitsbewilligungen n (maximum m)). Trägt Marcus ein, kein Wert wird geschätzt.
+export const RAHMEN_FELDER = ["kapital", "auslaender", "auslaenderMax", "bewilligungen", "bewilligungenMax"] as const;
+export type RahmenFeld = (typeof RAHMEN_FELDER)[number];
+export type MarktRahmenDaten = Record<RahmenFeld, number>;
 
-export type MarktEinstellung = { wert: number; geaendert: string };
-
-function lies(db: Database.Database, key: string): MarktEinstellung | undefined {
-  const r = db.prepare("SELECT wert, geaendert FROM einstellung WHERE schluessel = ?").get(key) as
+export function ladeMarktRahmen(db: Database.Database): { werte: MarktRahmenDaten; geaendert: string } | null {
+  const r = db.prepare("SELECT wert, geaendert FROM einstellung WHERE schluessel = 'markt_rahmen'").get() as
     | { wert: string; geaendert: string }
     | undefined;
-  return r ? { wert: Number(r.wert), geaendert: r.geaendert } : undefined;
+  return r ? { werte: JSON.parse(r.wert) as MarktRahmenDaten, geaendert: r.geaendert } : null;
 }
 
-export function ladeMarktRahmen(db: Database.Database): { kapital?: MarktEinstellung; auslaenderFrei?: MarktEinstellung } {
-  return { kapital: lies(db, KAPITAL), auslaenderFrei: lies(db, AUSLAENDER) };
-}
-
-export function speichereMarktRahmen(db: Database.Database, r: { kapital: number; auslaenderFrei: number }, zeit = new Date().toISOString()) {
-  const set = db.prepare(
-    "INSERT INTO einstellung (schluessel, wert, geaendert) VALUES (?, ?, ?) ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert, geaendert = excluded.geaendert",
-  );
-  db.transaction(() => {
-    set.run(KAPITAL, String(r.kapital), zeit);
-    set.run(AUSLAENDER, String(r.auslaenderFrei), zeit);
-  })();
+export function speichereMarktRahmen(db: Database.Database, r: MarktRahmenDaten, zeit = new Date().toISOString()) {
+  db.prepare(
+    "INSERT INTO einstellung (schluessel, wert, geaendert) VALUES ('markt_rahmen', ?, ?) ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert, geaendert = excluded.geaendert",
+  ).run(JSON.stringify(r), zeit);
 }
 
 // Startelf aus dem neuesten gespeicherten eigenen Spiel. Ligaspiele (laut Spielliste) haben Vorrang,

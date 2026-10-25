@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { lehneAb, nimmAblehnungZurueck, speichereMarktRahmen } from "@/lib/db/markt";
+import { lehneAb, nimmAblehnungZurueck, RAHMEN_FELDER, speichereMarktRahmen, type MarktRahmenDaten } from "@/lib/db/markt";
 
 export type MarktState = { meldung?: string; ok?: boolean };
 
@@ -13,12 +13,13 @@ function ganzzahl(v: FormDataEntryValue | null): number | undefined {
 }
 
 export async function rahmenSpeichern(_prev: MarktState, formData: FormData): Promise<MarktState> {
-  const kapital = ganzzahl(formData.get("kapital"));
-  const auslaenderFrei = ganzzahl(formData.get("auslaender"));
-  if (kapital === undefined || auslaenderFrei === undefined) {
-    return { meldung: "Bitte beide Felder als ganze Zahl eintragen." };
+  const werte = Object.fromEntries(RAHMEN_FELDER.map((f) => [f, ganzzahl(formData.get(f))]));
+  if (Object.values(werte).some((v) => v === undefined)) return { meldung: "Bitte alle Felder als ganze Zahl eintragen." };
+  const r = werte as MarktRahmenDaten;
+  if (r.auslaender > r.auslaenderMax || r.bewilligungen > r.bewilligungenMax) {
+    return { meldung: "Belegt kann nicht größer als das Maximum sein." };
   }
-  speichereMarktRahmen(getDb(), { kapital, auslaenderFrei });
+  speichereMarktRahmen(getDb(), r);
   revalidatePath("/markt");
   return { ok: true, meldung: "Gespeichert." };
 }

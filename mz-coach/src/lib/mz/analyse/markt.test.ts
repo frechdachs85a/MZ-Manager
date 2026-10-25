@@ -29,6 +29,7 @@ const markt = (pid: number, skills: Skills, m: Partial<MarktSpieler> = {}): Mark
 const rahmen = (r: Partial<MarktRahmen> = {}): MarktRahmen => ({
   kapital: 5_000_000,
   auslaenderFrei: 0,
+  bewilligungenFrei: 0,
   abgelehnt: new Set(),
   eigene: new Set([1, 2, 3]),
   ...r,
@@ -77,6 +78,8 @@ describe("Schwachstellen und Marktbewertung", () => {
     expect(e.empfehlung).toBeNull();
     expect(e.ausgeschlossen).toEqual({ "99-regel": 1, auslaender: 1, "keine-verbesserung": 1 });
     expect(bewerteMarkt([k[1]], liste, rahmen({ auslaenderFrei: 1 })).empfehlung?.kandidat.pid).toBe(21);
+    const mitBewilligung = bewerteMarkt([k[1]], liste, rahmen({ bewilligungenFrei: 3 })).empfehlung;
+    expect(mitBewilligung?.vorbehalte.some((v) => v.startsWith("Arbeitsbewilligung nötig"))).toBe(true);
   });
 
   it("Mindestpreis ist das höhere aus gefordert und Höchstgebot", () => {

@@ -55,7 +55,11 @@ export function schwachstellen(elf: Slot[], kader: SpielerDaten[]): { liste: Sch
 
 export type MarktRahmen = {
   kapital?: number; // EUR, von Marcus eingetragen
-  auslaenderFrei?: number; // freie Plätze für nicht einheimische Spieler, von Marcus eingetragen
+  // Freie Plätze laut Gebotsfenster: "Ausländische Spieler n (maximum m)" und "Arbeitsbewilligungen n
+  // (maximum m)". Ein Ausländer mit Arbeitsbewilligung zählt nicht als ausländischer Spieler (am Kader
+  // vom 24.10.2026 bestätigt: 7 Ausländer, 2 mit Arbeitsbewilligung, Anzeige "Ausländische Spieler: 5").
+  auslaenderFrei?: number;
+  bewilligungenFrei?: number;
   abgelehnt: Set<number>;
   eigene: Set<number>;
 };
@@ -80,7 +84,7 @@ export const GRUND_TEXT: Record<Grund, string> = {
   "preis-unbekannt": "Preis nicht lesbar",
   "zu-teuer": "teurer als dein Kapital",
   "nationalitaet-unbekannt": "Nationalität nicht lesbar",
-  auslaender: "kein freier Ausländerplatz",
+  auslaender: "kein freier Ausländerplatz und keine freie Arbeitsbewilligung",
 };
 
 export type Bewertung = {
@@ -151,7 +155,9 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
     if (rahmen.kapital !== undefined && preis > rahmen.kapital) return raus("zu-teuer");
     if (!k.nationalitaet) return raus("nationalitaet-unbekannt");
     const auslaender = k.nationalitaet !== HEIMATLAND;
-    if (auslaender && (rahmen.auslaenderFrei ?? 0) <= 0) return raus("auslaender");
+    const platzFrei = (rahmen.auslaenderFrei ?? 0) > 0;
+    const bewilligungNoetig = auslaender && !platzFrei;
+    if (bewilligungNoetig && (rahmen.bewilligungenFrei ?? 0) <= 0) return raus("auslaender");
 
     const { ziel, neu, gewinn } = bester;
     const elfNachher = elfVorher + gewinn;
@@ -170,12 +176,17 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
         : `Mindestpreis laut Markt ${eur(preis)}.`,
     );
     gruende.push(
-      auslaender
-        ? `Nicht einheimisch (${k.nationalitaet}): belegt einen deiner ${rahmen.auslaenderFrei} freien Ausländerplätze.`
-        : `Einheimisch (${k.nationalitaet}): belegt keinen Ausländerplatz.`,
+      !auslaender
+        ? `Einheimisch (${k.nationalitaet}): belegt keinen Ausländerplatz.`
+        : bewilligungNoetig
+          ? `Nicht einheimisch (${k.nationalitaet}): kein Ausländerplatz frei, aber noch ${rahmen.bewilligungenFrei} Arbeitsbewilligung(en).`
+          : `Nicht einheimisch (${k.nationalitaet}): belegt einen deiner ${rahmen.auslaenderFrei} freien Ausländerplätze.`,
     );
 
     const vorbehalte = ["Marktwert ist kein Preismaßstab: der Endpreis der Auktion kann deutlich höher liegen."];
+    if (bewilligungNoetig) {
+      vorbehalte.push("Arbeitsbewilligung nötig: ihre Kosten kommen zum Gebot dazu. Der Betrag steht im Gebotsfenster von ManagerZone.");
+    }
     if (rahmen.kapital === undefined) vorbehalte.push("Kapital nicht eingetragen: Budget nicht geprüft.");
     if (k.alter !== undefined && k.alter >= ALTER_ABBAU) vorbehalte.push(`${k.alter} Jahre: ab 30 baut erst Sprint, dann Ausdauer ab.`);
     if (k.markt.ende) vorbehalte.push(`Auktionsende laut Seite: ${k.markt.ende}.`);

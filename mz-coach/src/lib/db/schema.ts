@@ -115,6 +115,10 @@ const MIGRATIONEN: string[] = [
     datum TEXT NOT NULL
   );
   `,
+  `
+  -- Rahmen wird seit 25.10.2026 wie im Gebotsfenster gespeichert (markt_rahmen)
+  DELETE FROM einstellung WHERE schluessel IN ('markt_kapital', 'markt_auslaender_frei');
+  `,
 ];
 
 export function migrieren(db: Database.Database) {
