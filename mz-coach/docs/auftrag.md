@@ -118,3 +118,12 @@ Bau in Etappen und zeig mir nach jeder Etappe, was läuft:
 Schreibe für den XML-Parser, die Koordinaten-Umrechnung, die MZ-Formel und den Taktik-Prüfer automatische Tests. Testfall für die Umrechnung: Bei meinem Spiel 1625669278 (Torwart bei origin-y 1000) muss Cavalcante auf etwa 103/63 und Chille auf etwa 33/223 im Editor landen.
 
 Frag mich, wenn eine Entscheidung wirklich bei mir liegt (Hosting, Kosten, Datenbank). Alles andere entscheide selbst und sag kurz, was du gewählt hast.
+
+## Freundschaftsspiele mit dem Team der Frau (Marcus, 25.10.2026)
+
+- Laut Marcus von ManagerZone genehmigt: Freundschaftsspiele zwischen beiden Teams erlaubt, Transfers untereinander nicht.
+- Jeden Dienstag zwischen 6 und 11 Uhr von Marcus' Konto eine Einladung an ihr Team schicken: Donnerstag 11 und 19 Uhr, Freitag 11 und 19 Uhr.
+  Feste Uhrzeit, keine absichtlich wechselnden Zeiten.
+- Annehmen macht sie selbst. Die Webseite loggt sich nicht in ihr Konto ein (General Rules: "you must not log into any account other than your own").
+- Transfermarkt: Spieler ihres Teams nie vorschlagen und nie bieten.
+- Offen: Seite zum Verschicken einer Einladung (HTML) und ihre tid.
