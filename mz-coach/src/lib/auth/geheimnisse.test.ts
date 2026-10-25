@@ -42,3 +42,21 @@ describe("Ersteinrichtung: Geheimnisse auf dem Laufwerk", () => {
     expect(passwortHash(pfad())).toBe("scrypt:aus:der:umgebung:x:y");
   });
 });
+
+describe("selbst gewählter Einrichtungscode", () => {
+  const vorher = process.env.EINRICHTUNGSCODE;
+  afterEach(() => {
+    if (vorher === undefined) delete process.env.EINRICHTUNGSCODE;
+    else process.env.EINRICHTUNGSCODE = vorher;
+  });
+  it("gilt ab 8 Zeichen (Groß-/Kleinschreibung egal), nur bis zur Einrichtung", () => {
+    delete process.env.APP_PASSWORD_HASH;
+    const p = pfad();
+    process.env.EINRICHTUNGSCODE = "kurz";
+    expect(einrichtungscode(p)).toMatch(/^[0-9A-F]{4}-/);
+    process.env.EINRICHTUNGSCODE = " Toho-Sieg-2026 ";
+    expect(einrichtungscode(p)).toBe("TOHO-SIEG-2026");
+    speicherePasswortHash("scrypt:1:1:1:x:y", p);
+    expect(einrichtungscode(p)).toBeUndefined();
+  });
+});

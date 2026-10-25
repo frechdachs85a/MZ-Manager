@@ -26,8 +26,10 @@ else
 fi
 
 echo "== Pakete (Docker, Git) =="
-$SUDO env DEBIAN_FRONTEND=noninteractive apt-get update -y
-$SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2 git curl
+# Beim ersten Hochfahren hält oft das automatische Sicherheitsupdate die Paketsperre: bis 10 Minuten warten
+APT="$SUDO env DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=600"
+$APT update -y
+$APT install -y docker.io docker-compose-v2 git curl
 $SUDO systemctl enable --now docker
 
 echo "== Auslagerungsspeicher =="
@@ -57,7 +59,11 @@ if [ ! -f .env ]; then
   fi
   echo "DOMAIN=$DOMAIN" > .env
 fi
-cat .env
+# Selbst gewählter Einrichtungscode (z. B. aus der Cloud-Config): EINRICHTUNGSCODE=… bash einrichten.sh
+if [ -n "${EINRICHTUNGSCODE:-}" ] && ! grep -q '^EINRICHTUNGSCODE=' .env; then
+  echo "EINRICHTUNGSCODE=$EINRICHTUNGSCODE" >> .env
+fi
+grep '^DOMAIN=' .env
 mkdir -p daten
 
 echo "== Bauen und starten (beim ersten Mal einige Minuten) =="

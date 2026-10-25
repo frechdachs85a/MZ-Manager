@@ -67,8 +67,12 @@ export function istEingerichtet(pfad?: string): boolean {
 }
 
 // Einrichtungscode für /einrichtung: nur solange kein Passwort gesetzt ist, bleibt bis zur Einrichtung gleich
+// Selbst gewählter Code über die Umgebungsvariable EINRICHTUNGSCODE (mind. 8 Zeichen), z. B. beim Erstellen des
+// Servers in der Cloud-Config gesetzt: dann muss niemand das Protokoll lesen.
 export function einrichtungscode(pfad = geheimnisPfad()): string | undefined {
   if (istEingerichtet(pfad)) return undefined;
+  const eigener = process.env.EINRICHTUNGSCODE?.trim().toUpperCase();
+  if (eigener && eigener.length >= 8) return eigener;
   const g = ladeGeheimnisse(pfad);
   if (g.einrichtungscode) return g.einrichtungscode;
   const code = randomBytes(6).toString("hex").toUpperCase().replace(/(.{4})(?=.)/g, "$1-");

@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     init: true
     shm_size: "1gb" # Chromium braucht mehr gemeinsamen Speicher als die 64 MB, die Docker vorgibt
+    environment:
+      EINRICHTUNGSCODE: ${EINRICHTUNGSCODE:-}
     volumes:
       - ./daten:/data
     expose:
