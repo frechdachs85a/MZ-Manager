@@ -1,0 +1,10 @@
+node_modules
+.next
+data
+*.db
+*.db-*
+.env*
+!.env.example
+src/lib/mz/parser/fixtures/*.html
+src/lib/mz/parser/fixtures/*.xml
+tsconfig.tsbuildinfo

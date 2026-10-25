@@ -8,7 +8,7 @@ import { getDb } from "@/lib/db";
 import { ladeTeamSpiele, teamName } from "@/lib/db/gegner";
 import { ladeSpiel } from "@/lib/db/spiele";
 import { analysiereGegner, de } from "@/lib/mz/analyse/gegner";
-import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
+import { ANALYSE_SPIELE, LIGA_MID_AB, letzteLigaspiele } from "@/lib/mz/parser/spielliste";
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
 import { HolKnopf } from "./hol-knopf";
 
@@ -30,7 +30,8 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   const spiele = ladeTeamSpiele(db, tid);
   if (spiele.length === 0) notFound();
   const name = teamName(db, tid) ?? `tid ${tid}`;
-  const liga = spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
+  const alleLiga = spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
+  const liga = letzteLigaspiele(spiele);
   const fehlen = liga.filter((s) => !s.xml);
   const stats = liga.filter((s) => s.xml).map((s) => ladeSpiel(db, s.mid)).filter((s): s is StatsSpiel & { abgerufen: string } => !!s);
   const a = stats.length ? analysiereGegner(tid, stats) : null;
@@ -38,7 +39,7 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
 
   return (
     <>
-      <PageHeader title={name} subtitle={`tid ${tid} · ${liga.length} Ligaspiele dieser Saison, ${stats.length} ausgewertet`} />
+      <PageHeader title={name} subtitle={`tid ${tid} · ${alleLiga.length} Ligaspiele dieser Saison, davon die letzten ${liga.length} (höchstens ${ANALYSE_SPIELE}) betrachtet, ${stats.length} ausgewertet`} />
       <div className="seite">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
           <div>

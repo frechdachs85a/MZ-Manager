@@ -33,3 +33,22 @@ describe.skipIf(!HTML)("Echte Spielliste tid 97933", () => {
     expect([n("Ligaspiel"), n("Offizieller Pokal"), n("Freundschaftsspiel"), n("Scoutspiel")]).toEqual([2, 20, 2, 1]);
   });
 });
+
+describe("letzte Ligaspiele", () => {
+  it("nimmt höchstens 8, die neuesten zuerst, nur Ligaspiele dieser Saison", async () => {
+    const { letzteLigaspiele, LIGA_MID_AB } = await import("./spielliste");
+    const spiel = (i: number, art = "Ligaspiel") => ({
+      mid: LIGA_MID_AB + i,
+      datum: `2026-10-${String(i).padStart(2, "0")}`,
+      art,
+      altersklasse: false,
+      heim: { name: "A" },
+      gast: { name: "B" },
+    });
+    const l = [...Array.from({ length: 10 }, (_, i) => spiel(i + 1)), spiel(20, "Freundschaftsspiel"), { ...spiel(21), mid: 5 }];
+    const r = letzteLigaspiele(l);
+    expect(r).toHaveLength(8);
+    expect(r[0].datum).toBe("2026-10-10");
+    expect(r.at(-1)!.datum).toBe("2026-10-03");
+  });
+});

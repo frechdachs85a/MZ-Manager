@@ -83,3 +83,12 @@ export function parseSpielliste(html: string): Spielliste {
 export function ligaspieleDieserSaison(l: Spielliste): ListenSpiel[] {
   return l.spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
 }
+
+// Für die Gegneranalyse reichen die letzten 8 Ligaspiele der Saison (Marcus, 25.10.2026).
+export const ANALYSE_SPIELE = 8;
+export function letzteLigaspiele<T extends ListenSpiel>(spiele: T[], n = ANALYSE_SPIELE): T[] {
+  return spiele
+    .filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB)
+    .sort((a, b) => `${b.datum} ${b.zeit ?? ""}`.localeCompare(`${a.datum} ${a.zeit ?? ""}`) || b.mid - a.mid)
+    .slice(0, n);
+}

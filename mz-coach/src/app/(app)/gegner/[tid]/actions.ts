@@ -6,7 +6,7 @@ import { abrufBeenden, abrufBeginnen } from "@/lib/db/abruf";
 import { ladeTeamSpiele } from "@/lib/db/gegner";
 import { spielVorhanden } from "@/lib/db/spiele";
 import { holeStatsXml } from "@/lib/mz/abruf/spiele";
-import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
+import { letzteLigaspiele } from "@/lib/mz/parser/spielliste";
 
 export type HolState = { ok?: boolean; meldung?: string };
 
@@ -14,8 +14,8 @@ export type HolState = { ok?: boolean; meldung?: string };
 export async function fehlendeSpieleHolen(tid: number): Promise<HolState> {
   const db = getDb();
   const { spielXmlEinlesen } = await import("@/lib/mz/abruf/kader");
-  const fehlen = ladeTeamSpiele(db, tid).filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB && !spielVorhanden(db, s.mid));
-  if (fehlen.length === 0) return { ok: true, meldung: "Alle Ligaspiele sind schon gespeichert." };
+  const fehlen = letzteLigaspiele(ladeTeamSpiele(db, tid)).filter((s) => !spielVorhanden(db, s.mid));
+  if (fehlen.length === 0) return { ok: true, meldung: "Die letzten 8 Ligaspiele sind schon gespeichert." };
   const log = abrufBeginnen(db, "spiele");
   const teile: string[] = [];
   let ok = 0;
