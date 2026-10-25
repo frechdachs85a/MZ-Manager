@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Hero, List, Row, Section, Unavailable } from "@/components/ui";
+import { Kachel, List, Row, Section, Unavailable } from "@/components/ui";
+import { startelfAusLetztemSpiel } from "@/lib/db/markt";
+import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
 import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
 import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
@@ -20,6 +22,10 @@ export default async function Uebersicht() {
   const fehlen = einsatz.filter((x) => x.e.lage === "nicht_bereit" || x.e.lage === "unklar" || x.s.status?.verletzt);
   const zurueck = einsatz.filter((x) => x.e.lage === "wieder_bereit");
   const gesperrt = kader.filter((s) => s.status?.gesperrt);
+  const start = startelfAusLetztemSpiel(db);
+  const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
+  const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.map((s) => s.pid)]).size;
+  const kurzDatum = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(spieltag);
   const datum = new Intl.DateTimeFormat("de-DE", {
     weekday: "long",
     day: "numeric",
@@ -40,24 +46,32 @@ export default async function Uebersicht() {
           </Link>
         }
       />
-      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
-        <Section title="Nächstes Ligaspiel" footer="Datum aus der Regel: Ligaspiele immer mittwochs und sonntags. Gegner und Anstoß kommen mit dem Spielplan-Abruf.">
-          <Hero>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">Ligaspieltag</div>
-            <div className="mt-1.5 text-[26px] font-bold leading-tight tracking-tight">{datum}</div>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-white/15 px-3 py-1.5 text-[13px] font-medium">
-              <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-              Gegner und Countdown: noch nicht verfügbar
-            </div>
-          </Hero>
-        </Section>
+      <div className="seite mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
+        <Kachel farbe="blau" titel="Nächstes Ligaspiel" wert={kurzDatum} unten="Mittwochs und sonntags. Gegner und Anstoß: noch nicht verfügbar" />
+        <Kachel
+          farbe="orange"
+          titel="Fehlen oder unklar"
+          wert={taktikStand ? nichtDabei : "n. v."}
+          unten={taktikStand ? `${zurueck.length} kommen rechtzeitig zurück` : "Taktikseite noch nicht eingelesen"}
+        />
+        <Kachel farbe="lila" titel="Kader" wert={kader.length || "n. v."} unten={kader.length ? "Spieler im Kader" : "noch kein Kaderabruf"} href="/kader" />
+        <Kachel
+          farbe="limette"
+          titel="Größte Schwachstelle"
+          wert={schwach ? schwach.wert.toFixed(2).replace(".", ",") : "n. v."}
+          unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
+          href="/markt"
+        />
+      </div>
+      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-10">
 
-        <Section title="Empfohlene Taktik">
+        <Section title="Empfohlene Taktik" farbe="lila">
           <Unavailable title="Taktik fürs nächste Spiel" reason="Gegneranalyse und Taktik-Generator folgen in Etappe 4 und 5." />
         </Section>
 
         <Section
           title={`Einsatz am ${datum}`}
+          farbe="orange"
           footer={
             taktikStand
               ? `Kegel laut Taktikseite (Stand ${datumZeit(taktikStand)}) plus Enddatum aus dem Trainingslager. Ob ein Spieler am Enddatum selbst schon frei ist, ist nicht belegt. Sperren stehen auf ManagerZone je Wettbewerb.`
@@ -90,11 +104,11 @@ export default async function Uebersicht() {
           )}
         </Section>
 
-        <Section title="Tabelle">
+        <Section title="Tabelle" farbe="gelb">
           <Unavailable title={TEAM.liga} reason="Tabellenabruf folgt mit dem ManagerZone-Abruf." />
         </Section>
 
-        <Section title="Letzte Skill-Änderungen">
+        <Section title="Letzte Skill-Änderungen" farbe="limette">
           {aenderungen.length ? (
             <List>
               {aenderungen.map((a, i) => (

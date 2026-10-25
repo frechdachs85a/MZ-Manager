@@ -3,57 +3,36 @@
 /* Farben und Flächen (hell / dunkel). Akzent und Skill-Farben aus der geprüften Datenpalette
    (dataviz-Referenz: Blau #2a78d6/#3987e5, Rot #e34948/#e66767; CVD-Abstand ≥ 19 in beiden Modi). */
 :root {
-  --bg: #f3f4f6;
+  /* Hell und knallig (Marcus, 25.10.2026): weiße Fläche, schwarze Kanten, kräftige Farbblöcke */
+  --bg: #f7f5ef;
   --card: #ffffff;
-  --card-2: #f6f7f9;
-  --label: #0b0b0c;
-  --label-2: #5c5f66;
-  --label-3: #9a9da5;
-  --separator: rgba(15, 23, 42, 0.08);
-  --fill: rgba(15, 23, 42, 0.06);
-  --bar: rgba(255, 255, 255, 0.78);
-  --tint: #2a78d6;
-  --green: #12833f;
-  --red: #d03b3b;
-  --orange: #c26a00;
-  --yellow: #eda100;
-  --pitch: #2f8f5b;
-  --pitch-2: #2a8152;
+  --card-2: #f2efe6;
+  --label: #111111;
+  --label-2: #4a4a4a;
+  --label-3: #8a8a8a;
+  --separator: rgba(17, 17, 17, 0.12);
+  --fill: rgba(17, 17, 17, 0.06);
+  --bar: rgba(255, 255, 255, 0.85);
+  --ink: #111111;
+  --tint: #3d5afe;
+  --green: #0e9f5a;
+  --red: #e5383b;
+  --orange: #ff7a1a;
+  --yellow: #ffd23f;
+  --purple: #8b5cf6;
+  --lime: #c6f432;
+  --pink: #ff4fa3;
+  --pitch: #2f9a5e;
+  --pitch-2: #278552;
+  /* Skill-Farben aus der geprüften Datenpalette (dataviz): CVD-Abstand ≥ 19 */
   --skill-max: #e34948;
   --skill-train: #2a78d6;
   --skill-fix: #9a9da5;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.05);
-  --hero-1: #1f7a4c;
-  --hero-2: #0f4f31;
+  --shadow: 4px 4px 0 #111111;
+  --shadow-sm: 2px 2px 0 #111111;
+  --hero-1: #3d5afe;
+  --hero-2: #3d5afe;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0c0c0e;
-    --card: #17171a;
-    --card-2: #202024;
-    --label: #f2f2f0;
-    --label-2: #a3a3ad;
-    --label-3: #6c6c75;
-    --separator: rgba(255, 255, 255, 0.08);
-    --fill: rgba(255, 255, 255, 0.07);
-    --bar: rgba(23, 23, 26, 0.78);
-    --tint: #3987e5;
-    --green: #34c26a;
-    --red: #e66767;
-    --orange: #f2a33a;
-    --yellow: #fab219;
-    --pitch: #1f6b43;
-    --pitch-2: #1b5f3b;
-    --skill-max: #e66767;
-    --skill-train: #3987e5;
-    --skill-fix: #6c6c75;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.25);
-    --hero-1: #1a6a42;
-    --hero-2: #0b3a24;
-    color-scheme: dark;
-  }
 }
 
 @theme inline {
@@ -71,12 +50,16 @@
   --color-red: var(--red);
   --color-orange: var(--orange);
   --color-yellow: var(--yellow);
+  --color-ink: var(--ink);
+  --color-purple: var(--purple);
+  --color-lime: var(--lime);
+  --color-pink: var(--pink);
   --color-pitch: var(--pitch);
   --color-skill-max: var(--skill-max);
   --color-skill-train: var(--skill-train);
   --color-skill-fix: var(--skill-fix);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-inter), system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-inter), system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -114,7 +97,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
   @media (width >= 64rem) {
-    max-width: 72rem;
+    max-width: 92rem;
     padding-left: 40px;
     padding-right: 40px;
   }
@@ -159,8 +142,9 @@ body {
   }
 }
 
-/* Karten-Schatten und dezente Hover-Fläche */
+/* Karten: schwarze Kante, harter Schatten */
 .karte {
+  border: 2px solid var(--ink);
   box-shadow: var(--shadow);
 }
 @media (hover: hover) {
@@ -169,11 +153,48 @@ body {
   }
 }
 
-/* Kopfkarte mit Rasen-Verlauf (Übersicht, Spielbericht) */
-.hero {
-  background:
-    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.14), transparent 60%),
-    linear-gradient(135deg, var(--hero-1), var(--hero-2));
+/* Hauptknopf */
+.knopf {
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--tint);
   color: #fff;
-  box-shadow: 0 10px 30px -12px rgba(15, 79, 49, 0.55);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.knopf:not(:disabled):hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.knopf:not(:disabled):active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* Farbblöcke (Text-Kontrast: Blau, Lila mit Weiß; Orange, Limette, Gelb mit Schwarz) */
+.farbblock {
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow);
+  border-radius: 20px;
+}
+.farbblock-blau { background: var(--tint); color: #fff; }
+.farbblock-lila { background: var(--purple); color: #fff; }
+.farbblock-orange { background: var(--orange); color: var(--ink); }
+.farbblock-limette { background: var(--lime); color: var(--ink); }
+.farbblock-gelb { background: var(--yellow); color: var(--ink); }
+.farbblock-pink { background: var(--pink); color: var(--ink); }
+
+.hero {
+  background: var(--tint);
+  color: #fff;
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow);
+}
+
+h1, h2, .display {
+  font-family: var(--font-display);
+}
+.knopf.pressable:hover,
+.knopf.pressable:active {
+  opacity: 1;
 }

@@ -63,17 +63,17 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
             {spielDatum(s.datum) ?? "Datum n. v."} · Endstand
           </div>
           <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="min-w-0 text-[17px] font-semibold leading-tight">
+            <div className="display min-w-0 text-[18px] font-extrabold leading-tight lg:text-[28px]">
               {heim.name}
               {heim.id === TEAM.tid && <span className="block text-[12px] font-medium text-white/70">du · Heim</span>}
               {heim.id !== TEAM.tid && <span className="block text-[12px] font-medium text-white/70">Heim</span>}
             </div>
-            <div className="text-[44px] font-bold leading-none tracking-tight tabular-nums">
+            <div className="display text-[56px] font-extrabold leading-none tracking-tight tabular-nums lg:text-[80px]">
               {heim.statistik.goals ?? "?"}
               <span className="px-1 text-white/50">:</span>
               {gast.statistik.goals ?? "?"}
             </div>
-            <div className="min-w-0 text-right text-[17px] font-semibold leading-tight">
+            <div className="display min-w-0 text-right text-[18px] font-extrabold leading-tight lg:text-[28px]">
               {gast.name}
               <span className="block text-[12px] font-medium text-white/70">{gast.id === TEAM.tid ? "du · Gast" : "Gast"}</span>
             </div>
@@ -84,11 +84,12 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
             <Card className="p-4 text-[15px] text-orange">{s.hinweise.join(" ")}</Card>
           </Section>
         )}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:items-start lg:gap-x-10">
         <Section
           title="Startaufstellungen"
           footer="Aus origin der Stats-XML in Editor-Koordinaten umgerechnet (mz-wissen.md, Abschnitt 3), jedes Team aus Sicht seines eigenen Tors."
         >
-          <div className="grid grid-cols-2 gap-3 lg:max-w-3xl">
+          <div className="grid grid-cols-2 gap-4">
             {[heim, gast].map((t) => (
               <Card key={t.id} className="p-3">
                 <div className="mb-2 text-[15px] font-semibold">{t.name}{t.id === TEAM.tid && " (du)"}</div>
@@ -105,9 +106,20 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
             ))}
           </div>
         </Section>
+        <Section title="Statistik" footer={`Quelle: Stats-XML, gespeichert ${datumZeit(s.abgerufen)}.`}>
+          <Card>
+            <StatVergleich
+              links={heim.name}
+              rechts={gast.name}
+              akzent={gast.id === TEAM.tid ? "rechts" : "links"}
+              zeilen={STAT.map(([k, label]) => ({ label, links: heim.statistik[k], rechts: gast.statistik[k] }))}
+            />
+          </Card>
+        </Section>
+        </div>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
-          <div>
+        <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-10">
+          <div className="contents">
             <Section title={`Tore (${s.tore.length})`}>
               {s.tore.length ? (
                 <List>
@@ -152,16 +164,6 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
               </List>
             </Section>
           </div>
-          <Section title="Statistik" footer={`Quelle: Stats-XML, gespeichert ${datumZeit(s.abgerufen)}.`}>
-            <Card>
-              <StatVergleich
-                links={heim.name}
-                rechts={gast.name}
-                akzent={gast.id === TEAM.tid ? "rechts" : "links"}
-                zeilen={STAT.map(([k, label]) => ({ label, links: heim.statistik[k], rechts: gast.statistik[k] }))}
-              />
-            </Card>
-          </Section>
         </div>
       </div>
     </>
