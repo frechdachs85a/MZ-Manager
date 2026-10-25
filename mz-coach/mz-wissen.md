@@ -95,7 +95,7 @@ x/y = Startaufstellung, x1/y1 = Alternative 1, x2/y2 = Alternative 2. pt und fk 
 2. Alle Abstände mindestens 47
 3. Zwei zentrale Stürmer nie nebeneinander auf gleicher Höhe, sondern versetzt. Gilt bei genau zwei zentralen Stürmern (Marcus, 25.10.2026). Bei drei zentralen ist das Profi-Muster zwei hinten auf gleicher Höhe, einer vorne davor (红黑之恋 69/98, 131/98, 100/63, genauso Bulgarien und Essen); kupass ist damit korrekt.
 4. Eckstürmer immer mit Zulieferer auf seiner Seite (z. B. rechter Sechser 151/183, tiefer Stürmer 129/95 bei Ecke rechts)
-5. Höchstens 3 Wechsel, ohne Konflikte untereinander
+5. Höchstens 3 Wechsel, ohne Konflikte untereinander. Kein Spieler darf in zwei Wechselregeln vorkommen (Marcus, 25.10.2026).
 6. Bei Rückstand nur offensiver, nie absichern
 7. Rote-Karte-Regel in jeder Taktik; Fall abdecken, dass genau der Rot-Auswechselspieler Rot sieht. Rot-Logik: 2 Stürmer = Flügel (einer außen, einer zentral), 1 Stürmer = zentral + Kurzpass. Eckstürmer ohne guten Flankengeber rückt in die Mitte + Kurzpass.
 8. Bank nach Position, subgoalie nie Regel-Einwechsler
@@ -142,7 +142,7 @@ Standards, Form, Alter, Größe zählen nicht.
 | freund | Freundschaftsspiel-Taktik | Form halten |
 | U18 | 5-2-1-2 Kurzpass defensiv aus Profi-Bausteinen (Lyon-Fünferkette, Raureni-Spielmacher und Sturm) | Jugend, nicht aktiv betreut |
 
-Gemeinsame Regeln in außenR/außenL/3313of/532de: 50. Hyuga raus, Ishizaki rein (Eckstürmer früh frisch); 60. Kaupa für Nazarov und Rodekamp für Cytrynski (532de: Salzer für Nazarov); ab 60. bei 1 Tor Rückstand offensiv + aggressiv; ab 65. bei 2 Toren Rückstand Kurzpass + Alternative 2 + aggressiv; ab 70. bei Führung Spielweise normal (nur außenR und außenL); ab 80. bei Gleichstand offensiv + aggressiv; Rot: Flügel/Formation 1 und Schobel raus, Kaupa rein.
+Gemeinsame Regeln in außenR/außenL/3313of/532de: 50. Hyuga raus, Ishizaki rein (Eckstürmer früh frisch); 60. Kaupa für Nazarov und Rodekamp für Cytrynski (532de: Salzer für Nazarov); ab 60. bei 1 Tor Rückstand offensiv + aggressiv; ab 65. bei 2 Toren Rückstand Kurzpass + Alternative 2 + aggressiv; ab 70. bei Führung Spielweise normal (nur außenR und außenL); ab 80. bei Gleichstand offensiv + aggressiv; Rot: Flügel/Formation 1 und Schobel raus, Kaupa rein. Seit 25.10.2026 (Marcus): bei Rot in keiner Taktik mehr ein Spielerwechsel, nur noch die Umstellung auf Alternative 1; "Schobel raus, Kaupa rein" wurde aus außenR, außenL, kupass, 3313of, 532de, indivi und freund entfernt.
 
 Template-Koordinaten außenR (Editor): Abwehr 26/224, 76/224, 125/224, 175/224; Sechser 101/183 und 151/183; Spielmacher 101/135; Sturm 129/95, 82/77; Ecke 200/63.
 kupass-Koordinaten: Abwehr 33/222, 79/235, 127/235, 175/222; Sechser 79/186, 127/186; Spielmacher 103/142; Sturm 72/100, 134/100, vorne 103/63.

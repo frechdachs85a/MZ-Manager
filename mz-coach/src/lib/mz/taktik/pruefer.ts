@@ -94,17 +94,18 @@ export function pruefeTaktik(t: Taktik, kader: SpielerDaten[] = []): Pruefung {
   const bank = new Set(t.subs.map((s) => s.pid));
   const feldPids = new Set(t.pos.map((p) => p.pid));
   const subgoalie = t.subs.filter((s) => s.pos === "subgoalie").map((s) => s.pid);
-  const rein = new Map<string, number>();
+  // Kein Spieler darf in zwei Wechselregeln vorkommen, weder als Ein- noch als Auswechsler (Marcus, 25.10.2026)
+  const vorkommen = new Map<number, number>();
   for (const r of wechsel) {
     const inn = Number(r.in_player_id);
     const raus = Number(r.out_player);
     if (!bank.has(inn)) fehler.push({ regel: 5, text: `Regel wechselt ${wer(inn)} ein, der nicht auf der Bank sitzt.` });
     if (!feldPids.has(raus) && !bank.has(raus)) fehler.push({ regel: 5, text: `Regel wechselt ${wer(raus)} aus, der nicht in der Taktik steht.` });
     if (subgoalie.includes(inn)) fehler.push({ regel: 8, text: `${wer(inn)} sitzt auf subgoalie und kann per Regel nicht eingewechselt werden.` });
-    rein.set(r.in_player_id, (rein.get(r.in_player_id) ?? 0) + 1);
+    for (const pid of [inn, raus]) vorkommen.set(pid, (vorkommen.get(pid) ?? 0) + 1);
   }
-  for (const [pid, n] of rein) {
-    if (n > 1) hinweise.push({ regel: 5, text: `${wer(pid)} wird in ${n} Regeln eingewechselt. Greift eine, fällt die andere aus. Gewollt?` });
+  for (const [pid, n] of vorkommen) {
+    if (n > 1) fehler.push({ regel: 5, text: `${wer(pid)} kommt in ${n} Wechselregeln vor. Jeder Spieler darf nur in einer Wechselregel stehen.` });
   }
 
   // 6: Bei Rückstand nur offensiver, nie absichern

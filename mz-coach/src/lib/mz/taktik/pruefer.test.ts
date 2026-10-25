@@ -4,7 +4,7 @@ import type { SpielerDaten } from "@/lib/mz/spieler";
 import { pruefeTaktik } from "./pruefer";
 import { parseTaktikXml, TaktikXmlFehler } from "./xml";
 
-// außenR nach mz-wissen.md, Abschnitt 8 (Feldkoordinaten und Regeln von dort).
+// außenR nach mz-wissen.md, Abschnitt 8 (Feldkoordinaten und Regeln von dort; Rot seit 25.10.2026 ohne Wechsel).
 // Konstruiert, weil dort nicht angegeben: Torwart-Position, Zuordnung der Spieler zu den Plätzen,
 // Bank-Koordinaten (x 228, y laut Abschnitt 4). Noch keine echte exportierte Taktik.
 const pos = (pid: number, x: number, y: number, goalie = false) =>
@@ -39,7 +39,7 @@ ${regel({ check_time: "true", time: "60", check_goal_condition: "true", goal_con
 ${regel({ check_time: "true", time: "65", check_goal_condition: "true", goal_condition: "down_by_at_least", goals: "2", tactics: "shortpass", formation: "2", aggression: "aggressive" })}
 ${regel({ check_time: "true", time: "70", check_goal_condition: "true", goal_condition: "ahead_by_at_least", goals: "1", playstyle: "normal" })}
 ${regel({ check_time: "true", time: "80", check_goal_condition: "true", goal_condition: "tie", playstyle: "offensive", aggression: "aggressive" })}
-${regel({ check_player_event: "true", player_event: "sent_off", out_player: String(P.schobel), in_player_id: String(P.kaupa), tactics: "wings", formation: "1" })}
+${regel({ check_player_event: "true", player_event: "sent_off", tactics: "wings", formation: "1" })}
 </SoccerTactics>`;
 
 describe("Taktik-XML", () => {
@@ -58,11 +58,20 @@ describe("Taktik-XML", () => {
 });
 
 describe("Prüfer (Prüfliste mz-wissen.md, Abschnitt 5)", () => {
-  it("außenR-Vorlage: keine Fehler, Hinweise zu doppeltem Einwechsler und Rot-Fall", () => {
+  it("außenR-Vorlage (Stand 25.10.2026): keine Fehler, keine Wechsel-Hinweise", () => {
     const r = pruefeTaktik(parseTaktikXml(AUSSEN_R));
     expect(r.fehler).toEqual([]);
     expect(r.ok).toBe(true);
-    expect(r.hinweise.map((h) => h.regel)).toEqual(expect.arrayContaining([5, 7]));
+    expect(r.hinweise.filter((h) => h.regel === 5 || h.regel === 7)).toEqual([]);
+  });
+
+  it("Regel 5: ein Spieler in zwei Wechselregeln ist ein Fehler (ein- wie auswechseln)", () => {
+    const rotMitWechsel = regel({ check_player_event: "true", player_event: "sent_off", out_player: String(P.schobel), in_player_id: String(P.kaupa) });
+    const r = pruefeTaktik(parseTaktikXml(AUSSEN_R.replace("</SoccerTactics>", `${rotMitWechsel}</SoccerTactics>`)));
+    expect(r.fehler.some((f) => f.regel === 5 && f.text.includes(`pid ${P.kaupa} kommt in 2 Wechselregeln vor`))).toBe(true);
+    const zweimalRaus = regel({ check_time: "true", time: "70", out_player: String(P.hyuga), in_player_id: "225629999" });
+    const r2 = pruefeTaktik(parseTaktikXml(AUSSEN_R.replace("</SoccerTactics>", `${zweimalRaus}</SoccerTactics>`)));
+    expect(r2.fehler.some((f) => f.text.includes(`pid ${P.hyuga} kommt in 2 Wechselregeln vor`))).toBe(true);
   });
 
   it("Regel 1: vierter Stürmer und y < 63", () => {
@@ -147,16 +156,23 @@ describe.skipIf(!existsSync(ECHT))("Echte außenR aus dem Editor", () => {
     expect(t.pos[0].attrs).toMatchObject({ pt: "1", fk: "10" });
   });
 
-  it("hat nach der Prüfliste keine Fehler; zwei Rot-Regeln decken den Rot-Fall ab", () => {
+  it("Stand vor dem 25.10.: Kaupa in zwei Wechselregeln ist nach der neuen Regel ein Fehler", () => {
     const r = pruefeTaktik(t);
+    expect(r.fehler).toEqual([expect.objectContaining({ regel: 5, text: expect.stringContaining("pid 226471405 kommt in 2 Wechselregeln vor") })]);
+  });
+
+  it("ohne die Rot-Wechselregel (Änderung von Marcus am 25.10.) keine Fehler", () => {
+    const ohne = readFileSync(ECHT, "utf8").split("\n").filter((z) => !(z.includes('player_event="sent_off"') && z.includes('in_player_id="226471405"'))).join("\n");
+    const r = pruefeTaktik(parseTaktikXml(ohne));
     expect(r.fehler).toEqual([]);
-    expect(r.hinweise.some((h) => h.regel === 7)).toBe(false);
+    expect(r.hinweise.some((h) => h.regel === 5)).toBe(false);
   });
 
   it("passt zu mz-wissen.md, Abschnitt 8 (gemeinsame Regeln)", () => {
     const zeit = (m: string) => t.regeln.filter((r) => r.check_time === "true" && r.time === m);
     expect(zeit("50").some((r) => r.out_player === "229906765" && r.in_player_id === "230162433")).toBe(true);
     expect(zeit("65").some((r) => r.goal_condition === "down_by_at_least" && r.goals === "2" && r.tactics === "shortpass" && r.formation === "2")).toBe(true);
+    // Stand vor dem 25.10.: zwei Rot-Regeln (Umstellung und Wechsel)
     expect(t.regeln.filter((r) => r.player_event === "sent_off" && r.check_player_event === "true")).toHaveLength(2);
   });
 });
