@@ -191,3 +191,15 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
 - Standard zeigt nur die letzten 25 Spiele: bei vielen Pokalspielen fehlen ältere Ligaspiele. Am 25.10.
   enthielt die Liste von YugiPeeK nur 2 Ligaspiele (20 Pokal, 2 Freundschaft, 1 Scout).
 - Gegner einer Scoutspiel-Zeile hat keinen Team-Link (nur der Name).
+
+## Stats-XML ohne Login abrufen (25.10.2026, 7 Ligaspiele von YugiPeeK, tid 97933)
+
+- `getMatchFiles.php?type=stats&mid=…&sport=soccer` liefert Ligaspiele auch ohne Login (HTTP 200).
+  2 von 7 Spielen kamen sofort, 4 mit 0 Bytes.
+- Für die leeren: `check-match` antwortet beim ersten Aufruf `{"response":"queued","content":"Error preparing match!"}`
+  (auf Deutsch eingeloggt: "Fehler bei der Erstellung des Spiels!"), beim zweiten Aufruf nach 6 Sekunden
+  `{"response":"ok","content":"<script …"}`. Danach war die XML jeweils da (24 bis 27 KB).
+  Die Fehlermeldung ist also ein Zwischenstand, kein endgültiger Fehler.
+- Scoutspiel (mid 1637650666) ohne Login: `check-match` antwortet `{"response":"blocked","content":"You are not allowed to view …"}`,
+  die XML bleibt leer. Scoutspiele sind nur eingeloggt abrufbar.
+- Abgerufen nacheinander mit 3 bis 6 Sekunden Pause.
