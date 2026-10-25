@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
 import { migrieren } from "@/lib/db/schema";
-import { dateienEinlesen } from "./kader";
+import { listeSpiele, ladeSpiel } from "@/lib/db/spiele";
+import { dateienEinlesen, spielXmlEinlesen } from "./kader";
 
 vi.mock("server-only", () => ({}));
 
@@ -18,6 +19,7 @@ const UNAVAILABLE = lies("unavailable-2026-10-24.html");
 const TRAININGSLAGER = lies("trainingslager-2026-10-24.html");
 const TAKTIK = lies("taktik-2026-10-24.html");
 const SPIELER = lies("spieler-2026-10-24.html");
+const STATS = lies("stats-1625669278.xml");
 
 // Die echte Kaderseite enthält die Serverzeit in einem Skript, die Fixture nur die Tabelle.
 const kader = (zeit: string) => ({ name: "kader.html", html: `<script>server_time = new Date(${zeit});</script>${TABELLE}` });
@@ -166,5 +168,24 @@ describe.skipIf(!TABELLE || !UNAVAILABLE || !TRAININGSLAGER || !TAKTIK)("Status-
   it("Status-Seite ohne Kader: klare Meldung", () => {
     const db = frischeDb();
     expect(dateienEinlesen(db, [{ name: "unav.html", html: UNAVAILABLE! }]).meldung).toContain("Erst die Kaderübersicht");
+  });
+});
+
+describe.skipIf(!STATS)("Stats-XML speichern", () => {
+  it("speichert einmal, zweites Mal: schon gespeichert; auch als Datei-Upload", () => {
+    const db = frischeDb();
+    expect(spielXmlEinlesen(db, STATS!)).toBe("Spiel 1625669278 (FFK Kosova 0:9 FC Toho): gespeichert.");
+    expect(spielXmlEinlesen(db, STATS!)).toContain("schon gespeichert");
+    expect(dateienEinlesen(db, [{ name: "getMatchFiles.htm", html: `<html><body><pre>${STATS!}</pre></body></html>` }]).meldung).toContain("schon gespeichert");
+    expect(listeSpiele(db)).toEqual([{ mid: 1625669278, datum: "2026-10-21 14:45:00", heim: "FFK Kosova", gast: "FC Toho", tore: "0:9", final: true }]);
+    expect(ladeSpiel(db, 1625669278)!.tore).toHaveLength(9);
+    expect(db.prepare("SELECT length(stats_xml) > 1000 AS ok FROM spiel").get()).toEqual({ ok: 1 });
+  });
+
+  it("leere Seite (wie bei XML LEER) gibt eine klare Meldung", () => {
+    const db = frischeDb();
+    const r = dateienEinlesen(db, [{ name: "leer.htm", html: "<html><head></head><body></body></html>" }]);
+    expect(r).toMatchObject({ ok: false });
+    expect(listeSpiele(db)).toEqual([]);
   });
 });

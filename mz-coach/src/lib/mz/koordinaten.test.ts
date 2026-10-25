@@ -26,5 +26,9 @@ describe("originZuEditor", () => {
   // Vorgabe aus dem Auftrag: Spiel 1625669278 (Torwart bei origin-y 1000),
   // Cavalcante ≈ 103/63, Chille ≈ 33/223. Braucht die echte Stats-XML dieses Spiels,
   // die origin-Werte werden nicht erfunden.
-  it.todo("Spiel 1625669278: Cavalcante ≈ 103/63, Chille ≈ 33/223 (wartet auf echte XML)");
+  it("Testfall aus dem Auftrag, Spiel 1625669278 (Torwart bei origin-y 1000): Cavalcante 103/63, Chille 33/223", () => {
+    // origin-Werte aus der echten Stats-XML vom 21.10.2026
+    expect(originZuEditor({ x: 371, y: 175 }, 1000)).toEqual({ x: 103, y: 63 });
+    expect(originZuEditor({ x: 97, y: 693 }, 1000)).toEqual({ x: 33, y: 223 });
+  });
 });

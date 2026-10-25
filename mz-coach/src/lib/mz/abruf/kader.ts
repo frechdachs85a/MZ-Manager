@@ -13,6 +13,8 @@ import {
   parseTrainingslagerSeite,
   parseUnavailableSeite,
 } from "@/lib/mz/parser/status";
+import { speichereSpiel } from "@/lib/db/spiele";
+import { istStatsXml, parseStatsXml, statsXmlAus, StatsXmlFehler } from "@/lib/mz/parser/stats";
 import { mitMzSitzung, MZ_BASIS, MzFehler } from "./sitzung";
 import {
   speichereSpielerSeite,
@@ -55,7 +57,19 @@ function statusText(titel: string, r: StatusErgebnis) {
 }
 
 // Erkennt die Seitenart und wertet sie aus. Wirft bei unbekannter Seite oder unbekanntem Aufbau.
+// Stats-XML eines Spiels: einmal speichern (Roh-XML und Auswertung), nie doppelt.
+export function spielXmlEinlesen(db: Database.Database, text: string): string {
+  const xml = statsXmlAus(text);
+  const s = parseStatsXml(xml);
+  const heim = s.teams.find((t) => t.heim) ?? s.teams[0];
+  const gast = s.teams.find((t) => t !== heim)!;
+  const titel = `Spiel ${s.mid} (${heim.name} ${heim.statistik.goals ?? "?"}:${gast.statistik.goals ?? "?"} ${gast.name})`;
+  if (speichereSpiel(db, s, xml) === "vorhanden") return `${titel}: schon gespeichert.`;
+  return `${titel}: gespeichert.${s.hinweise.length ? ` Hinweise: ${s.hinweise.join(" ")}` : ""}`;
+}
+
 export function seiteEinlesen(db: Database.Database, html: string, herkunft: { url: string; quelle: string; htmlDom?: string | null }): string {
+  if (istStatsXml(html)) return spielXmlEinlesen(db, html);
   if (/id="playerAltViewTable"/.test(html)) {
     return speichereKaderSeite(db, html, herkunft.url, herkunft.quelle, herkunft.htmlDom ?? null);
   }
@@ -74,12 +88,14 @@ export function seiteEinlesen(db: Database.Database, html: string, herkunft: { u
     return statusText("Taktik (aufstellbar)", r) + unbekannt;
   }
   throw new KaderSeiteUnbekannt(
-    "Unbekannte Seite. Erwartet: Kaderübersicht (?p=players&sub=alt), Spieleransicht (?p=players), Verletzt / Gesperrt (?p=players&sub=unavailable), Trainingslager (?p=training_camp) oder Taktik (?p=tactics).",
+    "Unbekannte Seite. Erwartet: Kaderübersicht (?p=players&sub=alt), Spieleransicht (?p=players), Verletzt / Gesperrt (?p=players&sub=unavailable), Trainingslager (?p=training_camp), Taktik (?p=tactics) oder Stats-XML eines Spiels.",
   );
 }
 
-function meldungAus(e: unknown): string {
-  if (e instanceof MzFehler || e instanceof KaderSeiteUnbekannt || e instanceof StatusFehler) return e.message;
+export function meldungAus(e: unknown): string {
+  if (e instanceof MzFehler || e instanceof KaderSeiteUnbekannt || e instanceof StatusFehler || e instanceof StatsXmlFehler) {
+    return e.message;
+  }
   // Sonstige Fehler (Browser fehlt, Zeitüberschreitung) enthalten nur URLs, erste Zeile reicht.
   return `Technischer Fehler: ${(e instanceof Error ? e.message : String(e)).split("\n")[0]}`;
 }

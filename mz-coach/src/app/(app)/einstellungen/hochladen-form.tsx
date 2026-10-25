@@ -15,7 +15,7 @@ export function HochladenForm() {
           id="datei"
           name="datei"
           type="file"
-          accept=".html,.htm,text/html"
+          accept=".html,.htm,.xml,.txt,text/html,text/xml,text/plain"
           multiple
           required
           className="mt-2 block w-full text-[15px] text-label-2 file:mr-3 file:min-h-11 file:rounded-[10px] file:border-0 file:bg-fill file:px-4 file:text-[15px] file:font-medium file:text-tint"

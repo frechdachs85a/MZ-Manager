@@ -157,3 +157,22 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
   Das Feld `content` mit dieser Meldung steht nicht in mz-wissen.md. Ursache unbekannt
   (am 21.10. war für dieses Spiel laut mz-wissen.md, Abschnitt 3, eine XML verfügbar).
   Der Abruf muss diese Antwort als eigenen Fall erkennen und nicht endlos wiederholen.
+
+## Stats-XML: echter Aufbau (Spiel 1625669278, 25.10.2026 von Marcus über view-source kopiert)
+
+- Abruf im Browser: Erst `check-match` bis `{"response":"ok", ...}` (beim ersten Versuch kam die Fehlermeldung oben,
+  später "ok"), dann `getMatchFiles.php?...`. Die normale Ansicht wirkt leer, weil der Browser die XML als
+  Webseite ohne sichtbaren Text zeigt; mit `view-source:` davor ist der Inhalt da. Strg+S speichert dann nur
+  eine leere HTML-Hülle.
+- Kopf `<?xml version="1.0" encoding="utf-8"?>`, Wurzel `<SoccerStatistics matchId type date enddate version seed final>`.
+- `<Team id name shortname visiting tactic playstyle aggression ...>` mit `MetaData` (manager, series_name),
+  `HalfStatistics` und `Statistics` (goals, possession, shotsOnGoal, ...). visiting="0" = Heimteam.
+- `<Player id teamId name shirtno [goalkeeper="1"] position origin>`. origin "x,y" (z. B. "371,175"),
+  bei Bankspielern leer. Auch der Ersatztorwart auf subgoalie hat goalkeeper="1".
+- Unter Player: `Goal (frame time clock team assister)`, `Card (time clock frame type)`, `Miss`, `Save`, `item`,
+  `Statistics`. Abweichend von mz-wissen.md stehen Tore und Karten also unter dem Spieler.
+- Unter `Events`: `Substitution (time clock frame playerId teamId substitutedId reason minute)`, außerdem
+  `Replay` und `Post`. `Tactic`-Elemente kamen in diesem Spiel nicht vor.
+- Umrechnung bestätigt: Torwart FC Toho origin 375,1000; Cavalcante 371,175 -> 103/63, Chille 97,693 -> 33/223.
+  Die ganze Startelf liegt höchstens 1 Punkt neben der kupass-Vorlage aus mz-wissen.md.
+- Zeitregel 55. griff bei Spieluhr 60:11 (nächste Unterbrechung), Regeln 60. bei 62:22.

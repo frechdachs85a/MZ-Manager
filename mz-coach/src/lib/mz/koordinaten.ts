@@ -17,4 +17,4 @@ export function originZuEditor(origin: Punkt, torwartOriginY: 0 | 1000): Punkt {
   };
 }
 
-// Das genaue Format des origin-Attributs wird erst am echten XML festgelegt (Etappe 3).
+// origin steht in der Stats-XML als "x,y" (z. B. origin="371,175"), bei Bankspielern leer.
