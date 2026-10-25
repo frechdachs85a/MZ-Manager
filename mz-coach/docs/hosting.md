@@ -48,7 +48,15 @@ Server löschen beendet die Kosten.
    - SSH-Schlüssel: eigenen öffentlichen Schlüssel hinzufügen (empfohlen). Ohne Schlüssel schickt Hetzner ein
      root-Passwort per E-Mail.
    - Firewall: optional eine anlegen mit eingehend TCP 22, 80, 443 erlaubt. Ohne Firewall sind die Ports offen.
-3. Per SSH auf den Server (`ssh root@<öffentliche IP>`) und ausführen:
+   - **Cloud-Config** (unten bei „Cloud config“): Text aus dem Kasten unten einfügen und `MEIN-CODE` durch einen
+     eigenen Einrichtungscode ersetzen (mindestens 8 Zeichen, nur Buchstaben, Ziffern und Bindestriche). Dann richtet
+     sich der Server beim ersten Start komplett selbst ein, ganz ohne SSH. Weiter bei Schritt 4.
+     ```yaml
+     #cloud-config
+     runcmd:
+       - [bash, -c, "curl -fsSL https://raw.githubusercontent.com/frechdachs85a/MZ-Manager/main/mz-coach/deploy/server/einrichten.sh -o /root/einrichten.sh && HOME=/root EINRICHTUNGSCODE=MEIN-CODE bash /root/einrichten.sh > /root/einrichten.log 2>&1"]
+     ```
+3. Ohne Cloud-Config: per SSH auf den Server (`ssh root@<öffentliche IP>`) und ausführen:
    ```bash
    curl -fsSLO https://raw.githubusercontent.com/frechdachs85a/MZ-Manager/main/mz-coach/deploy/server/einrichten.sh
    bash einrichten.sh            # oder: bash einrichten.sh meine-domain.de
@@ -56,7 +64,10 @@ Server löschen beendet die Kosten.
    Das Skript installiert Docker, legt bei 4 GB Arbeitsspeicher 2 GB Swap an, holt den Code, baut und startet
    (beim ersten Mal einige Minuten). Ohne Domain läuft die Seite unter `https://<IP-mit-Bindestrichen>.sslip.io`.
    Mit eigener Domain vorher beim Domain-Anbieter einen A-Eintrag auf die öffentliche IP setzen.
-4. Am Ende zeigt das Skript Adresse und Einrichtungscode. Seite öffnen und einrichten (siehe oben).
+4. Mit Cloud-Config: etwa 10 bis 15 Minuten warten (Bau beim ersten Start), dann
+   `https://<öffentliche IP mit Bindestrichen statt Punkten>.sslip.io` öffnen, z. B. `https://203-0-113-7.sslip.io`,
+   und mit dem selbst gewählten Code einrichten. Fortschritt bei Bedarf: `/root/einrichten.log` auf dem Server.
+   Ohne Cloud-Config zeigt das Skript am Ende Adresse und Einrichtungscode.
 
 Update auf den neuesten Stand: `bash einrichten.sh` erneut ausführen. Protokoll: im Ordner
 `~/MZ-Manager/mz-coach/deploy/server` mit `docker compose logs -f app`. Daten liegen in

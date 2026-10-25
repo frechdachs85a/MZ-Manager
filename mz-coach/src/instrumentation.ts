@@ -5,7 +5,8 @@ export async function register() {
   const { einrichtungscode, ladeGeheimnisse } = await import("./lib/auth/geheimnisse");
   ladeGeheimnisse();
   const code = einrichtungscode();
-  if (code) console.log(`MZ Coach noch nicht eingerichtet. Einrichtungscode: ${code} (auf /einrichtung eingeben)`);
+  if (code && process.env.EINRICHTUNGSCODE) console.log("MZ Coach noch nicht eingerichtet. Einrichtungscode: der selbst gewählte (EINRICHTUNGSCODE)");
+  else if (code) console.log(`MZ Coach noch nicht eingerichtet. Einrichtungscode: ${code} (auf /einrichtung eingeben)`);
   if (process.env.MZ_ZEITPLAN === "aus") return;
   const { starteZeitplan } = await import("./lib/zeitplan");
   starteZeitplan();
