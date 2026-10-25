@@ -5,11 +5,9 @@ import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
 import { Card, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
-import { ladeTeamSpiele, teamName } from "@/lib/db/gegner";
-import { ladeSpiel } from "@/lib/db/spiele";
-import { analysiereGegner, de } from "@/lib/mz/analyse/gegner";
-import { ANALYSE_SPIELE, LIGA_MID_AB, letzteLigaspiele } from "@/lib/mz/parser/spielliste";
-import type { StatsSpiel } from "@/lib/mz/parser/stats";
+import { de } from "@/lib/mz/analyse/gegner";
+import { ANALYSE_SPIELE, LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
+import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { HolKnopf } from "./hol-knopf";
 
 const datumDe = (d?: string) => (d ? d.slice(0, 10).split("-").reverse().join(".") : "n. v.");
@@ -26,15 +24,10 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   await connection();
   const { tid: tidText } = await props.params;
   const tid = Number(tidText);
-  const db = getDb();
-  const spiele = ladeTeamSpiele(db, tid);
+  const { spiele, name, liga, stats, analyse: a } = gegnerAnalyseLaden(getDb(), tid);
   if (spiele.length === 0) notFound();
-  const name = teamName(db, tid) ?? `tid ${tid}`;
   const alleLiga = spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
-  const liga = letzteLigaspiele(spiele);
   const fehlen = liga.filter((s) => !s.xml);
-  const stats = liga.filter((s) => s.xml).map((s) => ladeSpiel(db, s.mid)).filter((s): s is StatsSpiel & { abgerufen: string } => !!s);
-  const a = stats.length ? analysiereGegner(tid, stats) : null;
   const begr = new Map(a?.begruendung.map((b) => [b.mid, b.text]));
 
   return (

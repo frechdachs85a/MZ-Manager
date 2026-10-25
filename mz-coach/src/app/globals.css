@@ -3,35 +3,36 @@
 /* Farben und Flächen (hell / dunkel). Akzent und Skill-Farben aus der geprüften Datenpalette
    (dataviz-Referenz: Blau #2a78d6/#3987e5, Rot #e34948/#e66767; CVD-Abstand ≥ 19 in beiden Modi). */
 :root {
-  /* Hell und knallig (Marcus, 25.10.2026): weiße Fläche, schwarze Kanten, kräftige Farbblöcke */
-  --bg: #f7f5ef;
-  --card: #ffffff;
-  --card-2: #f2efe6;
-  --label: #111111;
-  --label-2: #4a4a4a;
-  --label-3: #8a8a8a;
-  --separator: rgba(17, 17, 17, 0.12);
-  --fill: rgba(17, 17, 17, 0.06);
-  --bar: rgba(255, 255, 255, 0.85);
-  --ink: #111111;
-  --tint: #3d5afe;
-  --green: #0e9f5a;
-  --red: #e5383b;
-  --orange: #ff7a1a;
-  --yellow: #ffd23f;
-  --purple: #8b5cf6;
-  --lime: #c6f432;
-  --pink: #ff4fa3;
-  --pitch: #2f9a5e;
-  --pitch-2: #278552;
+  /* Klassisch elegant (Marcus, 25.10.2026): Elfenbein, Vereinsgrün, Gold, feine Linien */
+  --bg: #f5f2ea;
+  --card: #fffdf8;
+  --card-2: #f0ebdf;
+  --label: #1c2321;
+  --label-2: #5d635f;
+  --label-3: #9a978d;
+  --separator: rgba(28, 35, 33, 0.1);
+  --fill: rgba(28, 35, 33, 0.05);
+  --bar: rgba(255, 253, 248, 0.88);
+  --ink: #1c2321;
+  --tint: #1f4d3a;
+  --gold: #a8844e;
+  --gold-hell: #d9c39a;
+  --nacht: #12291f;
+  --green: #2f7d4f;
+  --red: #b23a3a;
+  --orange: #b56a1f;
+  --yellow: #c9a227;
+  --purple: #5b4b8a;
+  --lime: #8aa64a;
+  --pink: #b0517a;
+  --pitch: #2f7d50;
+  --pitch-2: #276b44;
   /* Skill-Farben aus der geprüften Datenpalette (dataviz): CVD-Abstand ≥ 19 */
   --skill-max: #e34948;
   --skill-train: #2a78d6;
-  --skill-fix: #9a9da5;
-  --shadow: 4px 4px 0 #111111;
-  --shadow-sm: 2px 2px 0 #111111;
-  --hero-1: #3d5afe;
-  --hero-2: #3d5afe;
+  --skill-fix: #a7a49b;
+  --shadow: 0 1px 2px rgba(28, 35, 33, 0.04), 0 8px 24px -12px rgba(28, 35, 33, 0.12);
+  --shadow-sm: 0 1px 2px rgba(28, 35, 33, 0.06);
   color-scheme: light;
 }
 
@@ -51,6 +52,9 @@
   --color-orange: var(--orange);
   --color-yellow: var(--yellow);
   --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --color-gold-hell: var(--gold-hell);
+  --color-nacht: var(--nacht);
   --color-purple: var(--purple);
   --color-lime: var(--lime);
   --color-pink: var(--pink);
@@ -59,7 +63,7 @@
   --color-skill-train: var(--skill-train);
   --color-skill-fix: var(--skill-fix);
   --font-sans: var(--font-inter), system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: var(--font-bricolage), var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -97,7 +101,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
   @media (width >= 64rem) {
-    max-width: 92rem;
+    max-width: 84rem;
     padding-left: 40px;
     padding-right: 40px;
   }
@@ -142,9 +146,9 @@ body {
   }
 }
 
-/* Karten: schwarze Kante, harter Schatten */
+/* Karten: feine Linie, weicher Schatten */
 .karte {
-  border: 2px solid var(--ink);
+  border: 1px solid var(--separator);
   box-shadow: var(--shadow);
 }
 @media (hover: hover) {
@@ -153,48 +157,41 @@ body {
   }
 }
 
-/* Hauptknopf */
+/* Hauptknopf: Vereinsgrün */
 .knopf {
-  border: 2px solid var(--ink);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--tint);
-  color: #fff;
+  color: #fffdf8;
+  letter-spacing: 0.01em;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: background-color 0.15s ease;
 }
 .knopf:not(:disabled):hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
-}
-.knopf:not(:disabled):active {
-  transform: translate(2px, 2px);
-  box-shadow: none;
-}
-
-/* Farbblöcke (Text-Kontrast: Blau, Lila mit Weiß; Orange, Limette, Gelb mit Schwarz) */
-.farbblock {
-  border: 2px solid var(--ink);
-  box-shadow: var(--shadow);
-  border-radius: 20px;
-}
-.farbblock-blau { background: var(--tint); color: #fff; }
-.farbblock-lila { background: var(--purple); color: #fff; }
-.farbblock-orange { background: var(--orange); color: var(--ink); }
-.farbblock-limette { background: var(--lime); color: var(--ink); }
-.farbblock-gelb { background: var(--yellow); color: var(--ink); }
-.farbblock-pink { background: var(--pink); color: var(--ink); }
-
-.hero {
-  background: var(--tint);
-  color: #fff;
-  border: 2px solid var(--ink);
-  box-shadow: var(--shadow);
-}
-
-h1, h2, .display {
-  font-family: var(--font-display);
+  background: #183e2f;
 }
 .knopf.pressable:hover,
 .knopf.pressable:active {
   opacity: 1;
+}
+
+/* Dunkle Kopfkarte (Ergebnis, Empfehlung) */
+.hero {
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(168, 132, 78, 0.22), transparent 55%),
+    var(--nacht);
+  color: #f5f2ea;
+  box-shadow: var(--shadow);
+}
+
+/* Kleine Kapitälchen-Beschriftung in Gold */
+.kapitaelchen {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+h1, h2, .display {
+  font-family: var(--font-display);
 }

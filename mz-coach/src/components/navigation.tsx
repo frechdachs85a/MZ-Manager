@@ -101,7 +101,7 @@ export function Navigation() {
     <>
       <nav
         aria-label="Hauptnavigation"
-        className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t-2 border-ink bg-card lg:hidden"
+        className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-separator bg-bar backdrop-blur-xl lg:hidden"
       >
         <ul className="mx-auto flex max-w-2xl">
           {TABS.map((tab) => {
@@ -113,10 +113,10 @@ export function Navigation() {
                   onClick={() => !active && haptic()}
                   aria-current={active ? "page" : undefined}
                   className={`flex min-h-[52px] flex-col items-center justify-center gap-0.5 pt-1.5 text-[10px] font-medium tracking-tight ${
-                    active ? "text-ink" : "text-label-2"
+                    active ? "text-tint" : "text-label-3"
                   }`}
                 >
-                  <span className={`flex h-[26px] w-[44px] items-center justify-center rounded-full transition-colors ${active ? "border-2 border-ink bg-lime" : ""}`}>
+                  <span className={`flex h-[26px] w-[44px] items-center justify-center rounded-full transition-colors ${active ? "bg-tint/10" : ""}`}>
                     <span className="h-[22px] w-[22px]">{tab.icon}</span>
                   </span>
                   {tab.label}
@@ -129,16 +129,16 @@ export function Navigation() {
 
       <nav
         aria-label="Hauptnavigation"
-        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r-2 border-ink bg-card px-4 py-6 lg:flex"
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-nacht px-4 py-8 text-[#e9e4d8] lg:flex"
       >
-        <Link href="/" className="farbblock farbblock-blau mb-8 flex items-center gap-3 px-4 py-3">
-          <Image src="/icons/icon-192.png" alt="" width={36} height={36} className="rounded-[9px] border-2 border-ink" />
+        <Link href="/" className="mb-10 flex items-center gap-3 px-3">
+          <Image src="/icons/icon-192.png" alt="" width={38} height={38} className="rounded-full ring-1 ring-gold/60" />
           <span>
-            <span className="display block text-[20px] font-extrabold leading-tight tracking-tight">MZ Coach</span>
-            <span className="block text-[13px] font-semibold text-white/85">FC Toho</span>
+            <span className="display block text-[21px] font-semibold leading-tight tracking-tight text-[#f5f2ea]">MZ Coach</span>
+            <span className="kapitaelchen block !text-gold-hell">FC Toho</span>
           </span>
         </Link>
-        <ul className="flex flex-1 flex-col gap-1.5">
+        <ul className="flex flex-1 flex-col gap-1">
           {[...TABS, EINSTELLUNGEN].map((tab) => {
             const active = istAktiv(pathname, tab.href);
             return (
@@ -146,8 +146,10 @@ export function Navigation() {
                 <Link
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-11 items-center gap-3 rounded-[12px] border-2 px-3 text-[16px] font-bold transition-colors ${
-                    active ? "border-ink bg-lime text-ink shadow-[2px_2px_0_var(--ink)]" : "border-transparent text-label hover:border-ink hover:bg-card-2"
+                  className={`relative flex min-h-11 items-center gap-3 rounded-[8px] px-3 text-[15px] transition-colors ${
+                    active
+                      ? "bg-white/[0.07] font-medium text-[#f5f2ea] before:absolute before:inset-y-2.5 before:left-0 before:w-[2px] before:rounded-full before:bg-gold"
+                      : "text-[#e9e4d8]/70 hover:bg-white/[0.04] hover:text-[#f5f2ea]"
                   }`}
                 >
                   <span className="h-[22px] w-[22px] shrink-0">{tab.icon}</span>

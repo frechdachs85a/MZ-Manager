@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Kachel, List, Row, Section, Unavailable } from "@/components/ui";
+import { Hero, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
+import { letzterGegner } from "@/lib/gegner-analyse";
 import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
 import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
@@ -23,6 +24,7 @@ export default async function Uebersicht() {
   const zurueck = einsatz.filter((x) => x.e.lage === "wieder_bereit");
   const gesperrt = kader.filter((s) => s.status?.gesperrt);
   const start = startelfAusLetztemSpiel(db);
+  const gegner = letzterGegner(db);
   const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
   const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.map((s) => s.pid)]).size;
   const kurzDatum = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(spieltag);
@@ -47,16 +49,16 @@ export default async function Uebersicht() {
         }
       />
       <div className="seite mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
-        <Kachel farbe="blau" titel="Nächstes Ligaspiel" wert={kurzDatum} unten="Mittwochs und sonntags. Gegner und Anstoß: noch nicht verfügbar" />
+        <Kachel titel="Nächstes Ligaspiel" wert={kurzDatum} unten="Mittwochs und sonntags. Gegner und Anstoß: noch nicht verfügbar" />
         <Kachel
-          farbe="orange"
+         
           titel="Fehlen oder unklar"
           wert={taktikStand ? nichtDabei : "n. v."}
           unten={taktikStand ? `${zurueck.length} kommen rechtzeitig zurück` : "Taktikseite noch nicht eingelesen"}
         />
-        <Kachel farbe="lila" titel="Kader" wert={kader.length || "n. v."} unten={kader.length ? "Spieler im Kader" : "noch kein Kaderabruf"} href="/kader" />
+        <Kachel titel="Kader" wert={kader.length || "n. v."} unten={kader.length ? "Spieler im Kader" : "noch kein Kaderabruf"} href="/kader" />
         <Kachel
-          farbe="limette"
+         
           titel="Größte Schwachstelle"
           wert={schwach ? schwach.wert.toFixed(2).replace(".", ",") : "n. v."}
           unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
@@ -65,13 +67,32 @@ export default async function Uebersicht() {
       </div>
       <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-10">
 
-        <Section title="Empfohlene Taktik" farbe="lila">
-          <Unavailable title="Taktik fürs nächste Spiel" reason="Gegneranalyse und Taktik-Generator folgen in Etappe 4 und 5." />
+        <Section
+          title="Empfohlene Taktik"
+          footer={
+            gegner
+              ? `Zuletzt eingelesener Gegner (Stand ${datumZeit(gegner.stand)}). Ob er der nächste Ligagegner ist, prüft die Seite erst mit dem Spielplan-Abruf.`
+              : undefined
+          }
+        >
+          {gegner?.analyse ? (
+            <Link href={`/gegner/${gegner.tid}`} className="block">
+              <Hero className="transition-shadow hover:shadow-[0_16px_40px_-18px_rgba(18,41,31,0.6)]">
+                <div className="kapitaelchen !text-gold-hell">Gegen {gegner.name}</div>
+                <div className="display mt-2 text-[40px] font-semibold leading-none">{gegner.analyse.empfehlung.taktik}</div>
+                <div className="mt-3 max-w-[60ch] text-[14px] leading-relaxed text-[#f5f2ea]/80">{gegner.analyse.urteilText}</div>
+                <div className="mt-4 text-[13px] text-gold-hell">
+                  {gegner.stats.length} von {gegner.liga.length} Ligaspielen ausgewertet · Analyse öffnen →
+                </div>
+              </Hero>
+            </Link>
+          ) : (
+            <Unavailable title="Taktik fürs nächste Spiel" reason="Noch kein Gegner mit ausgewerteten Ligaspielen. Unter „Gegner“ eine Spielliste einlesen." />
+          )}
         </Section>
 
         <Section
           title={`Einsatz am ${datum}`}
-          farbe="orange"
           footer={
             taktikStand
               ? `Kegel laut Taktikseite (Stand ${datumZeit(taktikStand)}) plus Enddatum aus dem Trainingslager. Ob ein Spieler am Enddatum selbst schon frei ist, ist nicht belegt. Sperren stehen auf ManagerZone je Wettbewerb.`
@@ -104,11 +125,11 @@ export default async function Uebersicht() {
           )}
         </Section>
 
-        <Section title="Tabelle" farbe="gelb">
+        <Section title="Tabelle">
           <Unavailable title={TEAM.liga} reason="Tabellenabruf folgt mit dem ManagerZone-Abruf." />
         </Section>
 
-        <Section title="Letzte Skill-Änderungen" farbe="limette">
+        <Section title="Letzte Skill-Änderungen">
           {aenderungen.length ? (
             <List>
               {aenderungen.map((a, i) => (

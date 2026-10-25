@@ -5,13 +5,27 @@ import { StatusBadges, statusHinweis } from "@/components/status";
 import { Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader, type KaderEintrag } from "@/lib/db/kader";
-import { alleMzWerte, POSITIONEN } from "@/lib/mz/formel";
+import { alleMzWerte, POSITIONEN, type Position } from "@/lib/mz/formel";
 import { KADER_START, QUELLE_KADER } from "@/lib/wissen/startbasis";
 import { datumZeit } from "@/lib/format";
 
-export default async function Kader() {
+// Sortierung der Desktop-Tabelle über ?sort=<Spalte> (Nr, Alter oder eine Position, absteigend)
+type Sortierung = "nr" | "alter" | Position;
+function sortiere(kader: KaderEintrag[], sort: Sortierung): KaderEintrag[] {
+  if (sort === "nr") return kader;
+  const wert = (s: KaderEintrag) => {
+    if (sort === "alter") return s.alter ?? -1;
+    const w = alleMzWerte(s.skills)[sort];
+    return w.ok ? w.wert : -1;
+  };
+  return [...kader].sort((a, b) => wert(b) - wert(a));
+}
+
+export default async function Kader(props: PageProps<"/kader">) {
   await connection();
   const kader = ladeKader(getDb());
+  const roh = (await props.searchParams).sort;
+  const sort: Sortierung = typeof roh === "string" && (roh === "alter" || (POSITIONEN as readonly string[]).includes(roh)) ? (roh as Sortierung) : "nr";
 
   if (kader.length === 0) {
     return (
@@ -51,7 +65,7 @@ export default async function Kader() {
         {/* Desktop: Tabelle mit dem MZ-Wert jeder Position, bester Wert hervorgehoben */}
         <div className="hidden lg:block">
           <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. Hinterlegung: je kräftiger, desto höher der Wert im Vergleich zum ganzen Kader. ${statusHinweis(kader)}`}>
-            <KaderTabelle kader={kader} />
+            <KaderTabelle kader={sortiere(kader, sort)} sort={sort} />
           </Section>
         </div>
         <div className="lg:hidden">
@@ -107,7 +121,22 @@ function hinterlegung(wert: number, min: number, max: number) {
   return `color-mix(in oklab, var(--tint) ${(4 + t * 26).toFixed(0)}%, transparent)`;
 }
 
-function KaderTabelle({ kader }: { kader: KaderEintrag[] }) {
+function SpaltenKopf({ label, wert, sort, rechts = true }: { label: string; wert: Sortierung; sort: Sortierung; rechts?: boolean }) {
+  const aktiv = sort === wert;
+  return (
+    <Link
+      href={wert === "nr" ? "/kader" : `/kader?sort=${encodeURIComponent(wert)}`}
+      scroll={false}
+      className={`inline-flex items-center gap-1 ${rechts ? "justify-end" : ""} ${aktiv ? "text-tint" : "hover:text-label"}`}
+      title={wert === "nr" ? "Nach Nummer" : `Nach ${label} sortieren (absteigend)`}
+    >
+      {label}
+      {aktiv && wert !== "nr" && <span aria-hidden>↓</span>}
+    </Link>
+  );
+}
+
+function KaderTabelle({ kader, sort }: { kader: KaderEintrag[]; sort: Sortierung }) {
   const alle = kader.flatMap((s) => {
     const w = alleMzWerte(s.skills);
     return POSITIONEN.flatMap((p) => (w[p].ok ? [w[p].wert] : []));
@@ -119,11 +148,11 @@ function KaderTabelle({ kader }: { kader: KaderEintrag[] }) {
       <table className="w-full text-left text-[15px]">
         <thead>
           <tr className="border-b border-separator text-[13px] text-label-2">
-            <th className="w-12 py-2.5 pl-4 text-right font-normal">Nr</th>
+            <th className="w-12 py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Nr" wert="nr" sort={sort} /></th>
             <th className="py-2.5 pl-4 font-normal">Name</th>
-            <th className="py-2.5 pl-4 text-right font-normal">Alter</th>
+            <th className="py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Alter" wert="alter" sort={sort} /></th>
             {POSITIONEN.map((p) => (
-              <th key={p} className="py-2.5 pr-2 pl-2 text-right font-semibold">{p}</th>
+              <th key={p} className="py-2.5 pr-2 pl-2 text-right font-semibold"><SpaltenKopf label={p} wert={p} sort={sort} /></th>
             ))}
             <th className="py-2.5 pr-4 pl-4 font-normal">Status</th>
           </tr>

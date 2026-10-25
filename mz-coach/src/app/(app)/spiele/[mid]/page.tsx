@@ -59,21 +59,21 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
       />
       <div className="seite">
         <Hero className="mt-5">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">
+          <div className="kapitaelchen !text-gold-hell">
             {spielDatum(s.datum) ?? "Datum n. v."} · Endstand
           </div>
           <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="display min-w-0 text-[18px] font-extrabold leading-tight lg:text-[28px]">
+            <div className="display min-w-0 text-[18px] font-semibold leading-tight lg:text-[26px]">
               {heim.name}
               {heim.id === TEAM.tid && <span className="block text-[12px] font-medium text-white/70">du · Heim</span>}
               {heim.id !== TEAM.tid && <span className="block text-[12px] font-medium text-white/70">Heim</span>}
             </div>
-            <div className="display text-[56px] font-extrabold leading-none tracking-tight tabular-nums lg:text-[80px]">
+            <div className="display text-[56px] font-semibold leading-none tracking-tight tabular-nums lg:text-[76px]">
               {heim.statistik.goals ?? "?"}
               <span className="px-1 text-white/50">:</span>
               {gast.statistik.goals ?? "?"}
             </div>
-            <div className="display min-w-0 text-right text-[18px] font-extrabold leading-tight lg:text-[28px]">
+            <div className="display min-w-0 text-right text-[18px] font-semibold leading-tight lg:text-[26px]">
               {gast.name}
               <span className="block text-[12px] font-medium text-white/70">{gast.id === TEAM.tid ? "du · Gast" : "Gast"}</span>
             </div>
