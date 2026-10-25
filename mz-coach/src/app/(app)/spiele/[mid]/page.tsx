@@ -3,6 +3,9 @@ import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
 import { StatVergleich } from "@/components/stat-vergleich";
+import { VerlaufAnsicht } from "@/components/verlauf-ansicht";
+import { eigenerVerlauf, gegnerVerlauf } from "@/lib/mz/analyse/verlauf";
+import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
 import { Card, Hero, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeSpiel } from "@/lib/db/spiele";
@@ -46,6 +49,22 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
   const { mid } = await props.params;
   const s = ladeSpiel(getDb(), Number(mid));
   if (!s) notFound();
+  const archiv = archivLaden(getDb());
+  const eigen = s.teams.find((t) => t.id === TEAM.tid);
+  const zuordnung = eigen ? taktikZuordnen(s, archiv) : null;
+  const eigeneTaktik = zuordnung ? archiv.find((a) => a.reiter === zuordnung.reiter)?.taktik : null;
+  const verlaeufe = s.teams.map((t) => ({
+    team: t,
+    titel: t.id === TEAM.tid ? (eigeneTaktik ? `${t.name} (du, Taktik ${zuordnung!.reiter})` : `${t.name} (du)`) : t.name,
+    v:
+      t.id === TEAM.tid && eigeneTaktik
+        ? eigenerVerlauf(s, eigeneTaktik, t.id)
+        : (() => {
+            const g = gegnerVerlauf(s, t.id);
+            if (t.id === TEAM.tid) g.hinweise.unshift("Keine passende Taktik im Archiv: Alternativ-Aufstellungen und Regeln nicht verknüpft. Taktik unter „Taktik“ speichern.");
+            return g;
+          })(),
+  }));
   const heim = s.teams.find((t) => t.heim) ?? s.teams[0];
   const gast = s.teams.find((t) => t !== heim)!;
   const name = (id?: number) => s.spieler.find((p) => p.id === id)?.name ?? (id ? `id ${id}` : "");
@@ -117,6 +136,20 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
           </Card>
         </Section>
         </div>
+
+        {verlaeufe.map(({ team, titel, v }) => (
+          <Section
+            key={team.id}
+            title={`Aufstellung im Spielverlauf: ${titel}`}
+            footer={
+              team.id === TEAM.tid && eigeneTaktik
+                ? "Plätze, Alternativ-Aufstellungen und Regeln exakt aus deinem Taktik-Export, verknüpft mit Wechseln, Taktikwechseln, Toren und Karten aus der XML. Grau = Eingewechselter auf dem Platz des Ausgewechselten (abgeleitet)."
+                : "Start aus der XML. Grau = Eingewechselter auf dem Platz des Ausgewechselten (abgeleitet, nicht gemessen)."
+            }
+          >
+            <VerlaufAnsicht phasen={v.phasen} hinweise={v.hinweise} />
+          </Section>
+        ))}
 
         <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-10">
           <div className="contents">

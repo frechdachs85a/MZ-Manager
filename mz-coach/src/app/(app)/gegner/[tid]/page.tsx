@@ -64,7 +64,7 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
           <div>
             {a ? (
               <>
-                <Section title="Spielt er immer gleich?" footer="Vergleich jedes Spiels mit dem neuesten: Formation, Einstellungen und Aufstellung (gleich = jeder Feldspieler höchstens 2 Punkte daneben).">
+                <Section title="Spielt er immer gleich?" footer="Vergleich jedes Spiels mit dem neuesten: Formation, Einstellungen und Aufstellung zu Spielbeginn (gleich = jeder Feldspieler höchstens 2 Punkte daneben). Wechsel und Taktikwechsel im Verlauf stehen im Spielbericht; ob er im Spiel die Formation umstellt, ist aus der XML nicht erkennbar.">
                   <Card className="p-4">
                     <div className="text-[17px] font-semibold">{a.urteilText}</div>
                     {a.konstant.length > 0 && <div className="mt-2 text-[15px] text-label-2">Immer: {a.konstant.join(" · ")}</div>}

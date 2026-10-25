@@ -16,7 +16,8 @@ import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
 import { alleMzWerte, POSITIONEN } from "@/lib/mz/formel";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import { saisonAuswertung } from "@/lib/saison";
-import { archivLaden, spieleJeTaktik } from "@/lib/taktik-archiv";
+import { archivLaden, spieleJeTaktik, taktikZuordnen } from "@/lib/taktik-archiv";
+import { eigenerVerlauf, gegnerVerlauf } from "@/lib/mz/analyse/verlauf";
 import { topAuswertung } from "@/lib/top-auswertung";
 import { portfolioAnalyse } from "@/lib/portfolio";
 import { heuteInBerlin } from "@/lib/format";
@@ -91,7 +92,7 @@ const WERKZEUGE: Werkzeug[] = [
   {
     def: {
       name: "spiel",
-      description: "Ein gespeichertes Spiel aus der Stats-XML: Teams mit Taktik/Spielweise/Härte und Statistik, Aufstellung in Editor-Koordinaten, Tore, Wechsel, Taktikwechsel, Karten.",
+      description: "Ein gespeichertes Spiel aus der Stats-XML: Teams mit Taktik/Spielweise/Härte und Statistik, Aufstellung in Editor-Koordinaten, Tore, Wechsel, Taktikwechsel, Karten, und der Verlauf der Aufstellung (eigenes Team mit dem Taktik-Export verknüpft inkl. Alternativ-Aufstellungen und Regeln; Gegner: Eingewechselter auf dem Platz des Ausgewechselten, abgeleitet; Formationswechsel des Gegners nicht erkennbar).",
       input_schema: {
         type: "object",
         properties: { mid: { type: "integer", description: "Spielnummer" } },
@@ -99,7 +100,19 @@ const WERKZEUGE: Werkzeug[] = [
         additionalProperties: false,
       },
     },
-    run: (db, input) => ladeSpiel(db, Number(input.mid)) ?? { fehler: `Spiel ${input.mid} ist nicht gespeichert.` },
+    run: (db, input) => {
+      const s = ladeSpiel(db, Number(input.mid));
+      if (!s) return { fehler: `Spiel ${input.mid} ist nicht gespeichert.` };
+      // Verlauf der Aufstellung: eigenes Team mit Taktik-Export verknüpft, Gegner abgeleitet
+      const archiv = archivLaden(db);
+      const z = s.teams.some((t) => t.id === TEAM.tid) ? taktikZuordnen(s, archiv) : null;
+      const taktik = z ? archiv.find((a) => a.reiter === z.reiter)?.taktik : null;
+      const verlauf = s.teams.map((t) => {
+        const v = t.id === TEAM.tid && taktik ? eigenerVerlauf(s, taktik, t.id) : gegnerVerlauf(s, t.id);
+        return { team: t.name, taktikReiter: t.id === TEAM.tid ? z?.reiter ?? null : undefined, hinweise: v.hinweise, phasen: v.phasen.map(({ aufstellung, ...p }) => ({ ...p, aufstellung: aufstellung.map((a) => ({ name: a.name, x: a.x, y: a.y, quelle: a.quelle })) })) };
+      });
+      return { ...s, verlauf };
+    },
   },
   {
     def: {
