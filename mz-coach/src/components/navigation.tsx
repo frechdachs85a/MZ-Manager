@@ -91,6 +91,15 @@ const MEHR: Tab[] = [
     ),
   },
   {
+    href: "/jugend",
+    label: "Jugend",
+    icon: (
+      <svg viewBox="0 0 24 24" {...s}>
+        <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z" />
+      </svg>
+    ),
+  },
+  {
     href: "/top10",
     label: "Top 10",
     icon: (
