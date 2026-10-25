@@ -77,7 +77,7 @@ Nur echte Daten von managerzone.com. Nichts schätzen, nichts erfinden. Fehlt ei
    - Vor jeder Antwort lädt die KI das relevante Wissen (eigener Kader, Gegnerdatei, Erkenntnisse) in ihren Kontext.
    - Ich kann Erkenntnisse ansehen, bearbeiten und löschen.
 
-8. **Chat**
+8. **Chat** (am 25.10.2026 auf Wunsch von Marcus entfernt, wegen der laufenden Kosten je Frage)
    - Ein Chatfeld, in dem ich frei frage: "Analysiere Team X", "Finde die beste Taktik gegen Y", "Wer verbessert meinen Sturm?", "Was hat sich bei meinen Spielern geändert?"
    - Die KI hat Werkzeuge (Tool Use) für: Kader abrufen, Spiel abrufen, Team analysieren, Taktik bauen, Taktik prüfen, Transfermarkt suchen, Wissen lesen und schreiben.
    - Antworten auf Deutsch, locker und direkt, ohne Gedankenstriche, ohne Emojis, Ansprache "du".

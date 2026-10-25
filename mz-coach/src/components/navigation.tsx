@@ -68,15 +68,6 @@ const TABS: Tab[] = [
       </svg>
     ),
   },
-  {
-    href: "/chat",
-    label: "Chat",
-    icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <path d="M20.5 11.5c0 4.1-3.8 7.5-8.5 7.5-1.2 0-2.3-.2-3.3-.6L4 20l1.2-3.6C4.1 15 3.5 13.3 3.5 11.5 3.5 7.4 7.3 4 12 4s8.5 3.4 8.5 7.5z" />
-      </svg>
-    ),
-  },
 ];
 
 // Nur in der Seitenleiste am Laptop (die Tab-Leiste am Handy hat Platz für 6)

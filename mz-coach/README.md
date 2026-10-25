@@ -78,7 +78,7 @@ npm run dev             # http://localhost:3000
   verkaufbar. Kader nach Rang sortier- und filterbar. Jugend: Rang 1 bis 3 behalten, sonst Abgabekandidat.
 - Regelmuster je Team aus der Stats-XML (Wechsel mit Regelminute, Bedingung, Rolle des Ausgewechselten; Taktikwechsel mit
   Spielstand; „sehr wahrscheinlich keine Regel“, wenn das Team in der Lage war und nichts auslöste).
-- Chat mit Claude (`ANTHROPIC_API_KEY`): 12 lesende Werkzeuge auf die eigene Datenbank, nichts wird erfunden.
+- Chat mit Claude: am 25.10.2026 auf Wunsch von Marcus entfernt (laufende Kosten je Frage bei Anthropic).
 - Zeitplan (`src/lib/zeitplan.ts`): 4 Uhr Top 10 und eigene Spiele, 6 Uhr Markt, täglich Aufräumen, wöchentlich Sicherung.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.

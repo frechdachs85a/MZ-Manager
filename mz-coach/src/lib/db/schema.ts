@@ -188,6 +188,10 @@ const MIGRATIONEN: string[] = [
     PRIMARY KEY (hoch, niedrig, schluessel)
   );
   `,
+  `
+  -- Chat entfernt (Marcus, 25.10.2026): gespeicherten Gesprächsverlauf löschen
+  DELETE FROM einstellung WHERE schluessel = 'chat';
+  `,
 ];
 
 export function migrieren(db: Database.Database) {
