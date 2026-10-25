@@ -53,3 +53,29 @@ export async function taktikPruefen(_prev: PruefState, formData: FormData): Prom
     return { fehlerXml: e instanceof TaktikXmlFehler ? e.message : "XML konnte nicht gelesen werden." };
   }
 }
+
+export type ArchivState = { ok?: boolean; meldung?: string };
+
+export async function taktikArchivieren(_prev: ArchivState, formData: FormData): Promise<ArchivState> {
+  const reiter = String(formData.get("reiter") ?? "").trim();
+  const xml = String(formData.get("xml") ?? "");
+  if (!reiter) return { meldung: "Bitte den Namen des Reiters angeben." };
+  try {
+    parseTaktikXml(xml);
+  } catch (e) {
+    return { meldung: e instanceof TaktikXmlFehler ? e.message : "XML nicht lesbar." };
+  }
+  const { speichereTaktikXml } = await import("@/lib/db/taktik");
+  speichereTaktikXml(getDb(), reiter, xml, "von Hand eingefügt (Export aus dem Taktik-Editor)");
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/", "layout");
+  return { ok: true, meldung: `${reiter} gespeichert.` };
+}
+
+export async function taktikEntfernen(formData: FormData) {
+  const reiter = String(formData.get("reiter") ?? "");
+  const { loescheTaktik } = await import("@/lib/db/taktik");
+  if (reiter) loescheTaktik(getDb(), reiter);
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/", "layout");
+}

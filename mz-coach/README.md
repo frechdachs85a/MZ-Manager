@@ -23,9 +23,8 @@ Fachgrundlage: `mz-wissen.md`. Auftrag: `docs/auftrag.md`.
 ```bash
 npm install
 npx playwright install --with-deps chromium   # Browser für den ManagerZone-Abruf
-cp .env.example .env.local
-npm run hash-password   # Passwort eingeben, Ausgabe in .env.local eintragen
-npm run dev             # http://localhost:3000
+npm run dev             # http://localhost:3000, führt beim ersten Mal zur Ersteinrichtung
+                        # (Einrichtungscode steht in der Konsole)
 ```
 
 ## Befehle
@@ -64,8 +63,30 @@ npm run dev             # http://localhost:3000
   Nationalität und Arbeitsbewilligung kommen aus der Spieleransicht (an der echten Seite geprüft).
   Die Marktsuche (ajax.php?p=transfer&sub=transfer-search) ist nach dem Quelltext des Userscripts
   Mazyar gebaut und noch nicht an einer echten Antwort geprüft; die erste Antwort wird roh gespeichert.
+- Top 10 (Lernmaterial): je Team die letzten 10 Liga- und 10 Weltligaspiele, Spiellisten wöchentlich,
+  fehlende Stats-XML täglich nachgeholt. Muster: Startstile, jeder Wechsel (Rolle, Regelminute, Spielstand),
+  Taktikwechsel und Karten, Zeitleiste je Spiel, Stil gegen Gegnerklasse. Wöchentliches Archiv.
+- Taktik-Portfolio: bewährte Stile der Top 10 je Gegnerklasse gegen das eigene Archiv, fehlende Stile mit echter
+  Beispiel-Startaufstellung und Regel-Kurzcheck. Gegnerseite zeigt, was die Top 10 gegen diesen Gegnertyp spielen.
+- Taktik-Archiv (Reiter mit XML, Prüfung gegen aktuellen Kader, Spiele je Taktik), Spieltag-Checkliste,
+  Saisonstatistik, Jugend (Regel 4/1 oder 4/2 ab Nr. 195), Kaderwert-Vergleich, Ligatabelle.
+- Scoutbericht: Sterne Hoch/Niedrig/Training (nur gefüllte), Stärken (1) und Schwächen (2), wörtlicher Text des Scouts
+  (beim Kaderabruf per Klick auf „Scoutbericht“ gelesen, nur fehlende oder bei geänderten Sternen; Aufbau der Antwort noch
+  nicht an einer echten geprüft, die erste wird roh gespeichert). Einstufung Rang 1 bis 6 aus Sternen und Schlüsselwort,
+  sonst „Scoutbericht unbekannt“ mit Text und Bestätigen. Prognose je Skill. Loyale Spieler (Herz) ohne Bericht, nicht
+  verkaufbar. Kader nach Rang sortier- und filterbar. Jugend: Rang 1 bis 3 behalten, sonst Abgabekandidat.
+- Regelmuster je Team aus der Stats-XML (Wechsel mit Regelminute, Bedingung, Rolle des Ausgewechselten; Taktikwechsel mit
+  Spielstand; „sehr wahrscheinlich keine Regel“, wenn das Team in der Lage war und nichts auslöste).
+- Chat mit Claude: am 25.10.2026 auf Wunsch von Marcus entfernt (laufende Kosten je Frage bei Anthropic).
+- Zeitplan (`src/lib/zeitplan.ts`): 4 Uhr Top 10 und eigene Spiele, 6 Uhr Markt, täglich Aufräumen, wöchentlich Sicherung.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
+
+## Hosting
+
+Anleitung für Railway und Oracle Cloud „Always Free“: `docs/hosting.md`. Ersteinrichtung ohne Schlüssel von Hand:
+Schlüssel erzeugt der Server selbst (`/data/geheimnisse.json`), das App-Passwort legst du auf `/einrichtung` fest,
+mit dem Einrichtungscode aus dem Serverprotokoll.
 
 ## Sicherheit
 

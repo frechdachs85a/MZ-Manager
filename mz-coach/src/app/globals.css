@@ -3,57 +3,37 @@
 /* Farben und Flächen (hell / dunkel). Akzent und Skill-Farben aus der geprüften Datenpalette
    (dataviz-Referenz: Blau #2a78d6/#3987e5, Rot #e34948/#e66767; CVD-Abstand ≥ 19 in beiden Modi). */
 :root {
-  --bg: #f3f4f6;
-  --card: #ffffff;
-  --card-2: #f6f7f9;
-  --label: #0b0b0c;
-  --label-2: #5c5f66;
-  --label-3: #9a9da5;
-  --separator: rgba(15, 23, 42, 0.08);
-  --fill: rgba(15, 23, 42, 0.06);
-  --bar: rgba(255, 255, 255, 0.78);
-  --tint: #2a78d6;
-  --green: #12833f;
-  --red: #d03b3b;
-  --orange: #c26a00;
-  --yellow: #eda100;
-  --pitch: #2f8f5b;
-  --pitch-2: #2a8152;
+  /* Klassisch elegant (Marcus, 25.10.2026): Elfenbein, Vereinsgrün, Gold, feine Linien */
+  --bg: #f5f2ea;
+  --card: #fffdf8;
+  --card-2: #f0ebdf;
+  --label: #1c2321;
+  --label-2: #5d635f;
+  --label-3: #9a978d;
+  --separator: rgba(28, 35, 33, 0.1);
+  --fill: rgba(28, 35, 33, 0.05);
+  --bar: rgba(255, 253, 248, 0.88);
+  --ink: #1c2321;
+  --tint: #1f4d3a;
+  --gold: #a8844e;
+  --gold-hell: #d9c39a;
+  --nacht: #12291f;
+  --green: #2f7d4f;
+  --red: #b23a3a;
+  --orange: #b56a1f;
+  --yellow: #c9a227;
+  --purple: #5b4b8a;
+  --lime: #8aa64a;
+  --pink: #b0517a;
+  --pitch: #2f7d50;
+  --pitch-2: #276b44;
+  /* Skill-Farben aus der geprüften Datenpalette (dataviz): CVD-Abstand ≥ 19 */
   --skill-max: #e34948;
   --skill-train: #2a78d6;
-  --skill-fix: #9a9da5;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.05);
-  --hero-1: #1f7a4c;
-  --hero-2: #0f4f31;
+  --skill-fix: #a7a49b;
+  --shadow: 0 1px 2px rgba(28, 35, 33, 0.04), 0 8px 24px -12px rgba(28, 35, 33, 0.12);
+  --shadow-sm: 0 1px 2px rgba(28, 35, 33, 0.06);
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0c0c0e;
-    --card: #17171a;
-    --card-2: #202024;
-    --label: #f2f2f0;
-    --label-2: #a3a3ad;
-    --label-3: #6c6c75;
-    --separator: rgba(255, 255, 255, 0.08);
-    --fill: rgba(255, 255, 255, 0.07);
-    --bar: rgba(23, 23, 26, 0.78);
-    --tint: #3987e5;
-    --green: #34c26a;
-    --red: #e66767;
-    --orange: #f2a33a;
-    --yellow: #fab219;
-    --pitch: #1f6b43;
-    --pitch-2: #1b5f3b;
-    --skill-max: #e66767;
-    --skill-train: #3987e5;
-    --skill-fix: #6c6c75;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.25);
-    --hero-1: #1a6a42;
-    --hero-2: #0b3a24;
-    color-scheme: dark;
-  }
 }
 
 @theme inline {
@@ -71,12 +51,19 @@
   --color-red: var(--red);
   --color-orange: var(--orange);
   --color-yellow: var(--yellow);
+  --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --color-gold-hell: var(--gold-hell);
+  --color-nacht: var(--nacht);
+  --color-purple: var(--purple);
+  --color-lime: var(--lime);
+  --color-pink: var(--pink);
   --color-pitch: var(--pitch);
   --color-skill-max: var(--skill-max);
   --color-skill-train: var(--skill-train);
   --color-skill-fix: var(--skill-fix);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-inter), system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -114,7 +101,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
   @media (width >= 64rem) {
-    max-width: 72rem;
+    max-width: 84rem;
     padding-left: 40px;
     padding-right: 40px;
   }
@@ -159,8 +146,9 @@ body {
   }
 }
 
-/* Karten-Schatten und dezente Hover-Fläche */
+/* Karten: feine Linie, weicher Schatten */
 .karte {
+  border: 1px solid var(--separator);
   box-shadow: var(--shadow);
 }
 @media (hover: hover) {
@@ -169,11 +157,41 @@ body {
   }
 }
 
-/* Kopfkarte mit Rasen-Verlauf (Übersicht, Spielbericht) */
+/* Hauptknopf: Vereinsgrün */
+.knopf {
+  border-radius: 10px;
+  background: var(--tint);
+  color: #fffdf8;
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.15s ease;
+}
+.knopf:not(:disabled):hover {
+  background: #183e2f;
+}
+.knopf.pressable:hover,
+.knopf.pressable:active {
+  opacity: 1;
+}
+
+/* Dunkle Kopfkarte (Ergebnis, Empfehlung) */
 .hero {
   background:
-    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.14), transparent 60%),
-    linear-gradient(135deg, var(--hero-1), var(--hero-2));
-  color: #fff;
-  box-shadow: 0 10px 30px -12px rgba(15, 79, 49, 0.55);
+    radial-gradient(120% 120% at 100% 0%, rgba(168, 132, 78, 0.22), transparent 55%),
+    var(--nacht);
+  color: #f5f2ea;
+  box-shadow: var(--shadow);
+}
+
+/* Kleine Kapitälchen-Beschriftung in Gold */
+.kapitaelchen {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+h1, h2, .display {
+  font-family: var(--font-display);
 }

@@ -3,6 +3,9 @@ import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
 import { StatVergleich } from "@/components/stat-vergleich";
+import { VerlaufAnsicht } from "@/components/verlauf-ansicht";
+import { eigenerVerlauf, gegnerVerlauf } from "@/lib/mz/analyse/verlauf";
+import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
 import { Card, Hero, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeSpiel } from "@/lib/db/spiele";
@@ -46,6 +49,22 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
   const { mid } = await props.params;
   const s = ladeSpiel(getDb(), Number(mid));
   if (!s) notFound();
+  const archiv = archivLaden(getDb());
+  const eigen = s.teams.find((t) => t.id === TEAM.tid);
+  const zuordnung = eigen ? taktikZuordnen(s, archiv) : null;
+  const eigeneTaktik = zuordnung ? archiv.find((a) => a.reiter === zuordnung.reiter)?.taktik : null;
+  const verlaeufe = s.teams.map((t) => ({
+    team: t,
+    titel: t.id === TEAM.tid ? (eigeneTaktik ? `${t.name} (du, Taktik ${zuordnung!.reiter})` : `${t.name} (du)`) : t.name,
+    v:
+      t.id === TEAM.tid && eigeneTaktik
+        ? eigenerVerlauf(s, eigeneTaktik, t.id)
+        : (() => {
+            const g = gegnerVerlauf(s, t.id);
+            if (t.id === TEAM.tid) g.hinweise.unshift("Keine passende Taktik im Archiv: Alternativ-Aufstellungen und Regeln nicht verknüpft. Taktik unter „Taktik“ speichern.");
+            return g;
+          })(),
+  }));
   const heim = s.teams.find((t) => t.heim) ?? s.teams[0];
   const gast = s.teams.find((t) => t !== heim)!;
   const name = (id?: number) => s.spieler.find((p) => p.id === id)?.name ?? (id ? `id ${id}` : "");
@@ -59,21 +78,21 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
       />
       <div className="seite">
         <Hero className="mt-5">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">
+          <div className="kapitaelchen !text-gold-hell">
             {spielDatum(s.datum) ?? "Datum n. v."} · Endstand
           </div>
           <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="min-w-0 text-[17px] font-semibold leading-tight">
+            <div className="display min-w-0 text-[18px] font-semibold leading-tight lg:text-[26px]">
               {heim.name}
               {heim.id === TEAM.tid && <span className="block text-[12px] font-medium text-white/70">du · Heim</span>}
               {heim.id !== TEAM.tid && <span className="block text-[12px] font-medium text-white/70">Heim</span>}
             </div>
-            <div className="text-[44px] font-bold leading-none tracking-tight tabular-nums">
+            <div className="display text-[56px] font-semibold leading-none tracking-tight tabular-nums lg:text-[76px]">
               {heim.statistik.goals ?? "?"}
               <span className="px-1 text-white/50">:</span>
               {gast.statistik.goals ?? "?"}
             </div>
-            <div className="min-w-0 text-right text-[17px] font-semibold leading-tight">
+            <div className="display min-w-0 text-right text-[18px] font-semibold leading-tight lg:text-[26px]">
               {gast.name}
               <span className="block text-[12px] font-medium text-white/70">{gast.id === TEAM.tid ? "du · Gast" : "Gast"}</span>
             </div>
@@ -84,11 +103,12 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
             <Card className="p-4 text-[15px] text-orange">{s.hinweise.join(" ")}</Card>
           </Section>
         )}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:items-start lg:gap-x-10">
         <Section
           title="Startaufstellungen"
           footer="Aus origin der Stats-XML in Editor-Koordinaten umgerechnet (mz-wissen.md, Abschnitt 3), jedes Team aus Sicht seines eigenen Tors."
         >
-          <div className="grid grid-cols-2 gap-3 lg:max-w-3xl">
+          <div className="grid grid-cols-2 gap-4">
             {[heim, gast].map((t) => (
               <Card key={t.id} className="p-3">
                 <div className="mb-2 text-[15px] font-semibold">{t.name}{t.id === TEAM.tid && " (du)"}</div>
@@ -105,9 +125,34 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
             ))}
           </div>
         </Section>
+        <Section title="Statistik" footer={`Quelle: Stats-XML, gespeichert ${datumZeit(s.abgerufen)}.`}>
+          <Card>
+            <StatVergleich
+              links={heim.name}
+              rechts={gast.name}
+              akzent={gast.id === TEAM.tid ? "rechts" : "links"}
+              zeilen={STAT.map(([k, label]) => ({ label, links: heim.statistik[k], rechts: gast.statistik[k] }))}
+            />
+          </Card>
+        </Section>
+        </div>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
-          <div>
+        {verlaeufe.map(({ team, titel, v }) => (
+          <Section
+            key={team.id}
+            title={`Aufstellung im Spielverlauf: ${titel}`}
+            footer={
+              team.id === TEAM.tid && eigeneTaktik
+                ? "Plätze, Alternativ-Aufstellungen und Regeln exakt aus deinem Taktik-Export, verknüpft mit Wechseln, Taktikwechseln, Toren und Karten aus der XML. Grau = Eingewechselter auf dem Platz des Ausgewechselten (abgeleitet)."
+                : "Start aus der XML. Grau = Eingewechselter auf dem Platz des Ausgewechselten (abgeleitet, nicht gemessen)."
+            }
+          >
+            <VerlaufAnsicht phasen={v.phasen} hinweise={v.hinweise} />
+          </Section>
+        ))}
+
+        <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-10">
+          <div className="contents">
             <Section title={`Tore (${s.tore.length})`}>
               {s.tore.length ? (
                 <List>
@@ -152,16 +197,6 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
               </List>
             </Section>
           </div>
-          <Section title="Statistik" footer={`Quelle: Stats-XML, gespeichert ${datumZeit(s.abgerufen)}.`}>
-            <Card>
-              <StatVergleich
-                links={heim.name}
-                rechts={gast.name}
-                akzent={gast.id === TEAM.tid ? "rechts" : "links"}
-                zeilen={STAT.map(([k, label]) => ({ label, links: heim.statistik[k], rechts: gast.statistik[k] }))}
-              />
-            </Card>
-          </Section>
         </div>
       </div>
     </>

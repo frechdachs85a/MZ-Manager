@@ -157,6 +157,8 @@ export function speichereSpielerSeite(
       const neu: SpielerDaten = { ...alt, statusStand: { ...alt.statusStand, scout: stand } };
       const block = nachPid.get(alt.pid);
       if (block) {
+        if (block.loyal) neu.loyal = true;
+        else delete neu.loyal;
         if (block.nationalitaet) neu.nationalitaet = block.nationalitaet;
         // Steht keine Arbeitsbewilligung beim Spieler, hat er laut Seite keine
         if (block.arbeitsbewilligung) neu.arbeitsbewilligung = block.arbeitsbewilligung;

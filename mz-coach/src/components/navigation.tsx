@@ -68,12 +68,45 @@ const TABS: Tab[] = [
       </svg>
     ),
   },
+];
+
+// Nur in der Seitenleiste am Laptop (die Tab-Leiste am Handy hat Platz für 6)
+const MEHR: Tab[] = [
   {
-    href: "/chat",
-    label: "Chat",
+    href: "/portfolio",
+    label: "Portfolio",
     icon: (
       <svg viewBox="0 0 24 24" {...s}>
-        <path d="M20.5 11.5c0 4.1-3.8 7.5-8.5 7.5-1.2 0-2.3-.2-3.3-.6L4 20l1.2-3.6C4.1 15 3.5 13.3 3.5 11.5 3.5 7.4 7.3 4 12 4s8.5 3.4 8.5 7.5z" />
+        <rect x="3" y="7" width="18" height="13" rx="2" />
+        <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18" />
+      </svg>
+    ),
+  },
+  {
+    href: "/saison",
+    label: "Saison",
+    icon: (
+      <svg viewBox="0 0 24 24" {...s}>
+        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+      </svg>
+    ),
+  },
+  {
+    href: "/jugend",
+    label: "Jugend",
+    icon: (
+      <svg viewBox="0 0 24 24" {...s}>
+        <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z" />
+      </svg>
+    ),
+  },
+  {
+    href: "/top10",
+    label: "Top 10",
+    icon: (
+      <svg viewBox="0 0 24 24" {...s}>
+        <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+        <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z" />
       </svg>
     ),
   },
@@ -101,7 +134,7 @@ export function Navigation() {
     <>
       <nav
         aria-label="Hauptnavigation"
-        className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-separator bg-bar backdrop-blur-xl backdrop-saturate-150 lg:hidden"
+        className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-separator bg-bar backdrop-blur-xl lg:hidden"
       >
         <ul className="mx-auto flex max-w-2xl">
           {TABS.map((tab) => {
@@ -113,10 +146,10 @@ export function Navigation() {
                   onClick={() => !active && haptic()}
                   aria-current={active ? "page" : undefined}
                   className={`flex min-h-[52px] flex-col items-center justify-center gap-0.5 pt-1.5 text-[10px] font-medium tracking-tight ${
-                    active ? "text-tint" : "text-label-2"
+                    active ? "text-tint" : "text-label-3"
                   }`}
                 >
-                  <span className={`flex h-[26px] w-[44px] items-center justify-center rounded-full transition-colors ${active ? "bg-tint/12" : ""}`}>
+                  <span className={`flex h-[26px] w-[44px] items-center justify-center rounded-full transition-colors ${active ? "bg-tint/10" : ""}`}>
                     <span className="h-[22px] w-[22px]">{tab.icon}</span>
                   </span>
                   {tab.label}
@@ -129,25 +162,27 @@ export function Navigation() {
 
       <nav
         aria-label="Hauptnavigation"
-        className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-separator bg-card/80 px-3 py-6 backdrop-blur-xl lg:flex"
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-nacht px-4 py-8 text-[#e9e4d8] lg:flex"
       >
-        <Link href="/" className="mb-6 flex items-center gap-3 px-3">
-          <Image src="/icons/icon-192.png" alt="" width={36} height={36} className="rounded-[9px]" />
+        <Link href="/" className="mb-10 flex items-center gap-3 px-3">
+          <Image src="/icons/icon-192.png" alt="" width={38} height={38} className="rounded-full ring-1 ring-gold/60" />
           <span>
-            <span className="block text-[17px] font-bold leading-tight tracking-tight">MZ Coach</span>
-            <span className="block text-[13px] text-label-2">FC Toho</span>
+            <span className="display block text-[21px] font-semibold leading-tight tracking-tight text-[#f5f2ea]">MZ Coach</span>
+            <span className="kapitaelchen block !text-gold-hell">FC Toho</span>
           </span>
         </Link>
-        <ul className="flex flex-1 flex-col gap-0.5">
-          {[...TABS, EINSTELLUNGEN].map((tab) => {
+        <ul className="flex flex-1 flex-col gap-1">
+          {[...TABS, ...MEHR, EINSTELLUNGEN].map((tab) => {
             const active = istAktiv(pathname, tab.href);
             return (
               <li key={tab.href} className={tab === EINSTELLUNGEN ? "mt-auto" : undefined}>
                 <Link
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative flex min-h-10 items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium transition-colors ${
-                    active ? "bg-tint/12 text-tint before:absolute before:inset-y-2 before:-left-3 before:w-[3px] before:rounded-r-full before:bg-tint" : "text-label hover:bg-fill"
+                  className={`relative flex min-h-11 items-center gap-3 rounded-[8px] px-3 text-[15px] transition-colors ${
+                    active
+                      ? "bg-white/[0.07] font-medium text-[#f5f2ea] before:absolute before:inset-y-2.5 before:left-0 before:w-[2px] before:rounded-full before:bg-gold"
+                      : "text-[#e9e4d8]/70 hover:bg-white/[0.04] hover:text-[#f5f2ea]"
                   }`}
                 >
                   <span className="h-[22px] w-[22px] shrink-0">{tab.icon}</span>

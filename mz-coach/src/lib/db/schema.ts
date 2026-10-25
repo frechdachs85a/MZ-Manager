@@ -119,6 +119,79 @@ const MIGRATIONEN: string[] = [
   -- Rahmen wird seit 25.10.2026 wie im Gebotsfenster gespeichert (markt_rahmen)
   DELETE FROM einstellung WHERE schluessel IN ('markt_kapital', 'markt_auslaender_frei');
   `,
+  `
+  -- Topteams der Managerwertung, deren Spiele als Lernmaterial gespeichert werden
+  CREATE TABLE top_team (
+    tid INTEGER PRIMARY KEY,
+    rang INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    quelle TEXT NOT NULL,          -- woher die Liste stammt (Rangliste mit Datum oder mz-wissen.md)
+    stand TEXT NOT NULL
+  );
+  `,
+  `
+  -- Taktik-Archiv: eigene Reiter mit XML aus dem Editor (exportTactic)
+  CREATE TABLE taktik (
+    reiter TEXT PRIMARY KEY,
+    xml TEXT NOT NULL,
+    gespeichert TEXT NOT NULL,
+    quelle TEXT NOT NULL
+  );
+  `,
+  `
+  -- Kader fremder Teams (Kaderseite ?p=players&tid=…): Alter und Marktwert je Spieler
+  CREATE TABLE gegner_kader (
+    tid INTEGER NOT NULL,
+    pid INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    alter_jahre INTEGER,
+    wert INTEGER,
+    stand TEXT NOT NULL,
+    PRIMARY KEY (tid, pid)
+  );
+  `,
+  `
+  -- Wöchentliches Archiv der Top-10-Auswertung (Stand der Erkenntnisse, geht nicht verloren)
+  CREATE TABLE top_archiv (
+    datum TEXT PRIMARY KEY,        -- JJJJ-MM-TT (Berlin)
+    spiele INTEGER NOT NULL,
+    auswertung_json TEXT NOT NULL
+  );
+  `,
+  `
+  -- Topteam-Spiele als kompaktes Muster ohne Spielernamen (keine komplette Stats-XML)
+  CREATE TABLE top_spiel (
+    mid INTEGER NOT NULL,
+    tid INTEGER NOT NULL,
+    datum TEXT,
+    art TEXT NOT NULL,             -- liga | weltliga
+    muster_json TEXT NOT NULL,     -- SpielMuster (anonym)
+    gespeichert TEXT NOT NULL,
+    PRIMARY KEY (mid, tid)
+  );
+  CREATE INDEX top_spiel_tid ON top_spiel(tid, art, datum);
+  `,
+  `
+  -- Muster Version 2 (Rollen nach Vorgabe vom 25.10.2026, Spielstand bei Taktikwechseln, Torverlauf):
+  -- alte Muster verwerfen, der nächste Abruf holt die Stats-XML neu
+  DELETE FROM top_spiel;
+  `,
+  `
+  -- Von Marcus bestätigte zusätzliche Scoutbericht-Kombinationen (Sterne + Schlüsselwort -> Rang)
+  CREATE TABLE scout_kombi (
+    hoch INTEGER NOT NULL,
+    niedrig INTEGER NOT NULL,
+    schluessel TEXT NOT NULL,
+    rang INTEGER NOT NULL,
+    abzeichen TEXT NOT NULL,
+    bestaetigt TEXT NOT NULL,
+    PRIMARY KEY (hoch, niedrig, schluessel)
+  );
+  `,
+  `
+  -- Chat entfernt (Marcus, 25.10.2026): gespeicherten Gesprächsverlauf löschen
+  DELETE FROM einstellung WHERE schluessel = 'chat';
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

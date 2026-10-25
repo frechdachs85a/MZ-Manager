@@ -187,6 +187,9 @@ export type SpielerSeite = {
   spieler: {
     pid: number;
     name: string;
+    block: string; // id des Spielerblocks (thePlayers_0, _1, … in Seitenreihenfolge, nicht die pid)
+    loyal: boolean; // Herz-Symbol "Loyaler Spieler" (loyal_player_container), hat keinen Scoutbericht
+    hatScoutLink: boolean; // Symbol "Scoutbericht" vorhanden
     nationalitaet?: string;
     arbeitsbewilligung?: SpielerBlock["arbeitsbewilligung"];
     // undefined: kein Scoutbericht beim Spieler
@@ -199,15 +202,16 @@ export function istSpielerSeite(html: string): boolean {
   return /id="thePlayers_\d+"/.test(html) && /class="player_skills/.test(html);
 }
 
-// Sterne = Anzahl der i-Elemente einer Gruppe. Die Klassen wiederholen sich in der gespeicherten
-// Seite fortlaufend (Nebenwirkung des Seiten-JavaScripts) und werden deshalb nicht gezählt.
+// Sterne = Anzahl der gelb gefüllten i-Elemente einer Gruppe (Klasse scout_report_star ohne --disabled).
+// Die Klassen wiederholen sich in der gespeicherten Seite fortlaufend (Nebenwirkung des Seiten-JavaScripts),
+// deshalb zählt jedes i einmal. Ein anderer Sterntyp (z. B. leer) ist bisher nicht gesehen: abbrechen statt raten.
 function sterne(gruppe: HTMLElement | null): number | undefined {
   if (!gruppe) return undefined;
   const i = gruppe.querySelectorAll("i");
-  if (i.some((x) => x.classList.contains("scout_report_star--disabled"))) {
-    throw new KaderSeiteUnbekannt("Scoutbericht mit deaktivierten Sternen: Aufbau bisher nicht gesehen.");
+  if (i.some((x) => !x.classList.contains("scout_report_star") || x.classList.contains("fa-regular"))) {
+    throw new KaderSeiteUnbekannt("Scoutbericht mit unbekanntem Sterntyp: Aufbau bisher nicht gesehen.");
   }
-  return i.length;
+  return i.filter((x) => !x.classList.contains("scout_report_star--disabled")).length;
 }
 
 export function parseSpielerSeite(html: string): SpielerSeite {
@@ -216,7 +220,9 @@ export function parseSpielerSeite(html: string): SpielerSeite {
   if (bloecke.length === 0) throw new KaderSeiteUnbekannt("Keine Spielerblöcke (thePlayers_…) gefunden.");
   const spieler = bloecke.map((b) => {
     const { pid, name, nationalitaet, arbeitsbewilligung } = parseSpielerBlock(b);
-    const basis = { pid, name, nationalitaet, arbeitsbewilligung };
+    const loyal = !!b.querySelector(".loyal_player_container, .loyal-player-icon");
+    const hatScoutLink = !!b.querySelector(".scout_report a");
+    const basis = { pid, name, block: b.id, loyal, hatScoutLink, nationalitaet, arbeitsbewilligung };
     // Die Skill-Tabelle steht für Desktop und Mobil doppelt, die erste reicht.
     const tabelle = b.querySelector("table.player_skills");
     const zeile = tabelle?.querySelector("tr.scout_report_row");
@@ -241,4 +247,30 @@ export function parseSpielerSeite(html: string): SpielerSeite {
     return { ...basis, scout: { hoch, niedrig, training, markierung } };
   });
   return { spieler, serverzeit: serverzeit(html) };
+}
+
+// Antwort auf den Klick "Scoutbericht" (vom Seiten-Skript nachgeladen; Aufbau noch nicht an einer echten Antwort
+// gesehen, die erste wird roh gespeichert). Ergebnis: sichtbarer Text, Leerraum zusammengefasst, sonst wörtlich.
+export function scoutTextAus(antwort: string): string {
+  let html = antwort;
+  try {
+    const j = JSON.parse(antwort) as unknown;
+    const texte: string[] = [];
+    const sammle = (v: unknown) => {
+      if (typeof v === "string") texte.push(v);
+      else if (v && typeof v === "object") Object.values(v).forEach(sammle);
+    };
+    sammle(j);
+    html = texte.join("\n");
+  } catch {
+    // kein JSON: HTML
+  }
+  const doc = parse(html.replace(/<br\s*\/?>/gi, "\n"));
+  doc.querySelectorAll("script, style").forEach((x) => x.remove());
+  return doc.text
+    .replace(/&nbsp;/g, " ")
+    .split("\n")
+    .map((z) => z.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
 }

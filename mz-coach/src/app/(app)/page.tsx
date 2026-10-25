@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Hero, List, Row, Section, Unavailable } from "@/components/ui";
+import { Card, Hero, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
+import { startelfAusLetztemSpiel } from "@/lib/db/markt";
+import { letzterGegner } from "@/lib/gegner-analyse";
+import { spieltagCheckliste } from "@/lib/checkliste";
+import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
+import { tabelleAus } from "@/lib/mz/parser/tabelle";
+import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
 import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
 import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
@@ -20,6 +26,15 @@ export default async function Uebersicht() {
   const fehlen = einsatz.filter((x) => x.e.lage === "nicht_bereit" || x.e.lage === "unklar" || x.s.status?.verletzt);
   const zurueck = einsatz.filter((x) => x.e.lage === "wieder_bereit");
   const gesperrt = kader.filter((s) => s.status?.gesperrt);
+  const start = startelfAusLetztemSpiel(db);
+  const gegner = letzterGegner(db);
+  const check = spieltagCheckliste(db);
+  const tabRoh = letzteRohseite(db, "tabelle");
+  const tabHtml = tabRoh ? ladeRohseite(db, tabRoh.id, "dom") ?? ladeRohseite(db, tabRoh.id, "roh") : null;
+  const tabelle = tabHtml ? tabelleAus(tabHtml.html, TEAM.name) : null;
+  const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
+  const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.map((s) => s.pid)]).size;
+  const kurzDatum = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(spieltag);
   const datum = new Intl.DateTimeFormat("de-DE", {
     weekday: "long",
     day: "numeric",
@@ -40,20 +55,73 @@ export default async function Uebersicht() {
           </Link>
         }
       />
-      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
-        <Section title="Nächstes Ligaspiel" footer="Datum aus der Regel: Ligaspiele immer mittwochs und sonntags. Gegner und Anstoß kommen mit dem Spielplan-Abruf.">
-          <Hero>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">Ligaspieltag</div>
-            <div className="mt-1.5 text-[26px] font-bold leading-tight tracking-tight">{datum}</div>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-white/15 px-3 py-1.5 text-[13px] font-medium">
-              <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-              Gegner und Countdown: noch nicht verfügbar
-            </div>
-          </Hero>
+      <div className="seite mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
+        <Kachel titel="Nächstes Ligaspiel" wert={kurzDatum} unten="Mittwochs und sonntags. Gegner und Anstoß: noch nicht verfügbar" />
+        <Kachel
+         
+          titel="Fehlen oder unklar"
+          wert={taktikStand ? nichtDabei : "n. v."}
+          unten={taktikStand ? `${zurueck.length} kommen rechtzeitig zurück` : "Taktikseite noch nicht eingelesen"}
+        />
+        <Kachel titel="Kader" wert={kader.length || "n. v."} unten={kader.length ? "Spieler im Kader" : "noch kein Kaderabruf"} href="/kader" />
+        <Kachel
+         
+          titel="Größte Schwachstelle"
+          wert={schwach ? schwach.wert.toFixed(2).replace(".", ",") : "n. v."}
+          unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
+          href="/markt"
+        />
+      </div>
+      <div className="seite">
+        <Section title="Spieltag-Checkliste" footer="Aus den gespeicherten Daten. Gelb: veraltet oder mit Fehlern, grau: noch offen.">
+          <Card>
+            <ul className="grid divide-y divide-separator lg:grid-cols-2 lg:divide-y-0">
+              {check.map((c) => (
+                <li key={c.titel} className="lg:border-b lg:border-separator lg:odd:border-r">
+                  <Link href={c.href ?? "/"} className="zeile-hover flex items-start gap-3 px-5 py-4">
+                    <span
+                      aria-label={c.status === "ok" ? "erledigt" : c.status === "warnung" ? "prüfen" : "offen"}
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                        c.status === "ok" ? "bg-tint text-white" : c.status === "warnung" ? "bg-yellow text-ink" : "border border-label-3 text-label-3"
+                      }`}
+                    >
+                      {c.status === "ok" ? "✓" : c.status === "warnung" ? "!" : ""}
+                    </span>
+                    <span>
+                      <span className="block text-[15px] font-medium">{c.titel}</span>
+                      <span className="block text-[13px] leading-relaxed text-label-2">{c.text}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </Section>
+      </div>
+      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-10">
 
-        <Section title="Empfohlene Taktik">
-          <Unavailable title="Taktik fürs nächste Spiel" reason="Gegneranalyse und Taktik-Generator folgen in Etappe 4 und 5." />
+        <Section
+          title="Empfohlene Taktik"
+          footer={
+            gegner
+              ? `Zuletzt eingelesener Gegner (Stand ${datumZeit(gegner.stand)}). Ob er der nächste Ligagegner ist, prüft die Seite erst mit dem Spielplan-Abruf.`
+              : undefined
+          }
+        >
+          {gegner?.analyse ? (
+            <Link href={`/gegner/${gegner.tid}`} className="block">
+              <Hero className="transition-shadow hover:shadow-[0_16px_40px_-18px_rgba(18,41,31,0.6)]">
+                <div className="kapitaelchen !text-gold-hell">Gegen {gegner.name}</div>
+                <div className="display mt-2 text-[40px] font-semibold leading-none">{gegner.analyse.empfehlung.taktik}</div>
+                <div className="mt-3 max-w-[60ch] text-[14px] leading-relaxed text-[#f5f2ea]/80">{gegner.analyse.urteilText}</div>
+                <div className="mt-4 text-[13px] text-gold-hell">
+                  {gegner.stats.length} von {gegner.liga.length} Ligaspielen ausgewertet · Analyse öffnen →
+                </div>
+              </Hero>
+            </Link>
+          ) : (
+            <Unavailable title="Taktik fürs nächste Spiel" reason="Noch kein Gegner mit ausgewerteten Ligaspielen. Unter „Gegner“ eine Spielliste einlesen." />
+          )}
         </Section>
 
         <Section
@@ -90,8 +158,36 @@ export default async function Uebersicht() {
           )}
         </Section>
 
-        <Section title="Tabelle">
-          <Unavailable title={TEAM.liga} reason="Tabellenabruf folgt mit dem ManagerZone-Abruf." />
+        <Section title="Tabelle" footer={tabRoh ? `Stand ${datumZeit(tabRoh.abgerufen)}, so wie ManagerZone sie zeigt.` : undefined}>
+          {tabelle ? (
+            <Card>
+              <table className="w-full text-[14px]">
+                {tabelle.kopf.length > 0 && (
+                  <thead>
+                    <tr className="border-b border-separator text-left text-[12px] text-label-2">
+                      {tabelle.kopf.map((k, i) => (
+                        <th key={i} className="px-3 py-2 font-medium first:pl-5 last:pr-5">{k}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                )}
+                <tbody className="divide-y divide-separator">
+                  {tabelle.zeilen.map((z, i) => (
+                    <tr key={i} className={z.eigen ? "bg-gold-hell/30 font-semibold" : ""}>
+                      {z.zellen.map((c, j) => (
+                        <td key={j} className="px-3 py-2 tabular-nums first:pl-5 last:pr-5">{c}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          ) : (
+            <Unavailable
+              title={TEAM.liga}
+              reason={tabRoh ? `Tabellenseite vom ${datumZeit(tabRoh.abgerufen)} gespeichert, aber keine Tabelle mit ${TEAM.name} darin erkannt.` : "Wird beim täglichen Abruf (ab 4 Uhr, mit Login) geholt."}
+            />
+          )}
         </Section>
 
         <Section title="Letzte Skill-Änderungen">

@@ -34,3 +34,10 @@ export async function fehlendeSpieleHolen(tid: number): Promise<HolState> {
   revalidatePath(`/gegner/${tid}`);
   return { ok: ok === fehlen.length, meldung };
 }
+
+export async function gegnerKaderHolen(tid: number): Promise<HolState> {
+  const { gegnerKaderAbrufen } = await import("@/lib/mz/abruf/fremd");
+  const r = await gegnerKaderAbrufen(getDb(), tid);
+  revalidatePath(`/gegner/${tid}`);
+  return r;
+}

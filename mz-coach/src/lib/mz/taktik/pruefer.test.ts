@@ -69,6 +69,8 @@ describe("Prüfer (Prüfliste mz-wissen.md, Abschnitt 5)", () => {
     const rotMitWechsel = regel({ check_player_event: "true", player_event: "sent_off", out_player: String(P.schobel), in_player_id: String(P.kaupa) });
     const r = pruefeTaktik(parseTaktikXml(AUSSEN_R.replace("</SoccerTactics>", `${rotMitWechsel}</SoccerTactics>`)));
     expect(r.fehler.some((f) => f.regel === 5 && f.text.includes(`pid ${P.kaupa} kommt in 2 Wechselregeln vor`))).toBe(true);
+    // Regel 7 (seit 25.10.2026): Spielerwechsel in der Rot-Regel ist selbst ein Fehler
+    expect(r.fehler.some((f) => f.regel === 7 && f.text.includes("Bei Rot kein Spielerwechsel"))).toBe(true);
     const zweimalRaus = regel({ check_time: "true", time: "70", out_player: String(P.hyuga), in_player_id: "225629999" });
     const r2 = pruefeTaktik(parseTaktikXml(AUSSEN_R.replace("</SoccerTactics>", `${zweimalRaus}</SoccerTactics>`)));
     expect(r2.fehler.some((f) => f.text.includes(`pid ${P.hyuga} kommt in 2 Wechselregeln vor`))).toBe(true);
@@ -158,7 +160,10 @@ describe.skipIf(!existsSync(ECHT))("Echte außenR aus dem Editor", () => {
 
   it("Stand vor dem 25.10.: Kaupa in zwei Wechselregeln ist nach der neuen Regel ein Fehler", () => {
     const r = pruefeTaktik(t);
-    expect(r.fehler).toEqual([expect.objectContaining({ regel: 5, text: expect.stringContaining("pid 226471405 kommt in 2 Wechselregeln vor") })]);
+    expect(r.fehler).toEqual([
+      expect.objectContaining({ regel: 5, text: expect.stringContaining("pid 226471405 kommt in 2 Wechselregeln vor") }),
+      expect.objectContaining({ regel: 7, text: expect.stringContaining("Bei Rot kein Spielerwechsel") }),
+    ]);
   });
 
   it("ohne die Rot-Wechselregel (Änderung von Marcus am 25.10.) keine Fehler", () => {

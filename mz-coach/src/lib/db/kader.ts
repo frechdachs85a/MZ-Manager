@@ -1,6 +1,19 @@
 import type Database from "better-sqlite3";
 import { aenderungen, type SpielerDaten } from "@/lib/mz/spieler";
 
+// Schnappschuss nur, wenn sich der Stand gegenüber dem letzten Schnappschuss des Spielers geändert hat
+// (kein Datenmüll bei unveränderten Abrufen; der Verlauf bleibt vollständig).
+function schnappschuss(db: Database.Database) {
+  const letzter = db.prepare("SELECT daten_json FROM spieler_snapshot WHERE pid = ? ORDER BY abgerufen DESC, id DESC LIMIT 1");
+  const ins = db.prepare("INSERT INTO spieler_snapshot (pid, abgerufen, quelle, daten_json) VALUES (?, ?, ?, ?)");
+  return {
+    run(pid: number, zeit: string, quelle: string, json: string) {
+      const l = letzter.get(pid) as { daten_json: string } | undefined;
+      if (l?.daten_json !== json) ins.run(pid, zeit, quelle, json);
+    },
+  };
+}
+
 // Speichert einen kompletten Kaderabruf: Schnappschuss je Spieler, Änderungen gegen
 // den vorherigen Stand, aktuellen Stand überschreiben. Spieler, die nicht mehr im
 // Kader sind (verkauft), werden inaktiv gesetzt, nicht gelöscht.
@@ -11,9 +24,7 @@ export function speichereKader(
   zeit = new Date().toISOString(),
 ): { neu: number; aenderungen: number } {
   const alt = db.prepare("SELECT daten_json FROM spieler WHERE pid = ?");
-  const snap = db.prepare(
-    "INSERT INTO spieler_snapshot (pid, abgerufen, quelle, daten_json) VALUES (?, ?, ?, ?)",
-  );
+  const snap = schnappschuss(db);
   const aend = db.prepare(
     "INSERT INTO spieler_aenderung (pid, datum, feld, alt, neu, quelle) VALUES (?, ?, ?, ?, ?, ?)",
   );
@@ -58,6 +69,10 @@ const STATUS_FELDER = [
   "scoutSterne",
   "scoutMarkierung",
   "scoutTraining",
+  "scoutText",
+  "scoutTextStand",
+  "scoutTextSterne",
+  "loyal",
   "nationalitaet",
   "arbeitsbewilligung",
 ] as const;
@@ -82,9 +97,7 @@ export function aktualisiereSpieler(
     pid: number;
     daten_json: string;
   }[];
-  const snap = db.prepare(
-    "INSERT INTO spieler_snapshot (pid, abgerufen, quelle, daten_json) VALUES (?, ?, ?, ?)",
-  );
+  const snap = schnappschuss(db);
   const aend = db.prepare(
     "INSERT INTO spieler_aenderung (pid, datum, feld, alt, neu, quelle) VALUES (?, ?, ?, ?, ?, ?)",
   );

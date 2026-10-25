@@ -1,0 +1,11 @@
+# Railway: baut mit dem Dockerfile in diesem Ordner (Root Directory im Dienst auf "mz-coach" stellen).
+# Das Volume (Mount Path /data) wird in der Railway-Oberfläche angelegt, nicht hier.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/gesund"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

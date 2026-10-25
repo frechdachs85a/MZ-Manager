@@ -3,14 +3,16 @@ import { LinkZeile } from "@/components/link-zeile";
 import { PageHeader } from "@/components/page-header";
 import { Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
-import { listeGegner } from "@/lib/db/gegner";
+import { listeEchteGegner } from "@/lib/db/gegner";
+import { ladeTopTeams } from "@/lib/db/top";
 import { datumZeit } from "@/lib/format";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
-import { QUELLE_TOP10, TOP10 } from "@/lib/wissen/startbasis";
+import { QUELLE_TOP10, TEAM, TOP10 } from "@/lib/wissen/startbasis";
 
 export default async function Gegner() {
   await connection();
-  const gegner = listeGegner(getDb(), LIGA_MID_AB);
+  const db = getDb();
+  const gegner = listeEchteGegner(db, LIGA_MID_AB, new Set([...ladeTopTeams(db).map((t) => t.tid), TEAM.tid]));
   return (
     <>
       <PageHeader title="Gegner" />
@@ -42,8 +44,11 @@ export default async function Gegner() {
             </List>
           </Section>
         </div>
-        <Section title="Top 10 Managerwertung" footer={`Quelle: ${QUELLE_TOP10}.`}>
+        <Section title="Top 10 Managerwertung" footer={`Quelle: ${QUELLE_TOP10}. Ihre Spiele werden als Lernmaterial ausgewertet.`}>
           <List>
+            <LinkZeile href="/top10" detail="Stile, Wechsel, Taktikwechsel und was gegen welchen Gegner gewinnt">
+              Top-10-Analyse öffnen
+            </LinkZeile>
             {TOP10.map((t) => (
               <Row
                 key={t.tid}

@@ -4,13 +4,34 @@ import { LinkZeile } from "@/components/link-zeile";
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
 import { Card, List, Row, Section, Unavailable } from "@/components/ui";
+import { RegelSaetze } from "@/components/regel-saetze";
 import { getDb } from "@/lib/db";
-import { ladeTeamSpiele, teamName } from "@/lib/db/gegner";
-import { ladeSpiel } from "@/lib/db/spiele";
-import { analysiereGegner, de } from "@/lib/mz/analyse/gegner";
-import { ANALYSE_SPIELE, LIGA_MID_AB, letzteLigaspiele } from "@/lib/mz/parser/spielliste";
-import type { StatsSpiel } from "@/lib/mz/parser/stats";
+import { de } from "@/lib/mz/analyse/gegner";
+import { ANALYSE_SPIELE, LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
+import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { HolKnopf } from "./hol-knopf";
+import { KaderKnopf } from "./kader-knopf";
+import { kaderwertVergleich, type ElfWert } from "@/lib/kaderwert";
+import { topGegenKlasse } from "@/lib/portfolio";
+import { gegnerKlasse } from "@/lib/mz/analyse/muster";
+import { datumZeit as dz } from "@/lib/format";
+
+const mio = (n: number) => `${(n / 1_000_000).toFixed(1).replace(".", ",")} Mio`;
+function ElfZeile({ titel, w }: { titel: string; w: ElfWert | null }) {
+  if (!w) return <Row title={titel} detail="nicht verfügbar" />;
+  return (
+    <Row
+      title={titel}
+      detail={`Startelf aus Spiel ${w.spiel?.mid ?? "?"} · ${w.mitWert} von ${w.spieler} mit Marktwert${w.fehlt.length ? ` · fehlt: ${w.fehlt.join(", ")}` : ""}`}
+      value={
+        <span className="text-right">
+          <span className="display block text-[18px] font-semibold text-label tabular-nums">{mio(w.summe)}</span>
+          <span className="block text-[12px]">{w.alterSchnitt !== undefined ? `Ø ${w.alterSchnitt.toFixed(1).replace(".", ",")} Jahre` : "Alter n. v."}</span>
+        </span>
+      }
+    />
+  );
+}
 
 const datumDe = (d?: string) => (d ? d.slice(0, 10).split("-").reverse().join(".") : "n. v.");
 const uhr = (clock: string) => {
@@ -26,15 +47,14 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   await connection();
   const { tid: tidText } = await props.params;
   const tid = Number(tidText);
-  const db = getDb();
-  const spiele = ladeTeamSpiele(db, tid);
+  const { spiele, name, liga, stats, analyse: a, regeln } = gegnerAnalyseLaden(getDb(), tid);
   if (spiele.length === 0) notFound();
-  const name = teamName(db, tid) ?? `tid ${tid}`;
   const alleLiga = spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
-  const liga = letzteLigaspiele(spiele);
   const fehlen = liga.filter((s) => !s.xml);
-  const stats = liga.filter((s) => s.xml).map((s) => ladeSpiel(db, s.mid)).filter((s): s is StatsSpiel & { abgerufen: string } => !!s);
-  const a = stats.length ? analysiereGegner(tid, stats) : null;
+  const kw = kaderwertVergleich(getDb(), tid);
+  const neuestes = a?.spiele[0];
+  const klasse = neuestes ? gegnerKlasse({ engeMitte: neuestes.engeMitte, fuenferkette: neuestes.formation.abwehr >= 5 } as Parameters<typeof gegnerKlasse>[0]) : undefined;
+  const topStile = klasse ? topGegenKlasse(getDb(), klasse).slice(0, 4) : [];
   const begr = new Map(a?.begruendung.map((b) => [b.mid, b.text]));
 
   return (
@@ -45,13 +65,18 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
           <div>
             {a ? (
               <>
-                <Section title="Spielt er immer gleich?" footer="Vergleich jedes Spiels mit dem neuesten: Formation, Einstellungen und Aufstellung (gleich = jeder Feldspieler höchstens 2 Punkte daneben).">
+                <Section title="Spielt er immer gleich?" footer="Vergleich jedes Spiels mit dem neuesten: Formation, Einstellungen und Aufstellung zu Spielbeginn (gleich = jeder Feldspieler höchstens 2 Punkte daneben). Wechsel und Taktikwechsel im Verlauf stehen im Spielbericht; ob er im Spiel die Formation umstellt, ist aus der XML nicht erkennbar.">
                   <Card className="p-4">
                     <div className="text-[17px] font-semibold">{a.urteilText}</div>
                     {a.konstant.length > 0 && <div className="mt-2 text-[15px] text-label-2">Immer: {a.konstant.join(" · ")}</div>}
                     <div className="mt-2 text-[15px] text-label-2">
                       Bilanz: {a.bilanz.siege} S, {a.bilanz.remis} U, {a.bilanz.niederlagen} N · Tore {a.bilanz.tore}:{a.bilanz.gegentore}
                     </div>
+                  </Card>
+                </Section>
+                <Section title="Wechsel- und Taktikregeln" footer={`Aus allen ${stats.length} ausgewerteten Ligaspielen: jeder Substitution- und Tactic-Eintrag der Stats-XML mit Minute und Spielstand.`}>
+                  <Card className="p-4 text-[14px]">
+                    <RegelSaetze regeln={regeln} />
                   </Card>
                 </Section>
                 <Section title="Taktikvorschlag" footer="Nach den Faustregeln aus mz-wissen.md, Abschnitt 10. Vor dem Einsatz den XML-Code der Taktik unter „Taktik“ prüfen lassen.">
@@ -101,6 +126,36 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
           </div>
         </div>
 
+        {klasse && (
+          <Section
+            title={`Was die Top 10 gegen ${klasse} spielen`}
+            footer="Gegnerklasse aus seinem neuesten Ligaspiel. Stile aus den gespeicherten Spielen der Top 10, mit Bilanz und ob du den Stil im Taktik-Archiv hast. Alle Stile unter „Portfolio“."
+          >
+            {topStile.length ? (
+              <List>
+                {topStile.map((t) => (
+                  <Row
+                    key={t.schluessel}
+                    title={`${t.schluessel}${t.bewaehrt ? " · bewährt" : ""}`}
+                    detail={`${t.spiele} Spiele (${t.S} S, ${t.U} U, ${t.N} N) · ${t.teams.join(", ")} · ${t.imArchiv.length ? `hast du: ${t.imArchiv.join(", ")}` : "nicht in deinem Archiv"}`}
+                  />
+                ))}
+              </List>
+            ) : (
+              <Card className="p-5 text-[14px] text-label-2">Noch keine Spiele der Top 10 gegen diese Gegnerklasse gespeichert.</Card>
+            )}
+          </Section>
+        )}
+        <Section
+          title="Kaderwert-Vergleich"
+          aktion={<KaderKnopf tid={tid} />}
+          footer={`Summe der Marktwerte der Startelf (mz-wissen.md, Abschnitt 10). Marktwert ist kein Preismaßstab, aber ein Maß für die Stärke. Gegnerkader ${kw.gegnerKaderStand ? `Stand ${dz(kw.gegnerKaderStand)}` : "noch nicht geholt"}.`}
+        >
+          <List>
+            <ElfZeile titel="FC Toho" w={kw.eigen} />
+            <ElfZeile titel={name} w={kw.gegner} />
+          </List>
+        </Section>
         {a && (
           <Section title="Aufstellung je Ligaspiel" footer="Startelf aus der Stats-XML in Editor-Koordinaten (mz-wissen.md, Abschnitt 3), aus Sicht seines Tors.">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

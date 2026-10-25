@@ -30,9 +30,13 @@ export type StatsSpieler = {
   statistik: Record<string, string>;
 };
 
-export type Ereignis = { clock: string; minute: number; frame: number; stand: string };
+// clock = Spieluhr, zeit = time-Attribut (läuft mit frame: frame = time in Sekunden × 1,5, an 57 echten
+// Ereignissen geprüft). minute = volle Minute der Spieluhr; bei Tactic gibt es nur time, dort aus time.
+export type Ereignis = { clock: string; zeit?: string; minute: number; frame: number; stand: string };
+// Spielstandbedingung einer ausgelösten Wechselregel (scorecondition/score), wie im Taktik-Export goal_condition/goals
+export type Bedingung = { art: string; tore?: number };
 export type Tor = Ereignis & { teamId: number; schuetze: number; vorlage?: number };
-export type Wechsel = Ereignis & { teamId: number; rein: number; raus: number; grund: string; regelMinute?: number; attrs: Record<string, string> };
+export type Wechsel = Ereignis & { teamId: number; rein: number; raus: number; grund: string; regelMinute?: number; bedingung?: Bedingung; attrs: Record<string, string> };
 export type TaktikWechsel = Ereignis & { teamId: number; art: string; neu: string };
 export type Karte = Ereignis & { spieler: number; teamId: number; art: string };
 
@@ -74,11 +78,18 @@ function punkt(v: string | undefined): Punkt | undefined {
   return m ? { x: Number(m[1]), y: Number(m[2]) } : undefined;
 }
 
-// "60:11.333" -> 60 (volle Minuten der Spieluhr)
+// "60:11.333" -> 60 (volle Minuten)
 function minute(clock: string): number {
   const m = clock.match(/^(\d+):/);
   if (!m) throw new StatsXmlFehler(`Unbekanntes Zeitformat "${clock}".`);
   return Number(m[1]);
+}
+
+// "45:55.333" -> frame 4133 (frame = Sekunden × 1,5)
+function frameAusZeit(zeit: string): number {
+  const m = zeit.match(/^(\d+):(\d+(?:\.\d+)?)$/);
+  if (!m) throw new StatsXmlFehler(`Unbekanntes Zeitformat "${zeit}".`);
+  return Math.round((Number(m[1]) * 60 + Number(m[2])) * 1.5);
 }
 
 function kinder(el: HTMLElement, tag: string): HTMLElement[] {
@@ -157,7 +168,7 @@ export function parseStatsXml(text: string): StatsSpiel {
   const karten: Karte[] = [];
   const basis = (el: HTMLElement) => {
     const clock = el.getAttribute("clock") ?? "";
-    return { clock, minute: minute(clock), frame: zahl(el.getAttribute("frame")) ?? 0 };
+    return { clock, zeit: el.getAttribute("time"), minute: minute(clock), frame: zahl(el.getAttribute("frame")) ?? 0 };
   };
   for (const r of roh) {
     const b = basis(r.el);
@@ -168,16 +179,21 @@ export function parseStatsXml(text: string): StatsSpiel {
       evs.push({ ...b, mach: (stand) => karten.push({ ...b, stand, spieler: r.spieler, teamId: r.teamId, art: r.el.getAttribute("type") ?? "" }) });
     }
   }
-  // Wechsel und Taktikwechsel stehen unter Events (Tactic im echten Spiel nicht vorhanden, Aufbau aus mz-wissen.md)
+  // Wechsel und Taktikwechsel stehen unter Events. Substitution: time, clock, frame, minute (Regelminute),
+  // reason (preset = Regel, injury = Verletzung), scorecondition und score (Spielstandbedingung), playerId (rein),
+  // substitutedId (raus), teamId. Unbekannte Attribute bleiben in attrs.
   for (const el of alle(root, "Substitution")) {
     const a = attrs(el);
     const b = basis(el);
-    evs.push({ ...b, mach: (stand) => wechsel.push({ ...b, stand, teamId: zahl(a.teamId)!, rein: zahl(a.playerId)!, raus: zahl(a.substitutedId)!, grund: a.reason ?? "", regelMinute: zahl(a.minute), attrs: a }) });
+    const bedingung = a.scorecondition ? { art: a.scorecondition, tore: zahl(a.score) } : undefined;
+    evs.push({ ...b, mach: (stand) => wechsel.push({ ...b, stand, teamId: zahl(a.teamId)!, rein: zahl(a.playerId)!, raus: zahl(a.substitutedId)!, grund: a.reason ?? "", regelMinute: zahl(a.minute), bedingung, attrs: a }) });
   }
+  // Tactic: teamId, time, type (tactic, playstyle, aggression), new_setting. Kein frame und keine clock in den
+  // echten Spielen; frame wird aus time berechnet, damit der Spielstand stimmt. Die Bedingung steht nicht drin.
   for (const el of alle(root, "Tactic")) {
     const a = attrs(el);
-    const zeit = a.clock ?? a.time ?? "";
-    const b = { clock: zeit, minute: minute(zeit), frame: zahl(a.frame) ?? 0 };
+    const zeit = a.time ?? a.clock ?? "";
+    const b = { clock: a.clock ?? zeit, zeit, minute: minute(zeit), frame: zahl(a.frame) ?? frameAusZeit(zeit) };
     evs.push({ ...b, mach: (stand) => taktikwechsel.push({ ...b, stand, teamId: zahl(a.teamId)!, art: a.type ?? "", neu: a.new_setting ?? "" }) });
   }
 

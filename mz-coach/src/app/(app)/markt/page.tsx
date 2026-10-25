@@ -175,7 +175,7 @@ function EmpfehlungKarte({ b }: { b: Bewertung }) {
   return (
     <div className="space-y-3">
       <Hero>
-        <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">Verstärkt am meisten</div>
+        <div className="kapitaelchen !text-gold-hell">Verstärkt am meisten</div>
         <div className="mt-1.5 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <a href={`${MZ}/?p=players&pid=${k.pid}`} target="_blank" rel="noreferrer" className="text-[26px] font-bold leading-tight tracking-tight underline-offset-4 hover:underline">

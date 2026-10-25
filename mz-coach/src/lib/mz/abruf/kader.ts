@@ -1,7 +1,8 @@
 import "server-only";
 import type Database from "better-sqlite3";
 import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
-import { speichereKader } from "@/lib/db/kader";
+import { ladeKader, speichereKader } from "@/lib/db/kader";
+import { scoutKlicker, speichereScoutTexte, type ScoutAntwort } from "./scout";
 import { KaderSeiteUnbekannt, parseKaderSeite } from "@/lib/mz/parser/kader";
 import {
   istSpielerSeite,
@@ -118,10 +119,18 @@ export async function kaderAbrufen(db: Database.Database, opt = { manuell: false
       db,
       async (s) => {
         for (const pfad of [KADER_PFAD, SPIELER_PFAD, UNAVAILABLE_PFAD, TRAININGSLAGER_PFAD, TAKTIK_PFAD]) {
-          const seite = await s.holeSeite(pfad);
+          // Spieleransicht: zusätzlich die Scoutberichte anklicken (nur fehlende oder mit geänderten Sternen)
+          const aufSeite = pfad === SPIELER_PFAD ? scoutKlicker(new Map(ladeKader(db).map((k) => [k.pid, k]))) : undefined;
+          const seite = await s.holeSeite(pfad, aufSeite ? { aufSeite } : undefined);
           try {
             const html = seite.htmlDom ?? seite.htmlRoh ?? "";
             teile.push(seiteEinlesen(db, html, { url: seite.url, quelle: `${MZ_BASIS}${pfad}`, htmlDom: seite.htmlDom }));
+            if (aufSeite && seite.extra) {
+              const { antworten, fehler } = seite.extra as { antworten: ScoutAntwort[]; fehler: string[] };
+              const n = speichereScoutTexte(db, antworten, new Date().toISOString(), `${MZ_BASIS}${pfad} (Scoutbericht)`);
+              teile.push(`Scoutberichte: ${n} Texte gelesen${fehler.length ? `, nicht lesbar: ${fehler.join("; ")}` : ""}.`);
+              if (fehler.length) allesOk = false;
+            }
           } catch (e) {
             allesOk = false;
             teile.push(`${pfad}: ${meldungAus(e)}`);

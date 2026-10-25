@@ -21,7 +21,7 @@ export function Spielfeld({ spieler, titel }: { spieler: FeldSpieler[]; titel?: 
     <figure className="m-0">
       <svg
         viewBox={`${FELD.x0 - rand} ${FELD.y0 - rand} ${w + 2 * rand} ${h + 2 * rand}`}
-        className="karte block w-full rounded-[16px]"
+        className="block w-full rounded-[10px]"
         role="img"
         aria-label={titel ?? "Spielfeld"}
       >

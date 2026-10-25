@@ -1,0 +1,34 @@
+# Oracle Cloud "Always Free" (oder jeder andere eigene Server mit Docker).
+# Startet die Webseite und davor Caddy, der das HTTPS-Zertifikat selbst holt und erneuert.
+# Daten liegen in ./daten (Datenbank, Sicherungen, geheimnisse.json) und überstehen Updates und Neustarts.
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    shm_size: "1gb" # Chromium braucht mehr gemeinsamen Speicher als die 64 MB, die Docker vorgibt
+    volumes:
+      - ./daten:/data
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN in deploy/oracle/.env eintragen}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_daten:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_daten:
+  caddy_config:
