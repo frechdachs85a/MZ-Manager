@@ -104,6 +104,16 @@ export default async function Einstellungen() {
             <AbrufButton />
           </Section>
         )}
+        <Section
+          title="Diagnose"
+          footer="Eine Datei mit Abrufprotokoll, den neuesten Rohantworten (Scoutbericht, transfer.js, challenges.js, Marktsuche) und je Spieler Scout-Sterne, Text und Einstufung. Ohne Zugangsdaten, Cookies oder Schlüssel. Zum Hochladen in den Chat mit Claude, damit Fehler geprüft werden können."
+        >
+          <Card>
+            <a href="/api/diagnose" download className="pressable block min-h-11 px-4 py-3 text-[17px] text-tint">
+              Diagnose herunterladen
+            </a>
+          </Card>
+        </Section>
         <Section>
           <Card>
             <form action={logout}>
