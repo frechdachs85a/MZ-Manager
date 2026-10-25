@@ -64,6 +64,15 @@ npm run dev             # http://localhost:3000
   Nationalität und Arbeitsbewilligung kommen aus der Spieleransicht (an der echten Seite geprüft).
   Die Marktsuche (ajax.php?p=transfer&sub=transfer-search) ist nach dem Quelltext des Userscripts
   Mazyar gebaut und noch nicht an einer echten Antwort geprüft; die erste Antwort wird roh gespeichert.
+- Top 10 (Lernmaterial): je Team die letzten 10 Liga- und 10 Weltligaspiele, Spiellisten wöchentlich,
+  fehlende Stats-XML täglich nachgeholt. Muster: Startstile, jeder Wechsel (Rolle, Regelminute, Spielstand),
+  Taktikwechsel und Karten, Zeitleiste je Spiel, Stil gegen Gegnerklasse. Wöchentliches Archiv.
+- Taktik-Portfolio: bewährte Stile der Top 10 je Gegnerklasse gegen das eigene Archiv, fehlende Stile mit echter
+  Beispiel-Startaufstellung und Regel-Kurzcheck. Gegnerseite zeigt, was die Top 10 gegen diesen Gegnertyp spielen.
+- Taktik-Archiv (Reiter mit XML, Prüfung gegen aktuellen Kader, Spiele je Taktik), Spieltag-Checkliste,
+  Saisonstatistik, Jugend (Regel 4/1 oder 4/2 ab Nr. 195), Kaderwert-Vergleich, Ligatabelle.
+- Chat mit Claude (`ANTHROPIC_API_KEY`): 12 lesende Werkzeuge auf die eigene Datenbank, nichts wird erfunden.
+- Zeitplan (`src/lib/zeitplan.ts`): 4 Uhr Top 10 und eigene Spiele, 6 Uhr Markt, täglich Aufräumen, wöchentlich Sicherung.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
 

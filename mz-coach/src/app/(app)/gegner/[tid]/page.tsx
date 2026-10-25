@@ -11,6 +11,8 @@ import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { HolKnopf } from "./hol-knopf";
 import { KaderKnopf } from "./kader-knopf";
 import { kaderwertVergleich, type ElfWert } from "@/lib/kaderwert";
+import { topGegenKlasse } from "@/lib/portfolio";
+import { gegnerKlasse } from "@/lib/mz/analyse/muster";
 import { datumZeit as dz } from "@/lib/format";
 
 const mio = (n: number) => `${(n / 1_000_000).toFixed(1).replace(".", ",")} Mio`;
@@ -49,6 +51,9 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   const alleLiga = spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
   const fehlen = liga.filter((s) => !s.xml);
   const kw = kaderwertVergleich(getDb(), tid);
+  const neuestes = a?.spiele[0];
+  const klasse = neuestes ? gegnerKlasse({ engeMitte: neuestes.engeMitte, fuenferkette: neuestes.formation.abwehr >= 5 } as Parameters<typeof gegnerKlasse>[0]) : undefined;
+  const topStile = klasse ? topGegenKlasse(getDb(), klasse).slice(0, 4) : [];
   const begr = new Map(a?.begruendung.map((b) => [b.mid, b.text]));
 
   return (
@@ -115,6 +120,26 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
           </div>
         </div>
 
+        {klasse && (
+          <Section
+            title={`Was die Top 10 gegen ${klasse} spielen`}
+            footer="Gegnerklasse aus seinem neuesten Ligaspiel. Stile aus den gespeicherten Spielen der Top 10, mit Bilanz und ob du den Stil im Taktik-Archiv hast. Alle Stile unter „Portfolio“."
+          >
+            {topStile.length ? (
+              <List>
+                {topStile.map((t) => (
+                  <Row
+                    key={t.schluessel}
+                    title={`${t.schluessel}${t.bewaehrt ? " · bewährt" : ""}`}
+                    detail={`${t.spiele} Spiele (${t.S} S, ${t.U} U, ${t.N} N) · ${t.teams.join(", ")} · ${t.imArchiv.length ? `hast du: ${t.imArchiv.join(", ")}` : "nicht in deinem Archiv"}`}
+                  />
+                ))}
+              </List>
+            ) : (
+              <Card className="p-5 text-[14px] text-label-2">Noch keine Spiele der Top 10 gegen diese Gegnerklasse gespeichert.</Card>
+            )}
+          </Section>
+        )}
         <Section
           title="Kaderwert-Vergleich"
           aktion={<KaderKnopf tid={tid} />}

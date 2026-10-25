@@ -18,6 +18,7 @@ import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import { saisonAuswertung } from "@/lib/saison";
 import { archivLaden, spieleJeTaktik } from "@/lib/taktik-archiv";
 import { topAuswertung } from "@/lib/top-auswertung";
+import { portfolioAnalyse } from "@/lib/portfolio";
 import { heuteInBerlin } from "@/lib/format";
 import { naechsterLigaspieltag, TEAM } from "@/lib/wissen/startbasis";
 
@@ -188,6 +189,23 @@ const WERKZEUGE: Werkzeug[] = [
       input_schema: ohneEingabe,
     },
     run: (db) => topAuswertung(db),
+  },
+  {
+    def: {
+      name: "portfolio",
+      description:
+        "Taktik-Portfolio: welche Stile (Formation, Taktik, Spielweise) die Top 10 gegen welche Gegnerklasse (Fünferkette, enge Mitte, mit Außenspielern) spielen, mit Bilanz und Punktquote, ob du den Stil im Archiv hast, und bewährte Stile, die dir fehlen (mit echter Beispiel-Startaufstellung eines Topteams und Regel-Kurzcheck). Grundlage für Taktikvorschläge und neue Taktiken.",
+      input_schema: ohneEingabe,
+    },
+    run: (db) => {
+      const p = portfolioAnalyse(db);
+      return {
+        spiele: p.spiele,
+        fehlend: p.fehlend,
+        klassen: p.klassen.map((k) => ({ klasse: k.klasse, spiele: k.spiele, stile: k.stile.map(({ beispiel, ...rest }) => ({ ...rest, beispielSpiel: { team: beispiel.team, mid: beispiel.mid, tore: beispiel.tore } })) })),
+        ohneBelegBeiTop10: p.ungenutzt,
+      };
+    },
   },
   {
     def: {

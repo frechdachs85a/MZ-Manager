@@ -9,7 +9,16 @@ import { rolle } from "./markt";
 export type Lage = "führt" | "gleich" | "hinten";
 export type Ergebnis = "S" | "U" | "N";
 
-export type Stil = { formation: Formation; tactic?: string; playstyle?: string; aggression?: string; engeMitte: boolean; fuenferkette: boolean };
+export type Stil = {
+  formation: Formation;
+  tactic?: string;
+  playstyle?: string;
+  aggression?: string;
+  engeMitte: boolean;
+  fuenferkette: boolean;
+  feld: { x: number; y: number }[]; // Feldspieler-Startpositionen (Editor-Koordinaten)
+  torwart?: { x: number; y: number };
+};
 
 export type SpielMuster = {
   mid: number;
@@ -48,6 +57,8 @@ function stil(s: StatsSpiel, tid: number): Stil {
     aggression: a.aggression,
     engeMitte: a.engeMitte,
     fuenferkette: abwehr >= 5,
+    feld: a.feld.map((f) => f.p),
+    torwart: a.torwart,
   };
 }
 
