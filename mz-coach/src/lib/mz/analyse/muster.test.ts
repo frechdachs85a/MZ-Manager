@@ -35,3 +35,16 @@ describe.skipIf(!vorhanden)("Spielmuster an 7 echten Ligaspielen", () => {
     expect(stilMatrix(spiele).reduce((n, z) => n + z.spiele, 0)).toBe(7);
   });
 });
+
+const EIGEN = new URL("../parser/fixtures/stats-1625669278.xml", import.meta.url);
+describe.skipIf(!existsSync(EIGEN))("Spielverlauf im eigenen Spiel vom 21.10.", () => {
+  it("drei Regelwechsel mit Regelminute, Rolle und Spielstand, zeitlich sortiert", () => {
+    const m = spielMuster(parseStatsXml(readFileSync(EIGEN, "utf8")), 847159);
+    expect(m.wechsel.map((w) => w.regelMinute)).toEqual([55, 60, 60]);
+    expect(m.wechsel[0]).toMatchObject({ raus: "Kojiro Hyuga", rein: "Balthasar Wiesenberg", grund: "preset" });
+    expect(m.wechsel[0].rolleRaus.startsWith("Sturm")).toBe(true);
+    expect(m.ablauf).toHaveLength(3);
+    expect(m.ablauf.map((a) => a.minute)).toEqual([...m.ablauf.map((a) => a.minute)].sort((a, b) => a - b));
+    expect(teamMuster([m]).wechselNachRolle.reduce((n, w) => n + w.anzahl, 0)).toBe(3);
+  });
+});

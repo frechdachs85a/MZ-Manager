@@ -6,8 +6,8 @@ import { spielMuster, stilMatrix, teamMuster, type SpielMuster, type TeamMuster 
 import { auswahlLernspiele } from "@/lib/mz/abruf/top-auswahl";
 
 export type TopTeamAuswertung = TopTeam & {
-  liga: { gewaehlt: number; mitXml: number; muster: TeamMuster | null };
-  weltliga: { gewaehlt: number; mitXml: number; muster: TeamMuster | null };
+  liga: { gewaehlt: number; mitXml: number; muster: TeamMuster | null; spiele: SpielMuster[] };
+  weltliga: { gewaehlt: number; mitXml: number; muster: TeamMuster | null; spiele: SpielMuster[] };
   arten: [string, number][]; // Spielarten in der gespeicherten Liste (zur Kontrolle der Weltliga-Erkennung)
 };
 
@@ -22,7 +22,7 @@ export function topAuswertung(db: Database.Database) {
         .filter((s): s is NonNullable<typeof s> => !!s)
         .map((s) => spielMuster(s, t.tid));
       alle.push(...muster);
-      return { gewaehlt: l.length, mitXml: muster.length, muster: muster.length ? teamMuster(muster) : null };
+      return { gewaehlt: l.length, mitXml: muster.length, muster: muster.length ? teamMuster(muster) : null, spiele: muster };
     };
     const arten = new Map<string, number>();
     for (const s of spiele) arten.set(s.art || "?", (arten.get(s.art || "?") ?? 0) + 1);

@@ -1,5 +1,6 @@
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
 import { werteSpielAus, type Formation } from "./gegner";
+import { rolle } from "./markt";
 
 // Spielmuster der Topteams (Auftrag: Top 10 der Rangliste, je 10 Liga- und 10 Weltligaspiele).
 // Alles aus der Stats-XML: Aufstellung, Einstellungen, ausgelöste Wechsel und Taktikwechsel mit
@@ -18,9 +19,15 @@ export type SpielMuster = {
   tore: { eigen: number; gegner: number };
   eigen: Stil;
   gegner: Stil & { name: string; tid: number };
-  wechsel: { minute: number; regelMinute?: number; lage: Lage; grund: string }[];
-  taktikwechsel: { minute: number; lage: Lage; art: string; neu: string }[];
+  wechsel: { minute: number; regelMinute?: number; lage: Lage; grund: string; raus: string; rein: string; rolleRaus: string; stand: string }[];
+  taktikwechsel: { minute: number; lage: Lage; art: string; neu: string; stand: string }[];
+  karten: { minute: number; lage: Lage; art: string; spieler: string; stand: string }[];
+  // Alle Änderungen im Spielverlauf in zeitlicher Reihenfolge (Wechsel, Taktikwechsel, Karten)
+  ablauf: { minute: number; stand: string; text: string }[];
 };
+
+const ART_DE: Record<string, string> = { playstyle: "Spielweise", aggression: "Härte", tactic: "Taktik" };
+const GRUND_DE: Record<string, string> = { preset: "Regel", injury: "Verletzung" };
 
 // "2:1" (Heim:Gast) aus Sicht des Teams
 export function lageAus(stand: string, heim: boolean): Lage {
@@ -51,6 +58,41 @@ export function spielMuster(s: StatsSpiel, tid: number): SpielMuster {
   const eigen = Number(team.statistik.goals ?? NaN);
   const gegner = Number(geg.statistik.goals ?? NaN);
   const minuteVon = (e: { minute: number }) => e.minute;
+  const name = new Map(s.spieler.map((p) => [p.id, p]));
+  // Rolle des Ausgewechselten aus seiner Startposition (Arbeitsdefinition aus analyse/markt); war er selbst
+  // eingewechselt, hat er keine Startposition.
+  const rolleVon = (id: number) => {
+    const p = name.get(id);
+    if (!p?.editor) return "Einwechselspieler";
+    return `${rolle({ pid: id, x: p.editor.x, y: p.editor.y, torwart: p.torwart })} ${p.editor.x}/${p.editor.y}`;
+  };
+  const wechsel = s.wechsel
+    .filter((w) => w.teamId === tid)
+    .map((w) => ({
+      minute: minuteVon(w),
+      regelMinute: w.regelMinute,
+      lage: lageAus(w.stand, team.heim),
+      grund: w.grund,
+      raus: name.get(w.raus)?.name ?? `id ${w.raus}`,
+      rein: name.get(w.rein)?.name ?? `id ${w.rein}`,
+      rolleRaus: rolleVon(w.raus),
+      stand: w.stand,
+    }));
+  const taktikwechsel = s.taktikwechsel
+    .filter((t) => t.teamId === tid)
+    .map((t) => ({ minute: minuteVon(t), lage: lageAus(t.stand, team.heim), art: t.art, neu: t.neu, stand: t.stand }));
+  const karten = s.karten
+    .filter((k) => k.teamId === tid)
+    .map((k) => ({ minute: k.minute, lage: lageAus(k.stand, team.heim), art: k.art, spieler: name.get(k.spieler)?.name ?? `id ${k.spieler}`, stand: k.stand }));
+  const ablauf = [
+    ...wechsel.map((w) => ({
+      minute: w.minute,
+      stand: w.stand,
+      text: `Wechsel (${GRUND_DE[w.grund] ?? w.grund}${w.regelMinute !== undefined ? `, Regel ab ${w.regelMinute}.` : ""}): ${w.rein} für ${w.raus} (${w.rolleRaus})`,
+    })),
+    ...taktikwechsel.map((t) => ({ minute: t.minute, stand: t.stand, text: `${ART_DE[t.art] ?? t.art} → ${t.neu}` })),
+    ...karten.map((k) => ({ minute: k.minute, stand: k.stand, text: `Karte ${k.art}: ${k.spieler}` })),
+  ].sort((a, b) => a.minute - b.minute);
   return {
     mid: s.mid,
     datum: s.datum,
@@ -59,12 +101,10 @@ export function spielMuster(s: StatsSpiel, tid: number): SpielMuster {
     tore: { eigen, gegner },
     eigen: stil(s, tid),
     gegner: { ...stil(s, geg.id), name: geg.name, tid: geg.id },
-    wechsel: s.wechsel
-      .filter((w) => w.teamId === tid)
-      .map((w) => ({ minute: minuteVon(w), regelMinute: w.regelMinute, lage: lageAus(w.stand, team.heim), grund: w.grund })),
-    taktikwechsel: s.taktikwechsel
-      .filter((t) => t.teamId === tid)
-      .map((t) => ({ minute: minuteVon(t), lage: lageAus(t.stand, team.heim), art: t.art, neu: t.neu })),
+    wechsel,
+    taktikwechsel,
+    karten,
+    ablauf,
   };
 }
 
@@ -92,6 +132,7 @@ export type TeamMuster = {
   startStile: [string, number][];
   wechselMinuten: number[]; // Minuten der Regelwechsel (Grund preset), aufsteigend
   wechselJeSpiel: number;
+  wechselNachRolle: { rolle: string; grund: string; anzahl: number; minuten: number[] }[];
   taktikwechsel: { lage: Lage; aenderung: string; anzahl: number; minuten: number[] }[];
   gegenKlasse: { klasse: string; bilanz: Bilanz; stile: [string, number][] }[];
 };
@@ -113,6 +154,17 @@ export function teamMuster(spiele: SpielMuster[]): TeamMuster {
     startStile: zaehle(spiele, (s) => stilText(s.eigen)),
     wechselMinuten: regel,
     wechselJeSpiel: spiele.length ? spiele.reduce((n, s) => n + s.wechsel.length, 0) / spiele.length : 0,
+    wechselNachRolle: (() => {
+      const m = new Map<string, { rolle: string; grund: string; minuten: number[] }>();
+      for (const w of spiele.flatMap((x) => x.wechsel)) {
+        const r = w.rolleRaus.split(" ")[0];
+        const k = `${r}|${w.grund}`;
+        const g = m.get(k) ?? { rolle: r, grund: GRUND_DE[w.grund] ?? w.grund, minuten: [] };
+        g.minuten.push(w.minute);
+        m.set(k, g);
+      }
+      return [...m.values()].map((g) => ({ ...g, anzahl: g.minuten.length, minuten: g.minuten.sort((a, b) => a - b) })).sort((a, b) => b.anzahl - a.anzahl);
+    })(),
     taktikwechsel: [...gruppen.values()]
       .map((g) => ({ ...g, anzahl: g.minuten.length, minuten: g.minuten.sort((a, b) => a - b) }))
       .sort((a, b) => b.anzahl - a.anzahl),

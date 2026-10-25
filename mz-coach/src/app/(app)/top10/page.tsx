@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { letzterAbruf } from "@/lib/db/abruf";
 import { datumZeit } from "@/lib/format";
 import { de } from "@/lib/mz/analyse/gegner";
-import type { Bilanz, TeamMuster } from "@/lib/mz/analyse/muster";
+import { stilText, type Bilanz, type SpielMuster, type TeamMuster } from "@/lib/mz/analyse/muster";
 import { topAuswertung } from "@/lib/top-auswertung";
 import { ladeTopArchiv } from "@/lib/archiv";
 import { TopAbrufKnopf } from "./abruf-knopf";
@@ -13,6 +13,47 @@ import { TopAbrufKnopf } from "./abruf-knopf";
 const bil = (b: Bilanz) => `${b.S} S · ${b.U} U · ${b.N} N`;
 const stilDe = (s: string) => s.replace(/(\w+)\/(\w+)\/(\w+)/, (_, t, p, a) => `${de(t)}/${de(p)}/${de(a)}`);
 const lageDe = { führt: "bei Führung", gleich: "bei Gleichstand", hinten: "bei Rückstand" } as const;
+
+// Kompletter Ablauf je Spiel: Start, dann jede Änderung mit Minute und Spielstand
+function Ablauf({ spiele }: { spiele: SpielMuster[] }) {
+  if (!spiele.length) return null;
+  return (
+    <details className="group">
+      <summary className="cursor-pointer text-[13px] font-medium text-tint">Ablauf je Spiel ({spiele.length})</summary>
+      <ol className="mt-3 space-y-3">
+        {spiele.map((sp) => (
+          <li key={sp.mid} className="rounded-[10px] border border-separator p-3 text-[13px]">
+            <div className="flex justify-between gap-2 font-medium">
+              <span>
+                {sp.datum?.slice(0, 10).split("-").reverse().join(".")} gegen {sp.gegner.name}
+              </span>
+              <span className="tabular-nums">
+                {sp.tore.eigen}:{sp.tore.gegner} {sp.ergebnis}
+              </span>
+            </div>
+            <div className="mt-1 text-label-2">
+              Start: {stilDe(stilText(sp.eigen))} · Gegner: {stilDe(stilText(sp.gegner))}
+            </div>
+            {sp.ablauf.length ? (
+              <ul className="mt-1.5 space-y-0.5">
+                {sp.ablauf.map((a, i) => (
+                  <li key={i}>
+                    <span className="inline-block w-20 tabular-nums text-label-3">
+                      {a.minute}. · {a.stand}
+                    </span>
+                    {a.text}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-1.5 text-label-3">Keine Wechsel, Taktikwechsel oder Karten.</div>
+            )}
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+}
 
 function Muster({ m, titel }: { m: TeamMuster | null; titel: string }) {
   if (!m) return <p className="text-[13px] text-label-3">{titel}: noch keine Spiele mit Stats-XML.</p>;
@@ -30,6 +71,12 @@ function Muster({ m, titel }: { m: TeamMuster | null; titel: string }) {
       <div>
         <span className="text-label-2">Regelwechsel: </span>
         {min.length ? `${min.length} in ${m.spiele} Spielen, Minuten ${min.join(", ")}` : "keine ausgelöst"}
+      </div>
+      <div>
+        <span className="text-label-2">Wer wird gewechselt: </span>
+        {m.wechselNachRolle.length
+          ? m.wechselNachRolle.map((w) => `${w.rolle} (${w.grund}, ${w.anzahl}×, Min. ${w.minuten.join(", ")})`).join(" · ")
+          : "keine Wechsel"}
       </div>
       <div>
         <span className="text-label-2">Taktikwechsel: </span>
@@ -103,7 +150,7 @@ export default async function Top10() {
           </Section>
         )}
 
-        <Section title="Teams" footer="Nur ausgelöste Regeln stehen in der Stats-XML: was ein Team eingestellt, aber nie ausgelöst hat, ist hier nicht sichtbar.">
+        <Section title="Teams" footer="Aus der Stats-XML: Startaufstellung und -einstellungen, jeder Wechsel (wer für wen, Rolle des Ausgewechselten aus seiner Startposition, Regelminute), jeder Taktikwechsel und jede Karte mit Minute und Spielstand. Nur ausgelöste Regeln stehen in der XML. Wohin ein Eingewechselter oder eine Alternative-Aufstellung rückt, steht nicht darin.">
           <div className="grid gap-5 lg:grid-cols-2">
             {teams.map((t) => (
               <Card key={t.tid} className="p-6">
@@ -116,7 +163,9 @@ export default async function Top10() {
                 </div>
                 <div className="mt-4 space-y-5">
                   <Muster m={t.liga.muster} titel={`Liga (${t.liga.mitXml} von ${t.liga.gewaehlt})`} />
+                  <Ablauf spiele={t.liga.spiele} />
                   <Muster m={t.weltliga.muster} titel={`Weltliga (${t.weltliga.mitXml} von ${t.weltliga.gewaehlt})`} />
+                  <Ablauf spiele={t.weltliga.spiele} />
                 </div>
                 {t.arten.length > 0 && (
                   <p className="mt-4 border-t border-separator pt-3 text-[12px] text-label-3">
