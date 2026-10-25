@@ -2,6 +2,11 @@
 
 Kopiere alles ab "AUFTRAG" in Claude Code. Lege vorher die Datei `mz-wissen.md` in den Projektordner, sie enthält das komplette Fachwissen.
 
+> **Änderungen durch Marcus (24.10.2026), gehen dem Text unten vor:**
+> - Reine Webseite für Laptop und Handy (responsive), keine installierbare App, kein PWA, keine Splash-Bilder.
+> - Keine Push-Benachrichtigungen. Ergebnisse der Automatik erscheinen auf der Übersicht.
+> - Statt "fühlt sich an wie eine native iPhone-App": ruhige, moderne Optik, auf dem Handy wie am Desktop gut nutzbar.
+
 ---
 
 AUFTRAG
@@ -50,6 +55,21 @@ Nur echte Daten von managerzone.com. Nichts schätzen, nichts erfinden. Fehlt ei
    - Filter nach meinen Regeln: 99-Regel (Sprint und Ausdauer 9+, Ausnahme Ausdauer 8 bei günstigen Einwechslern), Alter, Budget.
    - Anzeige: Skills, MZ-Wert je Position, Unterschied zu meinem Spieler, Alter, Marktwert, aktuelles Gebot, Auktionsende.
    - Marktwert ist kein Preismaßstab, das in der Bewertung berücksichtigen.
+   - Ergänzung Marcus, 25.10.2026:
+     - Größte Schwachstelle des Teams erkennen und den Spieler vom Markt suchen, der am meisten hilft.
+     - Grenzen beachten: erlaubte Zahl nicht einheimischer Spieler und verfügbares Kapital.
+     - Vorschlag ablehnen können, dann wird der nächstbeste gesucht. Abgelehnte Spieler werden nicht erneut vorgeschlagen.
+     - Jeden Tag automatisch neu suchen.
+     - Ist kein passender Spieler da, wird das ausdrücklich gesagt.
+     - Zu jedem Vorschlag sichtbar: warum dieser Spieler, um wie viel er das Team verstärkt und wodurch (Position, MZ-Wert vorher/nachher).
+   - Biet-Automat (Marcus, 25.10.2026):
+     - Maximalgebot je Spieler, Knopf "Max" setzt den verfügbaren Saldo ein.
+     - Liegt Marcus in der Schlussphase nicht vorne, eine Stufe höher bieten, nie über das Maximum.
+     - Geboten wird zwischen 1 und 3 Minuten vor Ende, nicht knapper. Jedes Gebot in den letzten 3 Minuten
+       verlängert die Frist um 3 Minuten (laut ManagerZone); weiter, bis Marcus allein vorne ist oder das
+       Maximum erreicht ist.
+     - Jedes Gebot mit Zeit und Betrag protokollieren.
+     - Offen: wie das Gebot abgeschickt wird (Funktion buy() in transfer.js, Datei angefragt).
 
 7. **Lernendes Gedächtnis**
    - Jedes abgerufene Spiel (eigene, Gegner, Topteams) wird dauerhaft gespeichert: Roh-XML plus ausgewertete Felder.
@@ -98,3 +118,14 @@ Bau in Etappen und zeig mir nach jeder Etappe, was läuft:
 Schreibe für den XML-Parser, die Koordinaten-Umrechnung, die MZ-Formel und den Taktik-Prüfer automatische Tests. Testfall für die Umrechnung: Bei meinem Spiel 1625669278 (Torwart bei origin-y 1000) muss Cavalcante auf etwa 103/63 und Chille auf etwa 33/223 im Editor landen.
 
 Frag mich, wenn eine Entscheidung wirklich bei mir liegt (Hosting, Kosten, Datenbank). Alles andere entscheide selbst und sag kurz, was du gewählt hast.
+
+## Freundschaftsspiele mit dem Team der Frau (Marcus, 25.10.2026)
+
+- Laut Marcus von ManagerZone genehmigt: Freundschaftsspiele zwischen beiden Teams erlaubt, Transfers untereinander nicht.
+- Jeden Dienstag zwischen 6 und 11 Uhr von Marcus' Konto eine Einladung an ihr Team schicken: Donnerstag 11 und 19 Uhr, Freitag 11 und 19 Uhr.
+  Feste Uhrzeit, keine absichtlich wechselnden Zeiten. Taktik immer Reiter "freund".
+- Annehmen macht sie selbst. Die Webseite loggt sich nicht in ihr Konto ein (General Rules: "you must not log into any account other than your own").
+- Transfermarkt: Spieler ihres Teams nie vorschlagen und nie bieten.
+- Herausforderungsseite gespeichert (25.10.2026): ?p=challenges&challenge-tid=<tid>, je Tag Knopf
+  "Herausforderungen" mit challenges.challenge.challengeButtonAction(<Tag>), je Tag Spiel 1 (11 Uhr) und Spiel 2 (19 Uhr).
+- Offen: challenges.js (was der Knopf abschickt). Die Webseite sichert sie beim ersten Marktabruf mit Login.

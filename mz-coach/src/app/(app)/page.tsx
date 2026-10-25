@@ -1,24 +1,25 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Card, List, Row, Section, Unavailable } from "@/components/ui";
+import { Hero, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
-import { letzteAenderungen } from "@/lib/db/kader";
-import { datumZeit } from "@/lib/format";
+import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
+import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
+import { StatusBadges } from "@/components/status";
+import { datumZeit, heuteInBerlin } from "@/lib/format";
 import { naechsterLigaspieltag, TEAM } from "@/lib/wissen/startbasis";
-
-function heuteInBerlin(): Date {
-  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" })
-    .format(new Date())
-    .split("-")
-    .map(Number);
-  return new Date(y, m - 1, d);
-}
 
 export default async function Uebersicht() {
   await connection(); // Datum pro Anfrage, nicht beim Build
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
-  const aenderungen = letzteAenderungen(getDb(), 8);
+  const db = getDb();
+  const aenderungen = letzteAenderungen(db, 8);
+  const kader = ladeKader(db);
+  const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
+  const taktikStand = kader.map((s) => s.statusStand?.aufstellbar).filter(Boolean).sort().at(-1);
+  const fehlen = einsatz.filter((x) => x.e.lage === "nicht_bereit" || x.e.lage === "unklar" || x.s.status?.verletzt);
+  const zurueck = einsatz.filter((x) => x.e.lage === "wieder_bereit");
+  const gesperrt = kader.filter((s) => s.status?.gesperrt);
   const datum = new Intl.DateTimeFormat("de-DE", {
     weekday: "long",
     day: "numeric",
@@ -39,21 +40,54 @@ export default async function Uebersicht() {
           </Link>
         }
       />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
         <Section title="Nächstes Ligaspiel" footer="Datum aus der Regel: Ligaspiele immer mittwochs und sonntags. Gegner und Anstoß kommen mit dem Spielplan-Abruf.">
-          <Card className="p-4">
-            <div className="text-[13px] font-semibold uppercase tracking-wide text-tint">Ligaspieltag</div>
-            <div className="mt-1 text-[22px] font-bold tracking-tight">{datum}</div>
-            <div className="mt-1 text-[15px] text-label-2">Gegner und Countdown: noch nicht verfügbar</div>
-          </Card>
+          <Hero>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">Ligaspieltag</div>
+            <div className="mt-1.5 text-[26px] font-bold leading-tight tracking-tight">{datum}</div>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-white/15 px-3 py-1.5 text-[13px] font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
+              Gegner und Countdown: noch nicht verfügbar
+            </div>
+          </Hero>
         </Section>
 
         <Section title="Empfohlene Taktik">
           <Unavailable title="Taktik fürs nächste Spiel" reason="Gegneranalyse und Taktik-Generator folgen in Etappe 4 und 5." />
         </Section>
 
-        <Section title="Ausfälle">
-          <Unavailable title="Verletzt, gesperrt, Trainingslager" reason="Wird mit dem Kaderabruf von ManagerZone geladen (Etappe 2)." />
+        <Section
+          title={`Einsatz am ${datum}`}
+          footer={
+            taktikStand
+              ? `Kegel laut Taktikseite (Stand ${datumZeit(taktikStand)}) plus Enddatum aus dem Trainingslager. Ob ein Spieler am Enddatum selbst schon frei ist, ist nicht belegt. Sperren stehen auf ManagerZone je Wettbewerb.`
+              : undefined
+          }
+        >
+          {!taktikStand ? (
+            <Unavailable title="Wer ist aufstellbar?" reason="Taktikseite noch nicht eingelesen (Einstellungen, Seiten hochladen)." />
+          ) : (
+            <List>
+              {fehlen.length === 0 && zurueck.length === 0 && gesperrt.length === 0 && (
+                <Row title="Alle aufstellbar" detail="Laut Taktikseite hat kein Spieler einen Kegel." />
+              )}
+              {fehlen.map(({ s, e }) => (
+                <Row key={s.pid} title={<span className="flex flex-wrap items-center gap-1.5">{s.name} <StatusBadges s={s} /></span>} detail={e.text} />
+              ))}
+              {zurueck.map(({ s, e }) => (
+                <Row key={s.pid} title={<span className="flex flex-wrap items-center gap-1.5">{s.name} <span className="text-[13px] text-green">wieder dabei</span></span>} detail={e.text} />
+              ))}
+              {gesperrt.map((s) => (
+                <Row
+                  key={`g${s.pid}`}
+                  title={`${s.name}: Sperre`}
+                  detail={(s.sperren ?? [])
+                    .map((x) => `${x.karte}, ${x.spiele} Spiel(e), gilt laut Seite für ${x.art}: ${x.wettbewerb}`)
+                    .join(" · ")}
+                />
+              ))}
+            </List>
+          )}
         </Section>
 
         <Section title="Tabelle">

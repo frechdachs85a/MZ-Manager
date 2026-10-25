@@ -7,7 +7,7 @@ export function ZugangForm() {
   const [state, action, pending] = useActionState<ZugangState, FormData>(zugangSpeichern, {});
   return (
     <form action={action}>
-      <div className="overflow-hidden rounded-[14px] bg-card">
+      <div className="overflow-hidden karte rounded-[18px] bg-card">
         <input
           name="benutzer"
           autoComplete="off"
@@ -31,7 +31,7 @@ export function ZugangForm() {
       <button
         type="submit"
         disabled={pending}
-        className="pressable mt-3 min-h-[50px] w-full rounded-[14px] bg-tint text-[17px] font-semibold text-white disabled:opacity-50"
+        className="pressable mt-3 min-h-[50px] w-full rounded-[14px] bg-tint shadow-[0_6px_16px_-6px_var(--tint)] text-[17px] font-semibold text-white disabled:opacity-50"
       >
         {pending ? "Speichern …" : "Zugang speichern"}
       </button>

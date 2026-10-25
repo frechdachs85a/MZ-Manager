@@ -55,6 +55,8 @@ Zeigt Alter und Marktwert, Skills nur bei Spielern, deren Skills öffentlich sic
 ### Eigene Spieler
 `/?p=players` (eingeloggt): alle Skills mit Rot/Schwarz (Klasse "maxed"), Scout-Sterne, Trainingslager-Status, Verletzungen/Sperren (Reiter "Verletzt / Gesperrt").
 Im Taktik-Editor haben Spieler im Trainingslager die Klasse `tc` und Opazität 0.6 (ausgegraut, nicht einsetzbar).
+Ergänzung 24.10.2026 (Marcus, an den Seiten bestätigt): Trainingslager heißt nicht automatisch "nicht einsetzbar". Mit einem Chip ausgestattete Spieler im Trainingslager sind trotzdem aufstellbar, Spieler im Jugendaufbau-Trainingslager (1 Woche) ebenfalls. Maßgeblich ist der Kegel auf der Taktikseite (`dd.tc`). Am 24.10. waren 12 Spieler im Trainingslager, davon 7 mit Kegel; 3 mit Chip und 2 im Jugendaufbau-Trainingslager waren aufstellbar.
+Sperren (`?p=players&sub=unavailable`, "Platzverweise") gelten je Wettbewerb, z. B. Rote Karte im Pokal nur für den Pokal.
 
 ### Scoutspiele
 Laufen gegen die Aufstellung aus dem letzten Ligaspiel des Gegners. Der Gegner sieht sie nicht. Lohnen sich nur, wenn der Gegner stabil gleich spielt. Kosten Geld.
@@ -85,20 +87,20 @@ XML-Format einer Taktik:
   <TacticRule name="Taktikregel" check_time="true|false" time="" check_goal_condition="true|false" goal_condition="tie|down_by_at_least|ahead_by_at_least" goals="1" check_player_event="true|false" player_event_player_type="anyone" player_event="sent_off|receives_yellow" out_player="<pid>|no_change" in_player_id="<pid>|NULL" tactics="no_change|wings|shortpass" playstyle="no_change|offensive|normal" aggression="no_change|aggressive|normal|passive" formation="no_change|1|2" />
 </SoccerTactics>
 ```
-x/y = Startaufstellung, x1/y1 = Alternative 1, x2/y2 = Alternative 2. Führung heißt `ahead_by_at_least` (`up_by_at_least` funktioniert nicht).
+x/y = Startaufstellung, x1/y1 = Alternative 1, x2/y2 = Alternative 2. pt und fk (je 1 bis 16): sehr wahrscheinlich Reihenfolge der Elfmeter- (penalty taker) und Freistoßschützen (free kick), nicht bestätigt; gegenprüfen im Editor unter dem Reiter "Standards" (Marcus, 25.10.2026). Führung heißt `ahead_by_at_least` (`up_by_at_least` funktioniert nicht).
 
 ## 5. PRÜFLISTE: vor jeder ausgegebenen Taktik zwingend
 
 1. In allen drei Aufstellungen höchstens 3 Stürmer (y ≤ 110) und nirgends y < 63
 2. Alle Abstände mindestens 47
-3. Zwei zentrale Stürmer nie nebeneinander auf gleicher Höhe, sondern versetzt
+3. Zwei zentrale Stürmer nie nebeneinander auf gleicher Höhe, sondern versetzt. Gilt bei genau zwei zentralen Stürmern (Marcus, 25.10.2026). Bei drei zentralen ist das Profi-Muster zwei hinten auf gleicher Höhe, einer vorne davor (红黑之恋 69/98, 131/98, 100/63, genauso Bulgarien und Essen); kupass ist damit korrekt.
 4. Eckstürmer immer mit Zulieferer auf seiner Seite (z. B. rechter Sechser 151/183, tiefer Stürmer 129/95 bei Ecke rechts)
-5. Höchstens 3 Wechsel, ohne Konflikte untereinander
+5. Höchstens 3 Wechsel, ohne Konflikte untereinander. Kein Spieler darf in zwei Wechselregeln vorkommen (Marcus, 25.10.2026).
 6. Bei Rückstand nur offensiver, nie absichern
 7. Rote-Karte-Regel in jeder Taktik; Fall abdecken, dass genau der Rot-Auswechselspieler Rot sieht. Rot-Logik: 2 Stürmer = Flügel (einer außen, einer zentral), 1 Stürmer = zentral + Kurzpass. Eckstürmer ohne guten Flankengeber rückt in die Mitte + Kurzpass.
 8. Bank nach Position, subgoalie nie Regel-Einwechsler
 9. Kopfball bei Innenverteidigern und Mittelstürmer beachten (Marcus' Regel, zählt in der Formel kaum)
-10. Spieler im Trainingslager (ausgegraut) oder gesperrt/verletzt nicht aufstellen
+10. Spieler mit Kegel auf der Taktikseite (Trainingslager ohne Chip) oder gesperrt/verletzt nicht aufstellen. Ob Kegel-Spieler auf der Bank sitzen dürfen, ist nicht getestet (Marcus, 25.10.2026): bis bestätigt auch nicht auf die Bank. Trainingslager mit Chip oder Jugendaufbau-Trainingslager ist erlaubt. Sperre nur für den Wettbewerb, für den sie gilt.
 11. Immer kompletten XML-Code ausgeben, nie Einzelzeilen
 
 ## 6. MZ-Formel (mzlive "MZ Manager"-Wert = Summe Skill × Gewicht)
@@ -115,6 +117,7 @@ Standards, Form, Alter, Größe zählen nicht.
 ## 7. Spieler-Regeln von Marcus
 
 - Skillanzeige: rot = ausgemaxt, schwarz = trainierbar. Markierung "1" = stärkste Skills, "2" = Schwächen. Hoch 4 Sterne = mind. eine 10, 3 Sterne = 9 oder 10. Kein Skill wird höher als die stärksten.
+  Ergänzung 24.10.2026 (an der Spieleransicht geprüft): Auf der Seite heißen die Markierungen "Hoch" (1) und "Niedrig" (2). Die Sterne-Regel gilt für das Potenzial: bei allen Spielern mit ausgemaxten 1-Skills bestätigt, bei Jugendspielern sind die 1-Skills oft noch niedrig.
 - Ausdauer unter 8: muss ca. 60. bis 80. raus (fällt nicht um, wird schlechter). Ab 8 hält er 90 Minuten.
 - Torwart ohne Ausdauer 8 = K.-o.-Kriterium
 - Ab 30 Jahren: erst 1 Ball Sprint weg, dann 1 Ausdauer. Beim Einkauf "99-Regel": Sprint und Ausdauer je 9+. Ausnahme: Ausdauer 8 bei sehr günstigen Spielern oder geplanten Einwechslern.
@@ -139,7 +142,7 @@ Standards, Form, Alter, Größe zählen nicht.
 | freund | Freundschaftsspiel-Taktik | Form halten |
 | U18 | 5-2-1-2 Kurzpass defensiv aus Profi-Bausteinen (Lyon-Fünferkette, Raureni-Spielmacher und Sturm) | Jugend, nicht aktiv betreut |
 
-Gemeinsame Regeln in außenR/außenL/3313of/532de: 50. Hyuga raus, Ishizaki rein (Eckstürmer früh frisch); 60. Kaupa für Nazarov und Rodekamp für Cytrynski (532de: Salzer für Nazarov); ab 60. bei 1 Tor Rückstand offensiv + aggressiv; ab 65. bei 2 Toren Rückstand Kurzpass + Alternative 2 + aggressiv; ab 70. bei Führung Spielweise normal (nur außenR und außenL); ab 80. bei Gleichstand offensiv + aggressiv; Rot: Flügel/Formation 1 und Schobel raus, Kaupa rein.
+Gemeinsame Regeln in außenR/außenL/3313of/532de: 50. Hyuga raus, Ishizaki rein (Eckstürmer früh frisch); 60. Kaupa für Nazarov und Rodekamp für Cytrynski (532de: Salzer für Nazarov); ab 60. bei 1 Tor Rückstand offensiv + aggressiv; ab 65. bei 2 Toren Rückstand Kurzpass + Alternative 2 + aggressiv; ab 70. bei Führung Spielweise normal (nur außenR und außenL); ab 80. bei Gleichstand offensiv + aggressiv; Rot: Flügel/Formation 1 und Schobel raus, Kaupa rein. Seit 25.10.2026 (Marcus): bei Rot in keiner Taktik mehr ein Spielerwechsel, nur noch die Umstellung auf Alternative 1; "Schobel raus, Kaupa rein" wurde aus außenR, außenL, kupass, 3313of, 532de, indivi und freund entfernt.
 
 Template-Koordinaten außenR (Editor): Abwehr 26/224, 76/224, 125/224, 175/224; Sechser 101/183 und 151/183; Spielmacher 101/135; Sturm 129/95, 82/77; Ecke 200/63.
 kupass-Koordinaten: Abwehr 33/222, 79/235, 127/235, 175/222; Sechser 79/186, 127/186; Spielmacher 103/142; Sturm 72/100, 134/100, vorne 103/63.
@@ -167,6 +170,7 @@ Top 10: 1 Bazellatin (102604), 2 Nagyváradi AC (864852), 3 Formation Pure Lyonn
 - Spielt der Gegner nachweislich immer gleich (mehrere XML, auch gegen Starke), Taktik gezielt anpassen: jeder Stürmer bekommt einen Manndecker (gleiche x, leicht zum eigenen Tor versetzt) plus Absicherer; Spielmacher zentral; Eckstürmer mit Zulieferer behalten.
 - Spielt er wechselnd oder ist die Datenlage dünn: Standard-Taktik wählen, nicht anpassen. (Essen-Lektion: Essen spielte im Ligaspiel anders als in den Scoutspielen.)
 - Fünferkette oder enge Mitte beim Gegner: kupass. Sonst außenR.
+  Ergänzung 25.10.2026 (Marcus): "Enge Mitte" ist eine Arbeitsdefinition, kein ManagerZone-Begriff: oberhalb der Abwehr steht niemand außen, außen = x ≤ 40 oder ≥ 170 (Grenze unscharf; Beispiele Essen, YugiPeeK mit allem zwischen x 60 und 153). Eine Fünferkette ist ein eigener Auslöser für kupass, auch wenn außen jemand steht.
 - Gegen starke Gegner beim Standard bleiben.
 - Immer Kaderwert vergleichen: Startelf-Marktwert eigene Taktik gegen Gegner.
 

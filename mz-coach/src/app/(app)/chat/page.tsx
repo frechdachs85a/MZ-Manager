@@ -5,10 +5,12 @@ export default function Chat() {
   return (
     <>
       <PageHeader title="Chat" />
-      <div className="px-safe mx-auto max-w-2xl">
+      <div className="seite">
+        <div className="lg:max-w-3xl">
         <Section>
           <Unavailable title="Frag den MZ Coach" reason="Chat mit Werkzeugen und Wissensspeicher folgt in Etappe 6." />
         </Section>
+        </div>
       </div>
     </>
   );

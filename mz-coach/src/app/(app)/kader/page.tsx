@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Badge, List, Row, Section } from "@/components/ui";
+import { StatusBadges, statusHinweis } from "@/components/status";
+import { Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
-import { ladeKader } from "@/lib/db/kader";
+import { ladeKader, type KaderEintrag } from "@/lib/db/kader";
 import { alleMzWerte, POSITIONEN } from "@/lib/mz/formel";
 import { KADER_START, QUELLE_KADER } from "@/lib/wissen/startbasis";
 import { datumZeit } from "@/lib/format";
@@ -16,7 +17,7 @@ export default async function Kader() {
     return (
       <>
         <PageHeader title="Kader" subtitle={`${KADER_START.length} Spieler, noch kein Live-Abruf`} />
-        <div className="px-safe mx-auto max-w-2xl">
+        <div className="seite">
           <Section
             title="Startbasis"
             footer={`Quelle: ${QUELLE_KADER}. Nur die dort notierten Skills, daher noch keine MZ-Werte. Alle Skills, Rot/Schwarz, Scout-Sterne und Status kommen mit dem ersten Abruf von ManagerZone.`}
@@ -46,8 +47,15 @@ export default async function Kader() {
   return (
     <>
       <PageHeader title="Kader" subtitle={`${kader.length} Spieler · Stand ${datumZeit(stand)}`} />
-      <div className="px-safe mx-auto max-w-2xl">
-        <Section footer="Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6).">
+      <div className="seite">
+        {/* Desktop: Tabelle mit dem MZ-Wert jeder Position, bester Wert hervorgehoben */}
+        <div className="hidden lg:block">
+          <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. Hinterlegung: je kräftiger, desto höher der Wert im Vergleich zum ganzen Kader. ${statusHinweis(kader)}`}>
+            <KaderTabelle kader={kader} />
+          </Section>
+        </div>
+        <div className="lg:hidden">
+        <Section footer={`Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6). ${statusHinweis(kader)}`}>
           <List>
             {kader.map((s) => {
               const werte = alleMzWerte(s.skills);
@@ -55,7 +63,6 @@ export default async function Kader() {
                 const w = werte[p];
                 return w.ok ? [{ p, wert: w.wert }] : [];
               }).sort((a, b) => b.wert - a.wert)[0];
-              const st = s.status ?? {};
               return (
                 <li key={s.pid} className="!ml-0 !pr-0">
                   <Link href={`/kader/${s.pid}`} className="pressable flex min-h-11 items-center gap-3 py-2.5 pl-4 pr-3">
@@ -63,10 +70,7 @@ export default async function Kader() {
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-medium">
                         {s.name}
-                        {st.verletzt && <Badge tone="red">verletzt</Badge>}
-                        {st.gesperrt && <Badge tone="red">gesperrt</Badge>}
-                        {st.trainingslager && <Badge tone="orange">Trainingslager</Badge>}
-                        {st.transfermarkt && <Badge tone="tint">Markt</Badge>}
+                        <StatusBadges s={s} />
                       </span>
                       <span className="block text-[13px] text-label-2">
                         {s.alter !== undefined ? `${s.alter} J.` : "Alter nicht verfügbar"}
@@ -91,7 +95,74 @@ export default async function Kader() {
             })}
           </List>
         </Section>
+        </div>
       </div>
     </>
+  );
+}
+
+// Hinterlegung je Zelle: eine Farbe, je höher der MZ-Wert im Kader, desto kräftiger (4 % bis 30 %)
+function hinterlegung(wert: number, min: number, max: number) {
+  const t = max > min ? (wert - min) / (max - min) : 0;
+  return `color-mix(in oklab, var(--tint) ${(4 + t * 26).toFixed(0)}%, transparent)`;
+}
+
+function KaderTabelle({ kader }: { kader: KaderEintrag[] }) {
+  const alle = kader.flatMap((s) => {
+    const w = alleMzWerte(s.skills);
+    return POSITIONEN.flatMap((p) => (w[p].ok ? [w[p].wert] : []));
+  });
+  const kMin = Math.min(...alle);
+  const kMax = Math.max(...alle);
+  return (
+    <Card>
+      <table className="w-full text-left text-[15px]">
+        <thead>
+          <tr className="border-b border-separator text-[13px] text-label-2">
+            <th className="w-12 py-2.5 pl-4 text-right font-normal">Nr</th>
+            <th className="py-2.5 pl-4 font-normal">Name</th>
+            <th className="py-2.5 pl-4 text-right font-normal">Alter</th>
+            {POSITIONEN.map((p) => (
+              <th key={p} className="py-2.5 pr-2 pl-2 text-right font-semibold">{p}</th>
+            ))}
+            <th className="py-2.5 pr-4 pl-4 font-normal">Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-separator">
+          {kader.map((s) => {
+            const werte = alleMzWerte(s.skills);
+            const max = Math.max(...POSITIONEN.map((p) => { const w = werte[p]; return w.ok ? w.wert : -1; }));
+            return (
+              <tr key={s.pid} className="zeile-hover transition-colors">
+                <td className="py-2.5 pl-4 text-right tabular-nums text-label-2">{s.nr ?? ""}</td>
+                <td className="py-2.5 pl-4 font-medium">
+                  <Link href={`/kader/${s.pid}`} className="hover:text-tint">{s.name}</Link>
+                </td>
+                <td className="py-2.5 pl-4 text-right tabular-nums">{s.alter ?? "n. v."}</td>
+                {POSITIONEN.map((p) => {
+                  const w = werte[p];
+                  return (
+                    <td key={p} className="py-1.5 pl-2 text-right">
+                      <span
+                        className={`inline-block min-w-[3.6rem] rounded-[8px] px-2 py-1 tabular-nums ${w.ok && w.wert === max ? "font-semibold text-label" : w.ok ? "text-label" : "text-label-3"}`}
+                        style={w.ok ? { background: hinterlegung(w.wert, kMin, kMax) } : undefined}
+                        title={w.ok && w.wert === max ? `${p}: bester Wert dieses Spielers` : undefined}
+                      >
+                        {w.ok ? w.wert.toFixed(2) : "n. v."}
+                      </span>
+                    </td>
+                  );
+                })}
+                <td className="py-2.5 pr-4 pl-4">
+                  <span className="flex flex-wrap gap-1">
+                    <StatusBadges s={s} />
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Card>
   );
 }

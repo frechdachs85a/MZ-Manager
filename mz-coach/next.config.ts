@@ -1,9 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Persönliche App mit Daten pro Anfrage aus der eigenen Datenbank:
+  // Persönliche Webseite mit Daten pro Anfrage aus der eigenen Datenbank:
   // klassisches dynamisches Rendern, kein Cache-Components-Modell.
   poweredByHeader: false,
+  // Upload der von Hand gespeicherten ManagerZone-Seiten (Taktikseite allein ca. 750 KB)
+  experimental: {
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   async headers() {
     return [
       {
@@ -13,13 +17,6 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "same-origin" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
-        ],
-      },
-      {
-        source: "/sw.js",
-        headers: [
-          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
-          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
         ],
       },
     ];

@@ -26,9 +26,11 @@ export function speichereKader(
   let neu = 0;
   let anzahl = 0;
   db.transaction(() => {
-    for (const s of kader) {
+    for (const k of kader) {
+      const vorher = alt.get(k.pid) as { daten_json: string } | undefined;
+      // Status stammt aus anderen Seiten (Verletzt/Gesperrt, Trainingslager) und bleibt erhalten.
+      const s = vorher ? behalteStatus(JSON.parse(vorher.daten_json), k) : k;
       const json = JSON.stringify(s);
-      const vorher = alt.get(s.pid) as { daten_json: string } | undefined;
       if (vorher) {
         for (const a of aenderungen(JSON.parse(vorher.daten_json), s)) {
           aend.run(s.pid, zeit, a.feld, a.alt, a.neu, quelle);
@@ -46,6 +48,62 @@ export function speichereKader(
     ).run(...pids);
   })();
   return { neu, aenderungen: anzahl };
+}
+
+const STATUS_FELDER = [
+  "status",
+  "statusStand",
+  "sperren",
+  "trainingslagerInfo",
+  "scoutSterne",
+  "scoutMarkierung",
+  "scoutTraining",
+  "nationalitaet",
+  "arbeitsbewilligung",
+] as const;
+
+function behalteStatus(alt: SpielerDaten, neu: SpielerDaten): SpielerDaten {
+  const out = { ...neu };
+  for (const f of STATUS_FELDER) {
+    if (out[f] === undefined && alt[f] !== undefined) Object.assign(out, { [f]: alt[f] });
+  }
+  return out;
+}
+
+// Ändert alle aktiven Spieler über `aendern` (z. B. Status aus einer Status-Seite):
+// Schnappschuss, Änderungsliste und aktueller Stand wie bei speichereKader.
+export function aktualisiereSpieler(
+  db: Database.Database,
+  aendern: (alt: SpielerDaten) => SpielerDaten,
+  quelle: string,
+  zeit = new Date().toISOString(),
+): { spieler: number; aenderungen: number } {
+  const rows = db.prepare("SELECT pid, daten_json FROM spieler WHERE aktiv = 1").all() as {
+    pid: number;
+    daten_json: string;
+  }[];
+  const snap = db.prepare(
+    "INSERT INTO spieler_snapshot (pid, abgerufen, quelle, daten_json) VALUES (?, ?, ?, ?)",
+  );
+  const aend = db.prepare(
+    "INSERT INTO spieler_aenderung (pid, datum, feld, alt, neu, quelle) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  const upd = db.prepare("UPDATE spieler SET daten_json = ? WHERE pid = ?");
+  let anzahl = 0;
+  db.transaction(() => {
+    for (const r of rows) {
+      const alt = JSON.parse(r.daten_json) as SpielerDaten;
+      const neu = aendern(alt);
+      for (const a of aenderungen(alt, neu)) {
+        aend.run(r.pid, zeit, a.feld, a.alt, a.neu, quelle);
+        anzahl++;
+      }
+      const json = JSON.stringify(neu);
+      snap.run(r.pid, zeit, quelle, json);
+      upd.run(json, r.pid);
+    }
+  })();
+  return { spieler: rows.length, aenderungen: anzahl };
 }
 
 export type KaderEintrag = SpielerDaten & { quelle: string; abgerufen: string };

@@ -13,6 +13,12 @@ export function speichereZugang(db: Database.Database, z: Zugang) {
     `INSERT INTO einstellung (schluessel, wert, geaendert) VALUES (?, ?, ?)
      ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert, geaendert = excluded.geaendert`,
   ).run(KEY, wert, new Date().toISOString());
+  vergissSitzung(db);
+}
+
+// Neuer oder gelöschter Zugang: alte Sitzungs-Cookies und gemerkte Login-Fehler verwerfen.
+function vergissSitzung(db: Database.Database) {
+  db.prepare("DELETE FROM einstellung WHERE schluessel IN ('mz_cookies', 'mz_login_fehler')").run();
 }
 
 export function ladeZugang(db: Database.Database): Zugang | null {
@@ -32,4 +38,5 @@ export function zugangStatus(db: Database.Database): { eingerichtet: boolean; ge
 
 export function loescheZugang(db: Database.Database) {
   db.prepare("DELETE FROM einstellung WHERE schluessel = ?").run(KEY);
+  vergissSitzung(db);
 }

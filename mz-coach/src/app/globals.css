@@ -1,42 +1,57 @@
 @import "tailwindcss";
 
-/* iOS-Systemfarben (hell / dunkel) */
+/* Farben und Flächen (hell / dunkel). Akzent und Skill-Farben aus der geprüften Datenpalette
+   (dataviz-Referenz: Blau #2a78d6/#3987e5, Rot #e34948/#e66767; CVD-Abstand ≥ 19 in beiden Modi). */
 :root {
-  --bg: #f2f2f7;
+  --bg: #f3f4f6;
   --card: #ffffff;
-  --card-2: #f2f2f7;
-  --label: #000000;
-  --label-2: rgba(60, 60, 67, 0.6);
-  --label-3: rgba(60, 60, 67, 0.3);
-  --separator: rgba(60, 60, 67, 0.29);
-  --fill: rgba(120, 120, 128, 0.12);
-  --bar: rgba(249, 249, 249, 0.82);
-  --tint: #007aff;
-  --green: #34c759;
-  --red: #ff3b30;
-  --orange: #ff9500;
-  --yellow: #ffcc00;
-  --pitch: #2e8b57;
+  --card-2: #f6f7f9;
+  --label: #0b0b0c;
+  --label-2: #5c5f66;
+  --label-3: #9a9da5;
+  --separator: rgba(15, 23, 42, 0.08);
+  --fill: rgba(15, 23, 42, 0.06);
+  --bar: rgba(255, 255, 255, 0.78);
+  --tint: #2a78d6;
+  --green: #12833f;
+  --red: #d03b3b;
+  --orange: #c26a00;
+  --yellow: #eda100;
+  --pitch: #2f8f5b;
+  --pitch-2: #2a8152;
+  --skill-max: #e34948;
+  --skill-train: #2a78d6;
+  --skill-fix: #9a9da5;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.05);
+  --hero-1: #1f7a4c;
+  --hero-2: #0f4f31;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --card: #1c1c1e;
-    --card-2: #2c2c2e;
-    --label: #ffffff;
-    --label-2: rgba(235, 235, 245, 0.6);
-    --label-3: rgba(235, 235, 245, 0.3);
-    --separator: rgba(84, 84, 88, 0.6);
-    --fill: rgba(120, 120, 128, 0.24);
-    --bar: rgba(22, 22, 23, 0.8);
-    --tint: #0a84ff;
-    --green: #30d158;
-    --red: #ff453a;
-    --orange: #ff9f0a;
-    --yellow: #ffd60a;
+    --bg: #0c0c0e;
+    --card: #17171a;
+    --card-2: #202024;
+    --label: #f2f2f0;
+    --label-2: #a3a3ad;
+    --label-3: #6c6c75;
+    --separator: rgba(255, 255, 255, 0.08);
+    --fill: rgba(255, 255, 255, 0.07);
+    --bar: rgba(23, 23, 26, 0.78);
+    --tint: #3987e5;
+    --green: #34c26a;
+    --red: #e66767;
+    --orange: #f2a33a;
+    --yellow: #fab219;
     --pitch: #1f6b43;
+    --pitch-2: #1b5f3b;
+    --skill-max: #e66767;
+    --skill-train: #3987e5;
+    --skill-fix: #6c6c75;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.25);
+    --hero-1: #1a6a42;
+    --hero-2: #0b3a24;
     color-scheme: dark;
   }
 }
@@ -57,6 +72,9 @@
   --color-orange: var(--orange);
   --color-yellow: var(--yellow);
   --color-pitch: var(--pitch);
+  --color-skill-max: var(--skill-max);
+  --color-skill-train: var(--skill-train);
+  --color-skill-fix: var(--skill-fix);
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -69,24 +87,37 @@ html {
 
 body {
   background: var(--bg);
+  font-feature-settings: "ss01", "cv11";
   color: var(--label);
   font-family: var(--font-sans);
-  overscroll-behavior-y: none;
 }
 
-/* Abstände für Notch und Home-Indicator */
-.pt-safe {
+/* Abstände für Notch und Home-Indicator. Als @utility, damit Varianten wie lg: greifen. */
+@utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
-.pb-tabbar {
+@utility pb-tabbar {
   padding-bottom: calc(env(safe-area-inset-bottom) + 64px);
 }
-.pb-safe {
+@utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
-.px-safe {
+@utility px-safe {
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* Inhaltsbreite: auf dem Handy volle Breite mit Rand, ab Desktop breiter mit mehr Luft */
+@utility seite {
+  margin-inline: auto;
+  max-width: 42rem;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  @media (width >= 64rem) {
+    max-width: 72rem;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
 }
 
 /* Sanftes Einblenden beim Seitenwechsel */
@@ -112,6 +143,12 @@ body {
   transform: scale(0.97);
   opacity: 0.7;
 }
+@media (hover: hover) {
+  a.pressable:hover,
+  button.pressable:not(:disabled):hover {
+    opacity: 0.85;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .page-in {
@@ -120,4 +157,23 @@ body {
   .pressable:active {
     transform: none;
   }
+}
+
+/* Karten-Schatten und dezente Hover-Fläche */
+.karte {
+  box-shadow: var(--shadow);
+}
+@media (hover: hover) {
+  .zeile-hover:hover {
+    background: var(--fill);
+  }
+}
+
+/* Kopfkarte mit Rasen-Verlauf (Übersicht, Spielbericht) */
+.hero {
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.14), transparent 60%),
+    linear-gradient(135deg, var(--hero-1), var(--hero-2));
+  color: #fff;
+  box-shadow: 0 10px 30px -12px rgba(15, 79, 49, 0.55);
 }
