@@ -14,6 +14,10 @@ export const MIN_ABSTAND = 47;
 export const MAX_STUERMER = 3;
 export const MAX_WECHSEL = 3;
 export const BANK_Y = [117, 140, 163, 186, 209]; // subgoalie, Abwehr, Mittelfeld, Sturm, X
+// Außen = x <= 40 oder x >= 170 (Arbeitsdefinition von Marcus, 25.10.2026; Grenze unscharf)
+export const AUSSEN_X_LINKS = 40;
+export const AUSSEN_X_RECHTS = 170;
+export const istAussen = (x: number) => x <= AUSSEN_X_LINKS || x >= AUSSEN_X_RECHTS;
 
 const AUFSTELLUNG = ["Startaufstellung", "Alternative 1", "Alternative 2"] as const;
 const PLAYSTYLE = ["defensive", "normal", "offensive"];
@@ -68,16 +72,14 @@ export function pruefeTaktik(t: Taktik, kader: SpielerDaten[] = []): Pruefung {
         }
       }
     }
-    // 3: Stürmer auf gleicher Höhe. "Zentral" ist nicht genau festgelegt, daher Hinweis.
-    for (let i = 0; i < stuermer.length; i++) {
-      for (let j = i + 1; j < stuermer.length; j++) {
-        if (stuermer[i].p.y === stuermer[j].p.y) {
-          hinweise.push({
-            regel: 3,
-            text: `${AUFSTELLUNG[k]}: ${wer(stuermer[i].pid)} und ${wer(stuermer[j].pid)} stürmen auf gleicher Höhe (y ${stuermer[i].p.y}). Zentrale Stürmer sollen versetzt stehen.`,
-          });
-        }
-      }
+    // 3: Gilt bei genau zwei zentralen Stürmern (Marcus, 25.10.2026). Bei drei zentralen ist "zwei hinten
+    // gleich hoch, einer davor" das Profi-Muster (z. B. 69/98, 131/98, 100/63) und erlaubt.
+    const zentral = stuermer.filter((s) => !istAussen(s.p.x));
+    if (zentral.length === 2 && zentral[0].p.y === zentral[1].p.y) {
+      fehler.push({
+        regel: 3,
+        text: `${AUFSTELLUNG[k]}: die zwei zentralen Stürmer ${wer(zentral[0].pid)} und ${wer(zentral[1].pid)} stehen auf gleicher Höhe (y ${zentral[0].p.y}). Versetzt aufstellen.`,
+      });
     }
   }
 
@@ -144,7 +146,10 @@ export function pruefeTaktik(t: Taktik, kader: SpielerDaten[] = []): Pruefung {
       const s = nachPid.get(pid);
       if (!s) continue;
       const ort = feldPids.has(pid) ? "aufgestellt" : "auf der Bank";
-      if (s.status?.aufstellbar === false) fehler.push({ regel: 10, text: `${s.name} ist ${ort}, hat aber den Kegel (Trainingslager ohne Chip).` });
+      if (s.status?.aufstellbar === false) {
+        const bank = feldPids.has(pid) ? "" : " Ob Kegel-Spieler auf der Bank sitzen dürfen, ist nicht getestet; bis dahin auch nicht auf die Bank.";
+        fehler.push({ regel: 10, text: `${s.name} ist ${ort}, hat aber den Kegel (Trainingslager ohne Chip).${bank}` });
+      }
       if (s.status?.verletzt) fehler.push({ regel: 10, text: `${s.name} ist ${ort}, aber verletzt.` });
       if (s.status?.gesperrt) {
         const arten = [...new Set((s.sperren ?? []).map((x) => x.art))].join(", ");

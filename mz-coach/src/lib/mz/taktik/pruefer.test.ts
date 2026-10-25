@@ -79,10 +79,16 @@ describe("Prüfer (Prüfliste mz-wissen.md, Abschnitt 5)", () => {
     expect(f[0].text).toContain("40.0 auseinander");
   });
 
-  it("Regel 3: Stürmer auf gleicher Höhe nur als Hinweis (kupass-Vorlage hat 72/100 und 134/100)", () => {
+  it("Regel 3: genau zwei zentrale Stürmer auf gleicher Höhe sind ein Fehler (Eckstürmer zählt nicht)", () => {
     const xml = AUSSEN_R.replace(`x="82" y="77"`, `x="82" y="95"`);
     const r = pruefeTaktik(parseTaktikXml(xml));
-    expect(r.hinweise.some((h) => h.regel === 3)).toBe(true);
+    expect(r.fehler.some((h) => h.regel === 3)).toBe(true);
+  });
+
+  it("Regel 3: drei zentrale Stürmer, zwei hinten gleich hoch, einer davor, ist erlaubt (Profi-Muster)", () => {
+    const xml = AUSSEN_R.replace(`x="129" y="95"`, `x="131" y="98"`).replace(`x="82" y="77"`, `x="69" y="98"`).replace(`x="200" y="63"`, `x="100" y="63"`);
+    const r = pruefeTaktik(parseTaktikXml(xml));
+    expect([...r.fehler, ...r.hinweise].some((h) => h.regel === 3)).toBe(false);
   });
 
   it("Regel 5: vier feste Zeitwechsel", () => {

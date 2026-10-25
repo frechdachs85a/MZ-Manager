@@ -87,20 +87,20 @@ XML-Format einer Taktik:
   <TacticRule name="Taktikregel" check_time="true|false" time="" check_goal_condition="true|false" goal_condition="tie|down_by_at_least|ahead_by_at_least" goals="1" check_player_event="true|false" player_event_player_type="anyone" player_event="sent_off|receives_yellow" out_player="<pid>|no_change" in_player_id="<pid>|NULL" tactics="no_change|wings|shortpass" playstyle="no_change|offensive|normal" aggression="no_change|aggressive|normal|passive" formation="no_change|1|2" />
 </SoccerTactics>
 ```
-x/y = Startaufstellung, x1/y1 = Alternative 1, x2/y2 = Alternative 2. Führung heißt `ahead_by_at_least` (`up_by_at_least` funktioniert nicht).
+x/y = Startaufstellung, x1/y1 = Alternative 1, x2/y2 = Alternative 2. pt und fk (je 1 bis 16): sehr wahrscheinlich Reihenfolge der Elfmeter- (penalty taker) und Freistoßschützen (free kick), nicht bestätigt; gegenprüfen im Editor unter dem Reiter "Standards" (Marcus, 25.10.2026). Führung heißt `ahead_by_at_least` (`up_by_at_least` funktioniert nicht).
 
 ## 5. PRÜFLISTE: vor jeder ausgegebenen Taktik zwingend
 
 1. In allen drei Aufstellungen höchstens 3 Stürmer (y ≤ 110) und nirgends y < 63
 2. Alle Abstände mindestens 47
-3. Zwei zentrale Stürmer nie nebeneinander auf gleicher Höhe, sondern versetzt
+3. Zwei zentrale Stürmer nie nebeneinander auf gleicher Höhe, sondern versetzt. Gilt bei genau zwei zentralen Stürmern (Marcus, 25.10.2026). Bei drei zentralen ist das Profi-Muster zwei hinten auf gleicher Höhe, einer vorne davor (红黑之恋 69/98, 131/98, 100/63, genauso Bulgarien und Essen); kupass ist damit korrekt.
 4. Eckstürmer immer mit Zulieferer auf seiner Seite (z. B. rechter Sechser 151/183, tiefer Stürmer 129/95 bei Ecke rechts)
 5. Höchstens 3 Wechsel, ohne Konflikte untereinander
 6. Bei Rückstand nur offensiver, nie absichern
 7. Rote-Karte-Regel in jeder Taktik; Fall abdecken, dass genau der Rot-Auswechselspieler Rot sieht. Rot-Logik: 2 Stürmer = Flügel (einer außen, einer zentral), 1 Stürmer = zentral + Kurzpass. Eckstürmer ohne guten Flankengeber rückt in die Mitte + Kurzpass.
 8. Bank nach Position, subgoalie nie Regel-Einwechsler
 9. Kopfball bei Innenverteidigern und Mittelstürmer beachten (Marcus' Regel, zählt in der Formel kaum)
-10. Spieler mit Kegel auf der Taktikseite (Trainingslager ohne Chip) oder gesperrt/verletzt nicht aufstellen. Trainingslager mit Chip oder Jugendaufbau-Trainingslager ist erlaubt. Sperre nur für den Wettbewerb, für den sie gilt.
+10. Spieler mit Kegel auf der Taktikseite (Trainingslager ohne Chip) oder gesperrt/verletzt nicht aufstellen. Ob Kegel-Spieler auf der Bank sitzen dürfen, ist nicht getestet (Marcus, 25.10.2026): bis bestätigt auch nicht auf die Bank. Trainingslager mit Chip oder Jugendaufbau-Trainingslager ist erlaubt. Sperre nur für den Wettbewerb, für den sie gilt.
 11. Immer kompletten XML-Code ausgeben, nie Einzelzeilen
 
 ## 6. MZ-Formel (mzlive "MZ Manager"-Wert = Summe Skill × Gewicht)
@@ -170,6 +170,7 @@ Top 10: 1 Bazellatin (102604), 2 Nagyváradi AC (864852), 3 Formation Pure Lyonn
 - Spielt der Gegner nachweislich immer gleich (mehrere XML, auch gegen Starke), Taktik gezielt anpassen: jeder Stürmer bekommt einen Manndecker (gleiche x, leicht zum eigenen Tor versetzt) plus Absicherer; Spielmacher zentral; Eckstürmer mit Zulieferer behalten.
 - Spielt er wechselnd oder ist die Datenlage dünn: Standard-Taktik wählen, nicht anpassen. (Essen-Lektion: Essen spielte im Ligaspiel anders als in den Scoutspielen.)
 - Fünferkette oder enge Mitte beim Gegner: kupass. Sonst außenR.
+  Ergänzung 25.10.2026 (Marcus): "Enge Mitte" ist eine Arbeitsdefinition, kein ManagerZone-Begriff: oberhalb der Abwehr steht niemand außen, außen = x ≤ 40 oder ≥ 170 (Grenze unscharf; Beispiele Essen, YugiPeeK mit allem zwischen x 60 und 153). Eine Fünferkette ist ein eigener Auslöser für kupass, auch wenn außen jemand steht.
 - Gegen starke Gegner beim Standard bleiben.
 - Immer Kaderwert vergleichen: Startelf-Marktwert eigene Taktik gegen Gegner.
 

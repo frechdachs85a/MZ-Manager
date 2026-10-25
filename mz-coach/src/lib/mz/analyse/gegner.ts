@@ -1,6 +1,6 @@
 import type { Punkt } from "@/lib/mz/koordinaten";
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
-import { STURM_Y } from "@/lib/mz/taktik/pruefer";
+import { AUSSEN_X_LINKS, AUSSEN_X_RECHTS, istAussen, STURM_Y } from "@/lib/mz/taktik/pruefer";
 
 // Gegneranalyse über die Ligaspiele der laufenden Saison (Auftrag, Funktion 3; mz-wissen.md, Abschnitt 10).
 // Alles hier beruht auf den Stats-XML. Wo eine Regel aus mz-wissen.md keine genaue Grenze hat,
@@ -13,11 +13,8 @@ export const ABWEHR_Y = 222; // mz-wissen.md, Abschnitt 4: Abwehr y >= 222
 // 1 Punkt genau, mz-wissen.md, Abschnitt 3). Mit 2 bleibt Spielraum für Rundung.
 export const GLEICH_TOLERANZ = 2;
 
-// Auslegung von "enge Mitte" (Abschnitt 10, ohne genaue Grenze): kein Mittelfeldspieler außen.
-// Außen = näher als 45 an der Seitenlinie (x 8,4 bzw. 200), also x < 53 oder x > 155.
-// Von Claude festgelegt, von Marcus noch zu bestätigen.
-export const MITTE_X_MIN = 53;
-export const MITTE_X_MAX = 155;
+// "Enge Mitte" (Arbeitsdefinition von Marcus, 25.10.2026): oberhalb der Abwehr steht niemand außen,
+// außen = x <= 40 oder x >= 170 (istAussen). Grenze unscharf. Fünferkette ist ein eigener Auslöser.
 
 export type Formation = { abwehr: number; mittel: number; sturm: number; text: string };
 
@@ -33,7 +30,7 @@ export type SpielAuswertung = {
   formation: Formation;
   feld: { name: string; p: Punkt }[]; // Startelf ohne Torwart, Editor-Koordinaten
   torwart?: Punkt;
-  mittelfeldX?: { min: number; max: number };
+  mittelfeldX?: { min: number; max: number }; // x-Spanne aller Spieler oberhalb der Abwehr
   engeMitte: boolean;
   bank: number;
   bankTorwart: boolean;
@@ -58,7 +55,7 @@ export function werteSpielAus(s: StatsSpiel, tid: number): SpielAuswertung {
   const name = new Map(s.spieler.map((p) => [p.id, p.name]));
   const eigene = s.spieler.filter((p) => p.teamId === tid);
   const feld = eigene.filter((p) => p.editor && !p.torwart).map((p) => ({ name: p.name, p: p.editor! }));
-  const mittel = feld.filter((f) => f.p.y > STURM_Y && f.p.y < ABWEHR_Y).map((f) => f.p.x);
+  const mittel = feld.filter((f) => f.p.y < ABWEHR_Y).map((f) => f.p.x);
   const mittelfeldX = mittel.length ? { min: Math.min(...mittel), max: Math.max(...mittel) } : undefined;
   return {
     mid: s.mid,
@@ -73,7 +70,7 @@ export function werteSpielAus(s: StatsSpiel, tid: number): SpielAuswertung {
     feld,
     torwart: eigene.find((p) => p.torwart && p.editor)?.editor,
     mittelfeldX,
-    engeMitte: !!mittelfeldX && mittelfeldX.min >= MITTE_X_MIN && mittelfeldX.max <= MITTE_X_MAX,
+    engeMitte: mittel.length > 0 && !mittel.some(istAussen),
     bank: eigene.filter((p) => !p.origin).length,
     bankTorwart: eigene.some((p) => !p.origin && p.torwart),
     wechsel: s.wechsel
@@ -227,19 +224,23 @@ export function analysiereGegner(tid: number, spiele: StatsSpiel[]): GegnerAnaly
   if (fuenferkette) gruende.push(`Fünferkette im neuesten Spiel (${neu.formation.text}).`);
   if (neu.engeMitte && neu.mittelfeldX) {
     gruende.push(
-      `Enge Mitte im neuesten Spiel: alle ${neu.formation.mittel} Mittelfeldspieler zwischen x ${neu.mittelfeldX.min} und ${neu.mittelfeldX.max} (Auslegung: keiner außerhalb x ${MITTE_X_MIN}–${MITTE_X_MAX}).`,
+      `Enge Mitte im neuesten Spiel: alle Spieler oberhalb der Abwehr zwischen x ${neu.mittelfeldX.min} und ${neu.mittelfeldX.max}, niemand außen (x ≤ ${AUSSEN_X_LINKS} oder ≥ ${AUSSEN_X_RECHTS}).`,
     );
   }
+  const engAnzahl = ausw.filter((s) => s.engeMitte).length;
+  if (ausw.length > 1) gruende.push(`Enge Mitte in ${engAnzahl} von ${ausw.length} Ligaspielen.`);
   const taktik = fuenferkette || neu.engeMitte ? "kupass" : "außenR";
   if (taktik === "außenR") gruende.push("Weder Fünferkette noch enge Mitte im neuesten Spiel.");
   const andere = ausw.filter((s) => s.formation.text !== neu.formation.text);
   if (andere.length) {
+    const auchEng = andere.every((s) => s.engeMitte === neu.engeMitte && (s.formation.abwehr >= 5) === fuenferkette);
     vorbehalte.push(
-      `In ${andere.length} von ${ausw.length} Spielen andere Formation (${[...new Set(andere.map((s) => s.formation.text))].join(", ")}). Er kann heute anders aufstellen.`,
+      `In ${andere.length} von ${ausw.length} Spielen andere Formation (${[...new Set(andere.map((s) => s.formation.text))].join(", ")}). Er kann heute anders aufstellen` +
+        (auchEng ? ", der Auslöser für die Empfehlung galt aber auch dort." : "; dort hätte die Regel anders entschieden."),
     );
   }
   vorbehalte.push("Kaderwert-Vergleich fehlt (Abschnitt 10): Kaderseite des Gegners mit Marktwerten nötig.");
-  if (!fuenferkette) vorbehalte.push(`„Enge Mitte“ ist in mz-wissen.md nicht genau festgelegt; verwendet wird x ${MITTE_X_MIN}–${MITTE_X_MAX}.`);
+  if (!fuenferkette) vorbehalte.push(`Grenze für „außen“ (x ≤ ${AUSSEN_X_LINKS} oder ≥ ${AUSSEN_X_RECHTS}) ist laut Marcus unscharf.`);
 
   const bilanz = { siege: 0, remis: 0, niederlagen: 0, tore: 0, gegentore: 0 };
   for (const s of ausw) {

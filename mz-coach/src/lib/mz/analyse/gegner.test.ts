@@ -41,5 +41,7 @@ describe.skipIf(!alleDa)("YugiPeeK, 7 Ligaspiele", () => {
     expect(a.empfehlung.taktik).toBe("kupass");
     expect(a.empfehlung.regel).toContain("Standard-Taktik wählen, nicht anpassen");
     expect(a.empfehlung.vorbehalte[0]).toContain("In 4 von 7 Spielen andere Formation");
+    expect(a.empfehlung.vorbehalte[0]).toContain("der Auslöser für die Empfehlung galt aber auch dort");
+    expect(a.empfehlung.gruende).toContain("Enge Mitte in 7 von 7 Ligaspielen.");
   });
 });
