@@ -13,7 +13,9 @@ import {
   parseTrainingslagerSeite,
   parseUnavailableSeite,
 } from "@/lib/mz/parser/status";
+import { speichereSpielliste } from "@/lib/db/gegner";
 import { speichereSpiel } from "@/lib/db/spiele";
+import { istSpielliste, ligaspieleDieserSaison, parseSpielliste } from "@/lib/mz/parser/spielliste";
 import { istStatsXml, parseStatsXml, statsXmlAus, StatsXmlFehler } from "@/lib/mz/parser/stats";
 import { mitMzSitzung, MZ_BASIS, MzFehler } from "./sitzung";
 import {
@@ -70,6 +72,11 @@ export function spielXmlEinlesen(db: Database.Database, text: string): string {
 
 export function seiteEinlesen(db: Database.Database, html: string, herkunft: { url: string; quelle: string; htmlDom?: string | null }): string {
   if (istStatsXml(html)) return spielXmlEinlesen(db, html);
+  if (istSpielliste(html)) {
+    const l = parseSpielliste(html);
+    const r = speichereSpielliste(db, l);
+    return `Spielliste ${l.teamName ?? ""} (tid ${l.tid}): ${l.spiele.length} Spiele, ${r.neu} neu, davon ${ligaspieleDieserSaison(l).length} Ligaspiele dieser Saison.`;
+  }
   if (/id="playerAltViewTable"/.test(html)) {
     return speichereKaderSeite(db, html, herkunft.url, herkunft.quelle, herkunft.htmlDom ?? null);
   }
@@ -88,7 +95,7 @@ export function seiteEinlesen(db: Database.Database, html: string, herkunft: { u
     return statusText("Taktik (aufstellbar)", r) + unbekannt;
   }
   throw new KaderSeiteUnbekannt(
-    "Unbekannte Seite. Erwartet: Kaderübersicht (?p=players&sub=alt), Spieleransicht (?p=players), Verletzt / Gesperrt (?p=players&sub=unavailable), Trainingslager (?p=training_camp), Taktik (?p=tactics) oder Stats-XML eines Spiels.",
+    "Unbekannte Seite. Erwartet: Kaderübersicht (?p=players&sub=alt), Spieleransicht (?p=players), Verletzt / Gesperrt (?p=players&sub=unavailable), Trainingslager (?p=training_camp), Taktik (?p=tactics), Spielliste (?p=match&sub=played&tid=…) oder Stats-XML eines Spiels.",
   );
 }
 

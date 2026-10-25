@@ -176,3 +176,18 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
 - Umrechnung bestätigt: Torwart FC Toho origin 375,1000; Cavalcante 371,175 -> 103/63, Chille 97,693 -> 33/223.
   Die ganze Startelf liegt höchstens 1 Punkt neben der kupass-Vorlage aus mz-wissen.md.
 - Zeitregel 55. griff bei Spieluhr 60:11 (nächste Unterbrechung), Regeln 60. bei 62:22.
+
+## Gespielte Spiele eines Teams: `/?p=match&sub=played&tid=97933` (25.10.2026, von Marcus gespeichert)
+
+- Liste `dl#fixtures-results-list`. Datumszeilen `dd.group` ("24-10-2026"), je Spiel `dd.odd`/`dd.even`
+  (zusätzlich Klasse `uxx` bei Altersklassen-Spielen).
+- Je Spiel: `.match-time` (HH:MM), `.match-reference-text-wrapper` mit `<span>` Spielart ("Ligaspiel",
+  "Offizieller Pokal", "Freundschaftsspiel", "Scoutspiel") und Link zum Wettbewerb ("div1.1"),
+  `.home-team-column`/`.away-team-column` mit Link `?p=team&tid=…` und `.full-name`, Ergebnis in
+  `.score-shown` ("2 - 4"), Spielnummer im Element `dl#action-panel-<mid>`.
+- Formular `#matchListForm` (POST `/ajax.php?p=matches&sub=list&sport=soccer`) mit tid1 (Team der Liste),
+  tid2 (eigenes Team), `selectType` (all, friendly, series = Ligaspiel, cup, scout_match, Altersklassen)
+  und `limit` (default, 1, 2 Wochen, max). Wie in mz-wissen.md, Abschnitt 2.
+- Standard zeigt nur die letzten 25 Spiele: bei vielen Pokalspielen fehlen ältere Ligaspiele. Am 25.10.
+  enthielt die Liste von YugiPeeK nur 2 Ligaspiele (20 Pokal, 2 Freundschaft, 1 Scout).
+- Gegner einer Scoutspiel-Zeile hat keinen Team-Link (nur der Name).

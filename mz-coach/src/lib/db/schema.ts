@@ -75,6 +75,25 @@ const MIGRATIONEN: string[] = [
     meldung TEXT
   );
   `,
+  `
+  -- Spiele aus der Spielliste eines Teams (?p=match&sub=played&tid=…), je Team und Spiel einmal
+  CREATE TABLE team_spiel (
+    tid INTEGER NOT NULL,
+    mid INTEGER NOT NULL,
+    datum TEXT NOT NULL,
+    zeit TEXT,
+    art TEXT NOT NULL,
+    wettbewerb TEXT,
+    daten_json TEXT NOT NULL,      -- ListenSpiel (Heim, Gast, Ergebnis)
+    stand TEXT NOT NULL,           -- Stand der Seite
+    PRIMARY KEY (tid, mid)
+  );
+  CREATE TABLE team (
+    tid INTEGER PRIMARY KEY,
+    name TEXT,
+    geaendert TEXT NOT NULL
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {
