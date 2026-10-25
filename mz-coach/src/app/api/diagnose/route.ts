@@ -3,10 +3,11 @@ import { ladeKader } from "@/lib/db/kader";
 import { ladeKombis, scoutEinstufung } from "@/lib/scout";
 
 // Diagnose zum Herunterladen (nur mit App-Login, siehe proxy.ts): Abrufprotokoll, die neuesten Rohantworten,
-// die nach dem Hosting erstmals echt geprüft werden müssen (Scoutbericht, transfer.js, challenges.js, Marktsuche),
+// die nach dem Hosting erstmals echt geprüft werden müssen (Login-Ergebnis mit Bildschirmfoto und Antwortverlauf,
+// Scoutbericht, transfer.js, challenges.js, Marktsuche),
 // und je Spieler Scout-Sterne, wörtlicher Text und Einstufung. Enthält KEINE Zugangsdaten, Cookies oder Schlüssel
 // (Tabelle einstellung und geheimnisse.json werden nicht gelesen).
-const ARTEN = ["scoutbericht", "skript-transfer", "skript-challenges", "markt-suche"];
+const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche"];
 
 export async function GET() {
   const db = getDb();

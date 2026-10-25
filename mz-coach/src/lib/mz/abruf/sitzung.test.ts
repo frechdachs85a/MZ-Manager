@@ -86,6 +86,13 @@ describe.skipIf(!browserDa)("MZ-Sitzung gegen lokalen Nachbau", () => {
     expect(seite.htmlDom).toContain("Kader");
     expect(logins).toBe(1);
 
+    // Diagnose: Login-Ergebnis, Bildschirmfoto und Antwortverlauf gespeichert, das Passwort nirgends
+    const diag = db.prepare("SELECT art, html_roh FROM rohseite WHERE art LIKE 'login-%'").all() as { art: string; html_roh: string }[];
+    expect(diag.map((d) => d.art).sort()).toEqual(["login-bild", "login-ergebnis", "login-verlauf"]);
+    expect(diag.find((d) => d.art === "login-bild")!.html_roh.startsWith("data:image/png;base64,")).toBe(true);
+    expect(JSON.parse(diag.find((d) => d.art === "login-verlauf")!.html_roh).verlauf.some((v: { methode: string }) => v.methode === "POST")).toBe(true);
+    for (const d of diag.filter((x) => x.art !== "login-bild")) expect(d.html_roh).not.toContain("geheim");
+
     const nochmal = await mitMzSitzung(db, (s) => s.holeSeite("/?p=players"));
     expect(nochmal.htmlDom).toContain("Kader");
     expect(logins).toBe(1);
