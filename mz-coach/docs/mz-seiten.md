@@ -206,3 +206,20 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
 - Spielliste und Spielplan über `POST /ajax.php?p=matches&sub=list&sport=soccer` liefern ohne Login nur
   "An error occurred: You need to be logged in" (getestet 25.10.2026 mit type=played/series/max und type=scheduled).
   Für die Automatik: Listen über die eingeloggte Sitzung, Stats-XML ohne Login.
+
+## Transfermarkt (25.10.2026)
+
+- `ajax.php?p=transfer&sub=transfer-search&sport=soccer&…` antwortet ohne Login mit
+  „An error occurred: You need to be logged in“ (selbst geprüft).
+- Laut Quelltext des Userscripts Mazyar (github.com/mz-ir/mazyar, `src/index.js`, `src/tools.js`):
+  Parameter = alle Felder von `#searchform` der Marktseite (Kontrollkästchen 1/0), Versatz `o`,
+  20 Spieler je Seite. Antwort JSON `{ totalHits, players }`, `players` = HTML mit `div.playerContainer`.
+  Transferkasten `.transfer-control-area`: Spalte 1 Zeile 3 = Auktionsende („TT-MM-JJJJ hh:mm“),
+  letzte Zeile = geforderter Preis; Spalte 2 letzte Zeile = letztes Gebot. Nicht selbst geprüft.
+- Spieleransicht (echte Seite 24.10.2026): je Spieler „Nationalität: <Land>“ und bei manchen
+  „Arbeitsbewillligung: <Flagge Deutschland> (n Tage)“ (auf der Seite mit drei l). Im Kader am 24.10.:
+  7 nicht deutsche Spieler, 2 davon mit dieser Zeile.
+- Forum (Zitat aus dem Handbuch, 16.03.2023): „All teams are allowed to employ up to 3 foreigners“,
+  Spieler mit Work Permit zählen nicht; 6 Work Permits je Region, Kosten 10 × Wochengehalt.
+  Passt nicht zum Kader (5 Ausländer ohne die Zeile), daher nicht als Regel übernommen: die freien
+  Plätze trägt Marcus selbst ein.

@@ -94,6 +94,27 @@ const MIGRATIONEN: string[] = [
     geaendert TEXT NOT NULL
   );
   `,
+  `
+  -- Transfermarktsuche: jede Suche mit allen gelesenen Spielern (Rohantwort steht in rohseite)
+  CREATE TABLE markt_suche (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    zeit TEXT NOT NULL,
+    treffer INTEGER NOT NULL,      -- totalHits laut Antwort
+    seiten INTEGER NOT NULL
+  );
+  CREATE TABLE markt_spieler (
+    suche_id INTEGER NOT NULL,
+    pid INTEGER NOT NULL,
+    daten_json TEXT NOT NULL,      -- MarktSpieler
+    PRIMARY KEY (suche_id, pid)
+  );
+  -- abgelehnte Vorschläge, werden nie wieder vorgeschlagen (bis zur Rücknahme)
+  CREATE TABLE markt_ablehnung (
+    pid INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    datum TEXT NOT NULL
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

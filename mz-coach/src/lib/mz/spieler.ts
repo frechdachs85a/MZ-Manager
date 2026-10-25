@@ -25,6 +25,9 @@ export type SpielerDaten = {
   scoutMarkierung?: Partial<Record<Skill, 1 | 2>>;
   scoutTraining?: number; // Sterne "Tr. Geschwindigkeit"
   sperren?: Sperre[];
+  // Aus der Spieleransicht (?p=players). Arbeitsbewilligung nur, wenn die Zeile dort steht.
+  nationalitaet?: string;
+  arbeitsbewilligung?: { land: string; tage?: number };
   trainingslagerInfo?: TrainingslagerInfo;
 };
 

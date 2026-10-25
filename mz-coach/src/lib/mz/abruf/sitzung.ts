@@ -124,6 +124,9 @@ async function login(db: Database.Database, ctx: BrowserContext) {
 
 export type MzSitzung = {
   holeSeite: (pfad: string) => Promise<Seite>;
+  // Antworttext ohne Browserseite (z. B. ajax.php), mit den Cookies der Sitzung. Loggt nicht
+  // selbst ein: vorher eine Seite mit holeSeite laden.
+  holeText: (pfad: string) => Promise<{ url: string; status: number; text: string }>;
 };
 
 let laeuft = false;
@@ -202,6 +205,12 @@ export async function mitMzSitzung<T>(
             );
           }
           return seite;
+        }),
+      holeText: (pfad) =>
+        drossel(async () => {
+          const url = pfad.startsWith("http") ? pfad : `${MZ_BASIS}${pfad}`;
+          const r = await ctx.request.get(url, { timeout: 60_000 });
+          return { url, status: r.status(), text: await r.text() };
         }),
     };
 

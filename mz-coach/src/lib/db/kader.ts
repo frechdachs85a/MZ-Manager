@@ -58,6 +58,8 @@ const STATUS_FELDER = [
   "scoutSterne",
   "scoutMarkierung",
   "scoutTraining",
+  "nationalitaet",
+  "arbeitsbewilligung",
 ] as const;
 
 function behalteStatus(alt: SpielerDaten, neu: SpielerDaten): SpielerDaten {

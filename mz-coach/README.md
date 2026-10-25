@@ -56,6 +56,14 @@ npm run dev             # http://localhost:3000
 - Spiele (Etappe 3): Stats-XML einfügen oder hochladen, Spielseite mit Aufstellungen, Toren, Wechseln.
 - Gegneranalyse (Etappe 4): Spielliste hochladen, fehlende Ligaspiele holt die Webseite ohne Login,
   Urteil gleich/wechselnd mit Begründung je Spiel, Taktikvorschlag nach mz-wissen.md, Abschnitt 10.
+- Transfermarkt-Scout (Etappe 8, Teil): Seite „Markt“. Größte Schwachstelle = Startplatz mit dem niedrigsten
+  MZ-Wert in seiner Rolle (Startelf aus dem neuesten eigenen Spiel). Empfehlung = Marktspieler mit dem größten
+  Gewinn auf einem Startplatz, innerhalb von Kapital und freien Ausländerplätzen (trägt Marcus ein) und der
+  99-Regel. Mit Gründen, Vorbehalten, Ablehnen (dann der nächste), „heute kein passender Spieler“.
+  Suche täglich ab 6 Uhr per Zeitplan (`src/instrumentation.ts`, abschaltbar mit `MZ_ZEITPLAN=aus`).
+  Nationalität und Arbeitsbewilligung kommen aus der Spieleransicht (an der echten Seite geprüft).
+  Die Marktsuche (ajax.php?p=transfer&sub=transfer-search) ist nach dem Quelltext des Userscripts
+  Mazyar gebaut und noch nicht an einer echten Antwort geprüft; die erste Antwort wird roh gespeichert.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
 

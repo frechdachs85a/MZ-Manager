@@ -6,7 +6,7 @@ import { StatVergleich } from "@/components/stat-vergleich";
 import { Card, Hero, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeSpiel } from "@/lib/db/spiele";
-import { datumZeit } from "@/lib/format";
+import { datumZeit, spielDatum } from "@/lib/format";
 import { TEAM } from "@/lib/wissen/startbasis";
 
 // Bezeichnungen der Team-Statistik (Attributnamen der Stats-XML)
@@ -39,11 +39,6 @@ const uhr = (clock: string) => {
   return m ? `${m[1]}:${m[2].padStart(2, "0")}` : clock;
 };
 // Kartenarten laut mz-wissen.md: yellow, second yellow. Unbekannte Werte unverändert.
-// "2026-10-21 14:45:00" -> "21.10.2026, 14:45" (nur umformatiert, keine Zeitzonen-Umrechnung)
-const anzeigeDatum = (d?: string) => {
-  const m = d?.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
-  return m ? `${m[3]}.${m[2]}.${m[1]}${m[4] ? `, ${m[4]}:${m[5]}` : ""}` : d;
-};
 const KARTE: Record<string, string> = { yellow: "Gelb", "second yellow": "Gelb-Rot" };
 
 export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
@@ -65,7 +60,7 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
       <div className="seite">
         <Hero className="mt-5">
           <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">
-            {anzeigeDatum(s.datum) ?? "Datum n. v."} · Endstand
+            {spielDatum(s.datum) ?? "Datum n. v."} · Endstand
           </div>
           <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <div className="min-w-0 text-[17px] font-semibold leading-tight">
