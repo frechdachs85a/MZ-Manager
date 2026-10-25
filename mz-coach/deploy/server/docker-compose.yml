@@ -1,4 +1,4 @@
-# Oracle Cloud "Always Free" (oder jeder andere eigene Server mit Docker).
+# Eigener Server mit Docker (Hetzner Cloud, Oracle Cloud Always Free, …).
 # Startet die Webseite und davor Caddy, der das HTTPS-Zertifikat selbst holt und erneuert.
 # Daten liegen in ./daten (Datenbank, Sicherungen, geheimnisse.json) und überstehen Updates und Neustarts.
 services:
@@ -23,7 +23,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      DOMAIN: ${DOMAIN:?DOMAIN in deploy/oracle/.env eintragen}
+      DOMAIN: ${DOMAIN:?DOMAIN in deploy/server/.env eintragen}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_daten:/data

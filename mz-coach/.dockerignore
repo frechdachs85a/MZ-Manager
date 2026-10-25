@@ -8,5 +8,5 @@ data
 src/lib/mz/parser/fixtures/*.html
 src/lib/mz/parser/fixtures/*.xml
 tsconfig.tsbuildinfo
-deploy/oracle/daten
-deploy/oracle/.env
+deploy/server/daten
+deploy/server/.env

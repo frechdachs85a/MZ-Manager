@@ -49,5 +49,5 @@ next-env.d.ts
 /src/lib/mz/parser/fixtures/*.xml
 
 # Server-Daten der Oracle-Einrichtung (Datenbank, Schlüssel)
-/deploy/oracle/daten/
-/deploy/oracle/.env
+/deploy/server/daten/
+/deploy/server/.env
