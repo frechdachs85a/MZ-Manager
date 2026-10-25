@@ -10,6 +10,12 @@ für Desktop und Handy optimiert: ab 1024 px Breite Seitenleiste links und mehrs
   kein eigenes Pull-to-Refresh (der Browser lädt beim Herunterziehen selbst neu).
 - Keine Push-Benachrichtigungen. Die Automatik nach Ligaspielen (Etappe 7) zeigt ihre Ergebnisse
   auf der Übersicht.
+- Automatik (25.10.2026): frühestens 12 Stunden nach Anstoß des eigenen Ligaspiels, damit alle Daten
+  fertig sind (Anstoß 18:15 -> 6:15 Uhr am nächsten Morgen). Dann voll automatisch: eigenes Spiel
+  auswerten, nächsten Ligagegner ermitteln, alle seine Ligaspiele der Saison holen und analysieren,
+  Taktik vorschlagen und prüfen.
+- Die Webseite soll alle eigenen Taktik-Reiter kennen und sich die Exporte selbst holen können
+  (Taktikseite: changeTacticTab, teamTactic.editor.exportTactic, Feld #importExportData).
 Fachgrundlage: `mz-wissen.md`. Auftrag: `docs/auftrag.md`.
 
 ## Start lokal
@@ -47,6 +53,9 @@ npm run dev             # http://localhost:3000
   mz-wissen.md, Abschnitt 5, als Code: Fehler (eindeutig verletzt) und Hinweise (Regel ohne genaue Grenze).
   Spielfeld mit allen drei Aufstellungen, Kegel-Spieler rot. Noch nicht an einer echten exportierten Taktik geprüft.
 - Spielfeld-Ansicht (Teil von Etappe 3): Grenzen aus der Umrechnung in mz-wissen.md, Abschnitt 3.
+- Spiele (Etappe 3): Stats-XML einfügen oder hochladen, Spielseite mit Aufstellungen, Toren, Wechseln.
+- Gegneranalyse (Etappe 4): Spielliste hochladen, fehlende Ligaspiele holt die Webseite ohne Login,
+  Urteil gleich/wechselnd mit Begründung je Spiel, Taktikvorschlag nach mz-wissen.md, Abschnitt 10.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
 

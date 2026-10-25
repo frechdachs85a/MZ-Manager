@@ -203,3 +203,6 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
 - Scoutspiel (mid 1637650666) ohne Login: `check-match` antwortet `{"response":"blocked","content":"You are not allowed to view …"}`,
   die XML bleibt leer. Scoutspiele sind nur eingeloggt abrufbar.
 - Abgerufen nacheinander mit 3 bis 6 Sekunden Pause.
+- Spielliste und Spielplan über `POST /ajax.php?p=matches&sub=list&sport=soccer` liefern ohne Login nur
+  "An error occurred: You need to be logged in" (getestet 25.10.2026 mit type=played/series/max und type=scheduled).
+  Für die Automatik: Listen über die eingeloggte Sitzung, Stats-XML ohne Login.
