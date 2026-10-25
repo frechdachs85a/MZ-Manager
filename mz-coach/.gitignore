@@ -46,3 +46,4 @@ next-env.d.ts
 
 # Echte Kaderseiten (Skills, Marktwerte, Gehälter). Repo ist öffentlich, daher nicht einchecken.
 /src/lib/mz/parser/fixtures/*.html
+/src/lib/mz/parser/fixtures/*.xml

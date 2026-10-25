@@ -135,3 +135,16 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
   nicht "nicht aufstellbar". Dafür gilt die Taktikseite.
 - Enthält auch einen leeren Reiter `#squad_unavailable`; die Erkennung von "Verletzt / Gesperrt" verlangt
   deshalb zusätzlich die Überschrift "Verletzungen".
+
+## Taktik-XML aus dem Editor (25.10.2026, von Marcus kopiert: außenR)
+
+- Beginnt mit `<?xml version="1.0" ?>`, dann `<SoccerTactics>`. Elemente in gemischter Reihenfolge (Pos und Sub abwechselnd).
+- `Pos` und auch `Sub` haben `x y x1 y1 x2 y2 pt fk`. Bank-Einträge: x 228, alle drei Aufstellungen gleich.
+- Torwart im Editor auf 103/315.
+- `pt` und `fk`: je Spieler eine Zahl 1 bis 16. Bedeutung nicht geprüft. Die Taktikseite hat Bereiche
+  `#tactic-roles-penalty-takers` und `#tactic-roles-free-kick-takers`, daher vermutlich Reihenfolge der
+  Elfmeter- bzw. Freistoßschützen. Der Prüfer lässt beide unverändert.
+- Regeln ohne Ereignis tragen trotzdem `player_event="receives_yellow"` und ohne Zeit `time="5"` (Vorgabewerte des Editors).
+- Rot wird mit zwei Regeln gelöst: eine stellt um (Flügel, Formation 1), eine wechselt (Schobel raus, Kaupa rein).
+- Der Prüfer meldet für diese Taktik keine Fehler; kleinste Abstände 47,5 / 48,3 / 48,0.
+- Gespeichert nur lokal als `src/lib/mz/parser/fixtures/aussenR-2026-10-25.xml` (Repo ist öffentlich).

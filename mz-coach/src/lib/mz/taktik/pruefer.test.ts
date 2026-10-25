@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { pruefeTaktik } from "./pruefer";
@@ -123,5 +124,33 @@ describe("Prüfer (Prüfliste mz-wissen.md, Abschnitt 5)", () => {
   it("Spieler, die nicht im Kader sind, sind ein Fehler", () => {
     const kader: SpielerDaten[] = [{ pid: P.liu, name: "Liu", skills: {} }];
     expect(pruefeTaktik(parseTaktikXml(AUSSEN_R), kader).fehler.some((f) => f.text.includes("nicht im gespeicherten Kader"))).toBe(true);
+  });
+});
+
+// Echte außenR von Marcus (25.10.2026), nur lokal vorhanden (nicht im öffentlichen Repo).
+const ECHT = new URL("../parser/fixtures/aussenR-2026-10-25.xml", import.meta.url);
+
+describe.skipIf(!existsSync(ECHT))("Echte außenR aus dem Editor", () => {
+  const t = parseTaktikXml(readFileSync(ECHT, "utf8"));
+
+  it("wird vollständig gelesen (XML-Kopf, Sub mit Alternativen, pt/fk bleiben erhalten)", () => {
+    expect(t.pos).toHaveLength(11);
+    expect(t.subs).toHaveLength(5);
+    expect(t.regeln).toHaveLength(9);
+    expect(t.pos.find((p) => p.pos === "goalie")).toMatchObject({ start: { x: 103, y: 315 } });
+    expect(t.pos[0].attrs).toMatchObject({ pt: "1", fk: "10" });
+  });
+
+  it("hat nach der Prüfliste keine Fehler; zwei Rot-Regeln decken den Rot-Fall ab", () => {
+    const r = pruefeTaktik(t);
+    expect(r.fehler).toEqual([]);
+    expect(r.hinweise.some((h) => h.regel === 7)).toBe(false);
+  });
+
+  it("passt zu mz-wissen.md, Abschnitt 8 (gemeinsame Regeln)", () => {
+    const zeit = (m: string) => t.regeln.filter((r) => r.check_time === "true" && r.time === m);
+    expect(zeit("50").some((r) => r.out_player === "229906765" && r.in_player_id === "230162433")).toBe(true);
+    expect(zeit("65").some((r) => r.goal_condition === "down_by_at_least" && r.goals === "2" && r.tactics === "shortpass" && r.formation === "2")).toBe(true);
+    expect(t.regeln.filter((r) => r.player_event === "sent_off" && r.check_player_event === "true")).toHaveLength(2);
   });
 });
