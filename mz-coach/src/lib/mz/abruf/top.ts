@@ -12,6 +12,9 @@ import { mitMzSitzung, MzFehler } from "./sitzung";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { letzteLigaspiele, type ListenSpiel } from "@/lib/mz/parser/spielliste";
 import { holeStatsXml } from "./spiele";
+import { speichereTopSpiel, topSpielVorhanden, type TopArt } from "@/lib/db/top-spiel";
+import { parseStatsXml } from "@/lib/mz/parser/stats";
+import { spielMuster } from "@/lib/mz/analyse/muster";
 
 // Lernmaterial aus den Topteams (Auftrag Marcus, 25.10.2026): je Team die letzten 10 Liga- und 10
 // Weltligaspiele. Spiellisten über die eingeloggte Sitzung (ajax.php?p=matches&sub=list, Felder wie
@@ -70,8 +73,14 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
             throw new MzFehler(`Spielliste von ${t.name}: Antwort nicht erkannt („${a.text.slice(0, 60)}“). Rohantwort gespeichert.`);
           }
           const liste = parseSpielliste(html, t.tid);
-          speichereSpielliste(db, { ...liste, teamName: liste.teamName ?? t.name });
           const { liga, weltliga } = auswahlLernspiele(liste.spiele);
+          // Eigenes Team: ganze Liste (Saisonstatistik). Topteams: nur die ausgewählten Spiele behalten.
+          const behalten = t.tid === TEAM.tid ? liste.spiele : [...liga, ...weltliga];
+          speichereSpielliste(db, { ...liste, spiele: behalten, teamName: liste.teamName ?? t.name });
+          if (t.tid !== TEAM.tid) {
+            const mids = behalten.map((x) => x.mid);
+            db.prepare(`DELETE FROM team_spiel WHERE tid = ? AND mid NOT IN (${mids.map(() => "?").join(",") || "NULL"})`).run(t.tid, ...mids);
+          }
           teile.push(`${t.name}: ${liste.spiele.length} Spiele in der Liste, davon ${liga.length} Liga und ${weltliga.length} Weltliga ausgewählt.`);
         }
       },
@@ -84,32 +93,45 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
 
     // 2. Stats-XML ohne Login, nacheinander mit Pause
     const eigene: ListenSpiel[] = letzteLigaspiele(ladeTeamSpiele(db, TEAM.tid), 99).filter((s) => s.tore !== undefined);
-    // Fehlende Spiele aller Topteams (auch an Tagen ohne Listenabruf: Nachholen bis alles da ist)
-    const fehlen = eigene
-      .concat(
-        ladeTopTeams(db).flatMap((t) => {
-          const { liga, weltliga } = auswahlLernspiele(ladeTeamSpiele(db, t.tid));
-          return [...liga, ...weltliga];
-        }),
-      )
-      .filter((s, i, alle) => alle.findIndex((x) => x.mid === s.mid) === i && !spielVorhanden(db, s.mid));
-    let geholt = 0;
-    for (const s of fehlen.slice(0, MAX_XML_JE_LAUF)) {
-      if (geholt > 0) await new Promise((r) => setTimeout(r, 4000));
-      const r = await holeStatsXml(s.mid);
-      if (r.ok) {
-        spielXmlEinlesen(db, r.xml);
-        geholt++;
-      } else {
-        teile.push(`mid ${s.mid}: ${r.text}`);
+    // Fehlende Spiele (auch an Tagen ohne Listenabruf: Nachholen bis alles da ist). Eigene Spiele werden
+    // komplett gespeichert; von Topteams nur ein Muster ohne Spielernamen, die XML wird nicht aufbewahrt.
+    const topTeams = ladeTopTeams(db);
+    const topTids = new Set(topTeams.map((t) => t.tid));
+    type Auftrag = { mid: number; eigen: boolean; top: { tid: number; art: TopArt }[] };
+    const auftraege = new Map<number, Auftrag>();
+    for (const s of eigene) if (!spielVorhanden(db, s.mid)) auftraege.set(s.mid, { mid: s.mid, eigen: true, top: [] });
+    for (const t of topTeams) {
+      const { liga, weltliga } = auswahlLernspiele(ladeTeamSpiele(db, t.tid));
+      for (const [art, l] of [["liga", liga], ["weltliga", weltliga]] as const) {
+        for (const s of l) {
+          if (topSpielVorhanden(db, s.mid, t.tid)) continue;
+          const a = auftraege.get(s.mid) ?? { mid: s.mid, eigen: false, top: [] };
+          a.top.push({ tid: t.tid, art });
+          auftraege.set(s.mid, a);
+        }
       }
     }
-    teile.push(`Stats-XML: ${geholt} neu gespeichert, ${Math.max(0, fehlen.length - MAX_XML_JE_LAUF)} folgen beim nächsten Lauf.`);
+    const fehlen = [...auftraege.values()];
+    let geholt = 0;
+    for (const a of fehlen.slice(0, MAX_XML_JE_LAUF)) {
+      if (geholt > 0) await new Promise((r) => setTimeout(r, 4000));
+      const r = await holeStatsXml(a.mid);
+      if (!r.ok) {
+        teile.push(`mid ${a.mid}: ${r.text}`);
+        continue;
+      }
+      if (a.eigen) spielXmlEinlesen(db, r.xml);
+      if (a.top.length) {
+        const spiel = parseStatsXml(r.xml);
+        for (const t of a.top) if (topTids.has(t.tid)) speichereTopSpiel(db, t.tid, t.art, spielMuster(spiel, t.tid, { anonym: true }));
+      }
+      geholt++;
+    }
+    teile.push(`Stats-XML: ${geholt} Spiele neu ausgewertet, ${Math.max(0, fehlen.length - MAX_XML_JE_LAUF)} folgen beim nächsten Lauf.`);
     // Wöchentliches Archiv der Auswertung, damit Erkenntnisse nicht verloren gehen
     if (woche) {
       const { archiviereTop } = await import("@/lib/archiv");
-      archiviereTop(db);
-      teile.push("Top-10-Auswertung archiviert.");
+      teile.push(archiviereTop(db) ? "Top-10-Auswertung archiviert." : "Top-10-Auswertung unverändert, kein neuer Archiv-Eintrag.");
     }
   } catch (e) {
     ok = false;

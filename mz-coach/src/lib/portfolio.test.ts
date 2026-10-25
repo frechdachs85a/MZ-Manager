@@ -2,7 +2,8 @@ import Database from "better-sqlite3";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { migrieren } from "@/lib/db/schema";
-import { speichereSpiel } from "@/lib/db/spiele";
+import { speichereTopSpiel } from "@/lib/db/top-spiel";
+import { spielMuster } from "@/lib/mz/analyse/muster";
 import { parseStatsXml } from "@/lib/mz/parser/stats";
 import { portfolioAnalyse, regelcheck } from "./portfolio";
 
@@ -29,7 +30,7 @@ describe.skipIf(!MIDS.every((m) => existsSync(F(m))))("Portfolio aus Topteam-Spi
     for (const m of MIDS) {
       const xml = readFileSync(F(m), "utf8");
       const s = parseStatsXml(xml);
-      speichereSpiel(db, s, xml);
+      speichereTopSpiel(db, 97933, "liga", spielMuster(s, 97933, { anonym: true }));
       const heim = s.teams.find((t) => t.heim)!;
       const gast = s.teams.find((t) => !t.heim)!;
       db.prepare("INSERT INTO team_spiel (tid, mid, datum, art, daten_json, stand) VALUES (?, ?, ?, ?, ?, ?)").run(

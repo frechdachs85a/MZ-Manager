@@ -158,6 +158,19 @@ const MIGRATIONEN: string[] = [
     auswertung_json TEXT NOT NULL
   );
   `,
+  `
+  -- Topteam-Spiele als kompaktes Muster ohne Spielernamen (keine komplette Stats-XML)
+  CREATE TABLE top_spiel (
+    mid INTEGER NOT NULL,
+    tid INTEGER NOT NULL,
+    datum TEXT,
+    art TEXT NOT NULL,             -- liga | weltliga
+    muster_json TEXT NOT NULL,     -- SpielMuster (anonym)
+    gespeichert TEXT NOT NULL,
+    PRIMARY KEY (mid, tid)
+  );
+  CREATE INDEX top_spiel_tid ON top_spiel(tid, art, datum);
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

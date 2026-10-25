@@ -37,10 +37,10 @@ describe("Aufräumen und Archiv", () => {
     expect((db.prepare("SELECT count(*) n FROM markt_suche").get() as { n: number }).n).toBe(7);
   });
 
-  it("archiviert die Top-10-Auswertung je Tag", () => {
+  it("archiviert die Top-10-Auswertung nur, wenn sie sich geändert hat", () => {
     const db = neu();
-    archiviereTop(db, new Date("2026-10-26T08:00:00Z"));
-    archiviereTop(db, new Date("2026-10-26T09:00:00Z"));
+    expect(archiviereTop(db, new Date("2026-10-26T08:00:00Z"))).toBe(true);
+    expect(archiviereTop(db, new Date("2026-11-02T08:00:00Z"))).toBe(false);
     expect(ladeTopArchiv(db)).toEqual([{ datum: "2026-10-26", spiele: 0 }]);
   });
 

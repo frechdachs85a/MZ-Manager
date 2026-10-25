@@ -5,12 +5,17 @@ import { topAuswertung } from "@/lib/top-auswertung";
 
 const berlinTag = (d: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(d);
 
-// Top-10-Auswertung mit Datum festhalten (eine Zeile je Tag; gleicher Tag wird ersetzt)
-export function archiviereTop(db: Database.Database, jetzt = new Date()) {
+// Top-10-Auswertung mit Datum festhalten (eine Zeile je Tag). Nur wenn sie sich gegenüber dem letzten
+// Archiv-Eintrag geändert hat: keine doppelten Stände.
+export function archiviereTop(db: Database.Database, jetzt = new Date()): boolean {
   const a = topAuswertung(db);
+  const json = JSON.stringify(a);
+  const letzter = db.prepare("SELECT auswertung_json FROM top_archiv WHERE datum < ? ORDER BY datum DESC LIMIT 1").get(berlinTag(jetzt)) as { auswertung_json: string } | undefined;
+  if (letzter?.auswertung_json === json) return false;
   db.prepare(
     "INSERT INTO top_archiv (datum, spiele, auswertung_json) VALUES (?, ?, ?) ON CONFLICT(datum) DO UPDATE SET spiele = excluded.spiele, auswertung_json = excluded.auswertung_json",
-  ).run(berlinTag(jetzt), a.spiele, JSON.stringify(a));
+  ).run(berlinTag(jetzt), a.spiele, json);
+  return true;
 }
 
 export function ladeTopArchiv(db: Database.Database): { datum: string; spiele: number }[] {

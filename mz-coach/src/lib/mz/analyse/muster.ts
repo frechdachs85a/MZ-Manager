@@ -62,7 +62,9 @@ function stil(s: StatsSpiel, tid: number): Stil {
   };
 }
 
-export function spielMuster(s: StatsSpiel, tid: number): SpielMuster {
+// anonym: ohne Spielernamen (für die Topteams zählt nur, wann welches Team was und wie spielt);
+// Spieler werden dann über ihre Rolle aus der Startposition beschrieben.
+export function spielMuster(s: StatsSpiel, tid: number, opt: { anonym?: boolean } = {}): SpielMuster {
   const team = s.teams.find((t) => t.id === tid);
   const geg = s.teams.find((t) => t.id !== tid);
   if (!team || !geg) throw new Error(`Team ${tid} spielt nicht in Spiel ${s.mid}.`);
@@ -84,8 +86,8 @@ export function spielMuster(s: StatsSpiel, tid: number): SpielMuster {
       regelMinute: w.regelMinute,
       lage: lageAus(w.stand, team.heim),
       grund: w.grund,
-      raus: name.get(w.raus)?.name ?? `id ${w.raus}`,
-      rein: name.get(w.rein)?.name ?? `id ${w.rein}`,
+      raus: opt.anonym ? "" : name.get(w.raus)?.name ?? `id ${w.raus}`,
+      rein: opt.anonym ? "" : name.get(w.rein)?.name ?? `id ${w.rein}`,
       rolleRaus: rolleVon(w.raus),
       stand: w.stand,
     }));
@@ -94,12 +96,14 @@ export function spielMuster(s: StatsSpiel, tid: number): SpielMuster {
     .map((t) => ({ minute: minuteVon(t), lage: lageAus(t.stand, team.heim), art: t.art, neu: t.neu, stand: t.stand }));
   const karten = s.karten
     .filter((k) => k.teamId === tid)
-    .map((k) => ({ minute: k.minute, lage: lageAus(k.stand, team.heim), art: k.art, spieler: name.get(k.spieler)?.name ?? `id ${k.spieler}`, stand: k.stand }));
+    .map((k) => ({ minute: k.minute, lage: lageAus(k.stand, team.heim), art: k.art, spieler: opt.anonym ? rolleVon(k.spieler) : name.get(k.spieler)?.name ?? `id ${k.spieler}`, stand: k.stand }));
   const ablauf = [
     ...wechsel.map((w) => ({
       minute: w.minute,
       stand: w.stand,
-      text: `Wechsel (${GRUND_DE[w.grund] ?? w.grund}${w.regelMinute !== undefined ? `, Regel ab ${w.regelMinute}.` : ""}): ${w.rein} für ${w.raus} (${w.rolleRaus})`,
+      text: opt.anonym
+        ? `Wechsel (${GRUND_DE[w.grund] ?? w.grund}${w.regelMinute !== undefined ? `, Regel ab ${w.regelMinute}.` : ""}): ${w.rolleRaus} ausgewechselt, Einwechsler auf diesen Platz (abgeleitet)`
+        : `Wechsel (${GRUND_DE[w.grund] ?? w.grund}${w.regelMinute !== undefined ? `, Regel ab ${w.regelMinute}.` : ""}): ${w.rein} für ${w.raus} (${w.rolleRaus})`,
     })),
     ...taktikwechsel.map((t) => ({ minute: t.minute, stand: t.stand, text: `${ART_DE[t.art] ?? t.art} → ${t.neu}` })),
     ...karten.map((k) => ({ minute: k.minute, stand: k.stand, text: `Karte ${k.art}: ${k.spieler}` })),
