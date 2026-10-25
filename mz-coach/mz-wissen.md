@@ -1,6 +1,6 @@
 # MZ-Wissensbasis FC Toho
 
-Stand: 24.10.2026. Alles hier ist entweder von Marcus vorgegeben oder aus echten ManagerZone-Daten belegt. Nichts davon ist geschätzt. Diese Datei ist die Startbasis für die KI der Webseite und wird laufend erweitert.
+Stand: 25.10.2026. Alles hier ist entweder von Marcus vorgegeben oder aus echten ManagerZone-Daten belegt. Nichts davon ist geschätzt. Diese Datei ist die Startbasis für die KI der Webseite und wird laufend erweitert.
 
 ---
 
@@ -97,7 +97,7 @@ x/y = Startaufstellung, x1/y1 = Alternative 1, x2/y2 = Alternative 2. pt und fk 
 4. Eckstürmer immer mit Zulieferer auf seiner Seite (z. B. rechter Sechser 151/183, tiefer Stürmer 129/95 bei Ecke rechts)
 5. Höchstens 3 Wechsel, ohne Konflikte untereinander. Kein Spieler darf in zwei Wechselregeln vorkommen (Marcus, 25.10.2026).
 6. Bei Rückstand nur offensiver, nie absichern
-7. Rote-Karte-Regel in jeder Taktik; Fall abdecken, dass genau der Rot-Auswechselspieler Rot sieht. Rot-Logik: 2 Stürmer = Flügel (einer außen, einer zentral), 1 Stürmer = zentral + Kurzpass. Eckstürmer ohne guten Flankengeber rückt in die Mitte + Kurzpass.
+7. Rote-Karte-Regel in jeder Taktik, aber ohne Spielerwechsel, nur Umstellung auf Alternative 1. Kein Spieler darf in zwei Wechselregeln vorkommen. Rot-Logik: 2 Stürmer = Flügel (einer außen, einer zentral), 1 Stürmer = zentral + Kurzpass. Eckstürmer ohne guten Flankengeber rückt in die Mitte + Kurzpass.
 8. Bank nach Position, subgoalie nie Regel-Einwechsler
 9. Kopfball bei Innenverteidigern und Mittelstürmer beachten (Marcus' Regel, zählt in der Formel kaum)
 10. Spieler mit Kegel auf der Taktikseite (Trainingslager ohne Chip) oder gesperrt/verletzt nicht aufstellen. Ob Kegel-Spieler auf der Bank sitzen dürfen, ist nicht getestet (Marcus, 25.10.2026): bis bestätigt auch nicht auf die Bank. Trainingslager mit Chip oder Jugendaufbau-Trainingslager ist erlaubt. Sperre nur für den Wettbewerb, für den sie gilt.
@@ -144,7 +144,7 @@ Standards, Form, Alter, Größe zählen nicht.
 | freund | Freundschaftsspiel-Taktik | Form halten |
 | U18 | 5-2-1-2 Kurzpass defensiv aus Profi-Bausteinen (Lyon-Fünferkette, Raureni-Spielmacher und Sturm) | Jugend, nicht aktiv betreut |
 
-Gemeinsame Regeln in außenR/außenL/3313of/532de: 50. Hyuga raus, Ishizaki rein (Eckstürmer früh frisch); 60. Kaupa für Nazarov und Rodekamp für Cytrynski (532de: Salzer für Nazarov); ab 60. bei 1 Tor Rückstand offensiv + aggressiv; ab 65. bei 2 Toren Rückstand Kurzpass + Alternative 2 + aggressiv; ab 70. bei Führung Spielweise normal (nur außenR und außenL); ab 80. bei Gleichstand offensiv + aggressiv; Rot: Flügel/Formation 1 und Schobel raus, Kaupa rein. Seit 25.10.2026 (Marcus): bei Rot in keiner Taktik mehr ein Spielerwechsel, nur noch die Umstellung auf Alternative 1; "Schobel raus, Kaupa rein" wurde aus außenR, außenL, kupass, 3313of, 532de, indivi und freund entfernt.
+Gemeinsame Regeln in außenR/außenL/3313of/532de: 50. Hyuga raus, Ishizaki rein (Eckstürmer früh frisch); 60. Kaupa für Nazarov und Rodekamp für Cytrynski (532de: Salzer für Nazarov); ab 60. bei 1 Tor Rückstand offensiv + aggressiv; ab 65. bei 2 Toren Rückstand Kurzpass + Alternative 2 + aggressiv; ab 70. bei Führung Spielweise normal (nur außenR und außenL); ab 80. bei Gleichstand offensiv + aggressiv; Rot: nur Umstellung auf Alternative 1 (Flügel bzw. Kurzpass bei kupass/indivi), KEIN Spielerwechsel (seit 25.10.2026, wie Lyon; vorher kollidierte "Schobel raus, Kaupa rein" mit dem Kaupa-Wechsel in der 60.). Gilt in allen Taktiken inkl. kupass, indivi, freund.
 
 Template-Koordinaten außenR (Editor): Abwehr 26/224, 76/224, 125/224, 175/224; Sechser 101/183 und 151/183; Spielmacher 101/135; Sturm 129/95, 82/77; Ecke 200/63.
 kupass-Koordinaten: Abwehr 33/222, 79/235, 127/235, 175/222; Sechser 79/186, 127/186; Spielmacher 103/142; Sturm 72/100, 134/100, vorne 103/63.
@@ -165,6 +165,25 @@ Top 10: 1 Bazellatin (102604), 2 Nagyváradi AC (864852), 3 Formation Pure Lyonn
 - CARDINAL startet normal und schaltet nach 5 bis 24 Minuten auf offensiv.
 - Startelf-Werte Top 10: 13,7 bis 16,1 Mio, Altersschnitt meist 29 bis 32. FC Toho: 12,4 Mio, 27,3 Jahre.
 - Profile sichtbarer Topspieler: IV immer Zweikampf 10; Mittelstürmer Schuss 9-10, Kopfball 9-10, Spielübersicht 10; Eckstürmer Flanken 10, Passen 9-10, Kopfball egal; Sechser Passen 9-10, Zweikampf 9-10; Torwart Tw10, Sü9, Fl8-9.
+
+### Muster aus 278 Spielen der Top 10 und ihrer Gegner (25.10.2026, 540 Team-Spiele mit Marktwerten)
+Hinweis: Marktwerte sind die Werte vom Abrufdatum, nicht vom Spieltag. Alles Zusammenhänge, keine bewiesenen Ursachen.
+- Kaderwert entscheidet am stärksten. Verhältnis Startelf eigene/Gegner: unter 0,85 = 0,14 Pkt/Spiel (2 Siege in 70); 0,85 bis 1,15 = 1,26 bis 1,58 Pkt (offen); 1,15 bis 1,3 = 2,44 Pkt; über 1,3 = 34 Siege in 34.
+- Kein Heimvorteil messbar: Heim 1,45 Pkt, auswärts 1,42; bei ausgeglichenem Kaderwert sogar auswärts etwas besser.
+- Bei ausgeglichenem Kaderwert (0,9 bis 1,1): Flügel 1,43 Pkt, Kurzpass 1,22; offensiv 1,44, normal 1,27; mit Eckstürmer 1,43, ohne 1,26; Einsatz aggressiv ab Anpfiff nur 0,74 (normal 1,46).
+- Einsatz aggressiv bringt NICHT mehr Karten (Gelb pro Spiel 0,20 gegen 0,21) und nicht mehr gewonnene Zweikämpfe.
+- Mehr Schüsse aufs Tor als der Gegner: 1,64 Pkt, weniger: 1,17. Ballbesitz ab 55 %: 2,04 Pkt, unter 45 %: 0,27.
+- Verwertung: 16 % der Schüsse aufs Tor werden Tore.
+- 20 % aller Tore fallen zwischen 75. und 90., in den anderen Viertelstunden je 14 bis 17 %.
+- Joker wirken: eingewechselte Stürmer 1,09 Tore pro 90 Minuten, Startstürmer 0,71; Startstürmer nach der 55. nur noch 0,62. 20 % aller Tore machen Eingewechselte.
+- Häufigste Regelminuten für Wechsel: 55. (510), 60. (231), 50. (196), 65. (112), 45. (56).
+- Bei 1 bis 2 Toren Rückstand in der 65.: Teams mit Umstellung (aggressiv, offensiv oder Passspiel) holen 0,57 Pkt und in 29 % noch mindestens einen Punkt; ohne Umstellung 0,43 Pkt und 22 %.
+- Bei Führung in der 70.: Umstellung auf normal hält den Sieg in 88 % (0,50 Gegentore danach), ohne 84 % (0,55). Kleiner Vorteil, kleine Stichprobe (26).
+- Altersschnitt der Startelf 32+ schneidet bei gleichem Kaderwert schlechter ab (1,19 Pkt) als 30 bis 32 (1,49).
+
+### Aus dem MZ-Forum (Erfahrungsberichte, nicht offiziell)
+- Taktik-Guide (topic 12766444): Flügelspiel braucht Flügelspieler mit Sprint/Ausdauer mind. 9/8, Flanken mind. 8; Kurzpass braucht Passen, Spielübersicht, Technik überall; ein Spieler im Mittelkreis fängt die Abstöße ab; Verteidiger so nah wie möglich an die gegnerischen Flügelspieler; Abwehr in zwei Linien, nie die ganze Abwehr in den Strafraum.
+- Form-Thread (topic 12023582): Form ist ein Multiplikator, jeder Ball zählt; Form wird dienstags berechnet; Liga- und Freundschaftsspiele wirken positiv und negativ (Überspielen möglich), Pokale, Freundschaftsligen und Herausforderungen nur positiv; alle Spieler im Aufgebot (auch ungenutzte Bank) bekommen denselben Formeffekt; Trainingslager ändert die Form nicht; Faustregel bei Form 7 bis 10: 4 Freundschaftsspiele plus 2 Ligaspiele pro Woche.
 
 ## 10. Faustregeln Gegneranalyse
 

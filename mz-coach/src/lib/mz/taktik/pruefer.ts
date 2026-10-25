@@ -126,10 +126,12 @@ export function pruefeTaktik(t: Taktik, kader: SpielerDaten[] = []): Pruefung {
   if (rot.length === 0) {
     fehler.push({ regel: 7, text: "Keine Regel für eine Rote Karte (player_event sent_off)." });
   } else {
+    // Seit 25.10.2026 (Marcus): bei Rot kein Spielerwechsel, nur Umstellung auf Alternative 1
     for (const r of rot.filter(istWechsel)) {
-      if (rot.length === 1) {
-        hinweise.push({ regel: 7, text: `Rot-Regel wechselt ${wer(r.out_player)} aus. Sieht genau er Rot, greift sie nicht. Fall abgedeckt?` });
-      }
+      fehler.push({ regel: 7, text: `Rot-Regel wechselt ${wer(r.out_player)} aus. Bei Rot kein Spielerwechsel, nur Umstellung auf Alternative 1.` });
+    }
+    if (!rot.some((r) => r.formation === "1")) {
+      hinweise.push({ regel: 7, text: "Keine Rot-Regel stellt auf Alternative 1 um (formation 1)." });
     }
   }
 
