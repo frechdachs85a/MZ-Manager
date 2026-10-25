@@ -79,6 +79,20 @@ const TABS: Tab[] = [
   },
 ];
 
+// Nur in der Seitenleiste am Laptop (die Tab-Leiste am Handy hat Platz für 6)
+const MEHR: Tab[] = [
+  {
+    href: "/top10",
+    label: "Top 10",
+    icon: (
+      <svg viewBox="0 0 24 24" {...s}>
+        <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+        <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z" />
+      </svg>
+    ),
+  },
+];
+
 const EINSTELLUNGEN: Tab = {
   href: "/einstellungen",
   label: "Einstellungen",
@@ -139,7 +153,7 @@ export function Navigation() {
           </span>
         </Link>
         <ul className="flex flex-1 flex-col gap-1">
-          {[...TABS, EINSTELLUNGEN].map((tab) => {
+          {[...TABS, ...MEHR, EINSTELLUNGEN].map((tab) => {
             const active = istAktiv(pathname, tab.href);
             return (
               <li key={tab.href} className={tab === EINSTELLUNGEN ? "mt-auto" : undefined}>

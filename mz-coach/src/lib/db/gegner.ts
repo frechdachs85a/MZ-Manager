@@ -36,6 +36,11 @@ export function listeGegner(db: Database.Database, ligaAb: number): GegnerZeile[
     .all(ligaAb, ligaAb) as GegnerZeile[];
 }
 
+// Wie listeGegner, aber ohne die Topteams (deren Spiele sind Lernmaterial)
+export function listeEchteGegner(db: Database.Database, ligaAb: number, topTids: Set<number>): GegnerZeile[] {
+  return listeGegner(db, ligaAb).filter((g) => !topTids.has(g.tid));
+}
+
 export function ladeTeamSpiele(db: Database.Database, tid: number): (ListenSpiel & { xml: boolean })[] {
   const rows = db
     .prepare(

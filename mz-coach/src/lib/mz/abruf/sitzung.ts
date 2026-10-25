@@ -134,6 +134,8 @@ export type MzSitzung = {
   // Antworttext ohne Browserseite (z. B. ajax.php), mit den Cookies der Sitzung. Loggt nicht
   // selbst ein: vorher eine Seite mit holeSeite laden.
   holeText: (pfad: string) => Promise<{ url: string; status: number; text: string }>;
+  // Formular abschicken wie die Seite selbst (POST, Felder als application/x-www-form-urlencoded)
+  sendeForm: (pfad: string, felder: Record<string, string>) => Promise<{ url: string; status: number; text: string }>;
 };
 
 let laeuft = false;
@@ -226,6 +228,12 @@ export async function mitMzSitzung<T>(
         drossel(async () => {
           const url = pfad.startsWith("http") ? pfad : `${MZ_BASIS}${pfad}`;
           const r = await ctx.request.get(url, { timeout: 60_000 });
+          return { url, status: r.status(), text: await r.text() };
+        }),
+      sendeForm: (pfad, felder) =>
+        drossel(async () => {
+          const url = pfad.startsWith("http") ? pfad : `${MZ_BASIS}${pfad}`;
+          const r = await ctx.request.post(url, { form: felder, timeout: 60_000 });
           return { url, status: r.status(), text: await r.text() };
         }),
     };

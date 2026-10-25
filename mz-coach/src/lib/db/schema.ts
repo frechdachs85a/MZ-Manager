@@ -119,6 +119,16 @@ const MIGRATIONEN: string[] = [
   -- Rahmen wird seit 25.10.2026 wie im Gebotsfenster gespeichert (markt_rahmen)
   DELETE FROM einstellung WHERE schluessel IN ('markt_kapital', 'markt_auslaender_frei');
   `,
+  `
+  -- Topteams der Managerwertung, deren Spiele als Lernmaterial gespeichert werden
+  CREATE TABLE top_team (
+    tid INTEGER PRIMARY KEY,
+    rang INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    quelle TEXT NOT NULL,          -- woher die Liste stammt (Rangliste mit Datum oder mz-wissen.md)
+    stand TEXT NOT NULL
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

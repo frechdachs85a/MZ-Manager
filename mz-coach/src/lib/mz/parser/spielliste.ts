@@ -35,11 +35,27 @@ function tidAus(a: HTMLElement | null): number | undefined {
   return m ? Number(m[1]) : undefined;
 }
 
-export function parseSpielliste(html: string): Spielliste {
+// Antwort von ajax.php?p=matches&sub=list: HTML direkt oder als Text in einer JSON-Antwort (Aufbau
+// noch nicht an einer echten Antwort gesehen, daher beides).
+export function spiellisteHtmlAus(antwort: string): string | null {
+  if (istSpielliste(antwort)) return antwort;
+  try {
+    const suche = (v: unknown): string | null => {
+      if (typeof v === "string") return istSpielliste(v) ? v : null;
+      if (v && typeof v === "object") for (const x of Object.values(v)) { const r = suche(x); if (r) return r; }
+      return null;
+    };
+    return suche(JSON.parse(antwort));
+  } catch {
+    return null;
+  }
+}
+
+export function parseSpielliste(html: string, tidVorgabe?: number): Spielliste {
   const doc = parse(html);
   const liste = doc.querySelector("dl#fixtures-results-list");
   if (!liste) throw new KaderSeiteUnbekannt("Spielliste (#fixtures-results-list) nicht gefunden.");
-  const tid = Number(doc.querySelector("input#tid1")?.getAttribute("value"));
+  const tid = Number(doc.querySelector("input#tid1")?.getAttribute("value")) || tidVorgabe;
   if (!tid) throw new KaderSeiteUnbekannt("Team der Spielliste (tid1) nicht gefunden.");
 
   const spiele: ListenSpiel[] = [];
