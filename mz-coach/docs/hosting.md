@@ -30,3 +30,13 @@ Chromium startet im Container.
 4. Die Umgebungsvariablen oben eintragen.
 5. Unter Networking die eigene Domain hinzufügen und den angezeigten DNS-Eintrag beim Domain-Anbieter setzen.
 6. In der Webseite unter Einstellungen den ManagerZone-Zugang hinterlegen.
+
+## Zeitplan, Aufräumen, Sicherung
+
+- 4 Uhr: Top 10 (Spiellisten einmal pro Woche, montags; fehlende Spiele täglich nachgeholt), eigene Ligaspiele, Ligatabelle.
+- 6 Uhr: Transfermarkt.
+- Täglich: Aufräumen (je Art die letzten 3 Rohseiten, die letzten 7 Marktsuchen, 2000 Protokollzeilen;
+  Spieler-Schnappschüsse nur bei Änderung). Spiele, Spiellisten, Änderungsverlauf, Taktiken und Archiv bleiben immer.
+- Wöchentlich: Archiv der Top-10-Auswertung und Sicherung der ganzen Datenbank nach `/data/sicherung/`
+  (die letzten 8). Die Sicherungen liegen auf demselben Volume; für Schutz gegen Verlust des Volumes
+  zusätzlich ab und zu eine Datei herunterladen.

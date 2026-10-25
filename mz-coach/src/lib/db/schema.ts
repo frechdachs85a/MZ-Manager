@@ -150,6 +150,14 @@ const MIGRATIONEN: string[] = [
     PRIMARY KEY (tid, pid)
   );
   `,
+  `
+  -- Wöchentliches Archiv der Top-10-Auswertung (Stand der Erkenntnisse, geht nicht verloren)
+  CREATE TABLE top_archiv (
+    datum TEXT PRIMARY KEY,        -- JJJJ-MM-TT (Berlin)
+    spiele INTEGER NOT NULL,
+    auswertung_json TEXT NOT NULL
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

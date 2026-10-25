@@ -16,22 +16,40 @@ import { holeStatsXml } from "./spiele";
 // Lernmaterial aus den Topteams (Auftrag Marcus, 25.10.2026): je Team die letzten 10 Liga- und 10
 // Weltligaspiele. Spiellisten über die eingeloggte Sitzung (ajax.php?p=matches&sub=list, Felder wie
 // im Formular #matchListForm), Stats-XML ohne Login. Gespeicherte Spiele werden nie erneut geholt.
+//
 // Höchstens so viele neue Stats-XML je Lauf (je Spiel bis zu ~1 Minute mit check-match); der Rest folgt am nächsten Tag
 export const MAX_XML_JE_LAUF = 60;
+
+const TAG_MS = 24 * 3600_000;
+
+// Top-10-Spiellisten einmal pro Woche: montags (Berlin) oder wenn der letzte erfolgreiche Lauf
+// länger als 7 Tage her ist. Eigene Spiele, Tabelle und das Nachholen fehlender Stats-XML täglich.
+export function topWocheFaellig(db: Database.Database, jetzt = new Date()): boolean {
+  const r = db.prepare("SELECT max(gestartet) AS z FROM abruf_log WHERE art = 'top10-listen' AND ok = 1").get() as { z: string | null };
+  if (!r.z) return true;
+  const seit = jetzt.getTime() - new Date(r.z).getTime();
+  const montag = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", weekday: "short" }).format(jetzt) === "Mon";
+  return seit > 7 * TAG_MS || (montag && berlinTag(new Date(r.z)) !== berlinTag(jetzt));
+}
 
 export async function topAbrufen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "top10");
   const teile: string[] = [];
   let ok = true;
+  const woche = opt.manuell || topWocheFaellig(db);
+  const listenLog = woche ? abrufBeginnen(db, "top10-listen") : null;
+  let listenFertig = false;
   try {
-    const teams = ladeTopTeams(db);
+    const teams = woche ? ladeTopTeams(db) : [];
     // 1. Spiellisten eingeloggt
     await mitMzSitzung(
       db,
       async (s) => {
-        // Rangliste roh sichern (Aufbau noch nicht gesehen; Parser folgt nach Prüfung)
-        const rang = await s.holeSeite("/?p=rank");
-        speichereRohseite(db, { art: "rangliste", url: rang.url, status: rang.status, htmlRoh: rang.htmlRoh, htmlDom: rang.htmlDom });
+        // Rangliste roh sichern (Aufbau noch nicht gesehen; Parser folgt nach Prüfung), nur wöchentlich
+        if (woche) {
+          const rang = await s.holeSeite("/?p=rank");
+          speichereRohseite(db, { art: "rangliste", url: rang.url, status: rang.status, htmlRoh: rang.htmlRoh, htmlDom: rang.htmlDom });
+        }
         // Ligatabelle (Link aus der Navigation von ManagerZone); angezeigt auf der Übersicht
         const tab = await s.holeSeite("/?p=league&type=senior");
         speichereRohseite(db, { art: "tabelle", url: tab.url, status: tab.status, htmlRoh: tab.htmlRoh, htmlDom: tab.htmlDom });
@@ -59,12 +77,17 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
       },
       opt,
     );
+    if (listenLog) {
+      abrufBeenden(db, listenLog, true, "Spiellisten der Top 10 gelesen.");
+      listenFertig = true;
+    }
 
     // 2. Stats-XML ohne Login, nacheinander mit Pause
     const eigene: ListenSpiel[] = letzteLigaspiele(ladeTeamSpiele(db, TEAM.tid), 99).filter((s) => s.tore !== undefined);
+    // Fehlende Spiele aller Topteams (auch an Tagen ohne Listenabruf: Nachholen bis alles da ist)
     const fehlen = eigene
       .concat(
-        teams.flatMap((t) => {
+        ladeTopTeams(db).flatMap((t) => {
           const { liga, weltliga } = auswahlLernspiele(ladeTeamSpiele(db, t.tid));
           return [...liga, ...weltliga];
         }),
@@ -82,9 +105,16 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
       }
     }
     teile.push(`Stats-XML: ${geholt} neu gespeichert, ${Math.max(0, fehlen.length - MAX_XML_JE_LAUF)} folgen beim nächsten Lauf.`);
+    // Wöchentliches Archiv der Auswertung, damit Erkenntnisse nicht verloren gehen
+    if (woche) {
+      const { archiviereTop } = await import("@/lib/archiv");
+      archiviereTop(db);
+      teile.push("Top-10-Auswertung archiviert.");
+    }
   } catch (e) {
     ok = false;
     teile.push(meldungAus(e));
+    if (listenLog && !listenFertig) abrufBeenden(db, listenLog, false, meldungAus(e));
   }
   const meldung = `Top 10: ${teile.join(" ")}`;
   abrufBeenden(db, log, ok, meldung);
@@ -95,7 +125,7 @@ const berlinTag = (d: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Eur
 const berlinStunde = (d: Date) =>
   Number(new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" }).format(d));
 
-// Einmal am Tag ab 4 Uhr (Berlin), vor der Marktsuche; ein Versuch je Tag.
+// Täglicher Lauf ab 4 Uhr (Berlin), vor der Marktsuche; ein Versuch je Tag. Die Top-10-Listen darin nur wöchentlich.
 export function topFaellig(db: Database.Database, jetzt = new Date()): boolean {
   if (!zugangStatus(db).eingerichtet || berlinStunde(jetzt) < 4) return false;
   const letzter = letzterAbruf(db, "top10");

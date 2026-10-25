@@ -7,6 +7,7 @@ import { datumZeit } from "@/lib/format";
 import { de } from "@/lib/mz/analyse/gegner";
 import type { Bilanz, TeamMuster } from "@/lib/mz/analyse/muster";
 import { topAuswertung } from "@/lib/top-auswertung";
+import { ladeTopArchiv } from "@/lib/archiv";
 import { TopAbrufKnopf } from "./abruf-knopf";
 
 const bil = (b: Bilanz) => `${b.S} S · ${b.U} U · ${b.N} N`;
@@ -49,13 +50,15 @@ export default async function Top10() {
   const db = getDb();
   const { teams, matrix, spiele } = topAuswertung(db);
   const abruf = letzterAbruf(db, "top10");
+  const listen = letzterAbruf(db, "top10-listen");
+  const archiv = ladeTopArchiv(db);
   return (
     <>
       <PageHeader title="Top 10" subtitle={`Lernmaterial aus der Managerwertung · ${spiele} Spiele ausgewertet`} />
       <div className="seite">
         <Section
           title="Abruf"
-          footer={`${abruf ? `Letzter Abruf ${datumZeit(abruf.gestartet)}: ${abruf.meldung ?? "läuft"} ` : ""}Täglich ab 4 Uhr automatisch: je Team die letzten 10 Liga- und 10 Weltligaspiele, gespeicherte Spiele nie doppelt. Teams: ${teams[0]?.quelle ?? ""}.`}
+          footer={`${abruf ? `Letzter Abruf ${datumZeit(abruf.gestartet)}: ${abruf.meldung ?? "läuft"} ` : ""}${listen ? `Spiellisten zuletzt ${datumZeit(listen.gestartet)}. ` : ""}Spiellisten der Top 10 einmal pro Woche (montags ab 4 Uhr), fehlende Spiele werden täglich nachgeholt: je Team die letzten 10 Liga- und 10 Weltligaspiele, jedes Spiel nur einmal gespeichert. Die Auswertung wird wöchentlich archiviert. Teams: ${teams[0]?.quelle ?? ""}.`}
         >
           <TopAbrufKnopf />
         </Section>
@@ -91,6 +94,14 @@ export default async function Top10() {
             </Card>
           )}
         </Section>
+
+        {archiv.length > 0 && (
+          <Section title="Archiv" footer="Wöchentlicher Stand der Auswertung, gespeichert in der Datenbank (und in der wöchentlichen Sicherung).">
+            <p className="text-[14px] text-label-2">
+              {archiv.map((a) => `${a.datum.split("-").reverse().join(".")} (${a.spiele} Spiele)`).join(" · ")}
+            </p>
+          </Section>
+        )}
 
         <Section title="Teams" footer="Nur ausgelöste Regeln stehen in der Stats-XML: was ein Team eingestellt, aber nie ausgelöst hat, ist hier nicht sichtbar.">
           <div className="grid gap-5 lg:grid-cols-2">
