@@ -138,6 +138,18 @@ const MIGRATIONEN: string[] = [
     quelle TEXT NOT NULL
   );
   `,
+  `
+  -- Kader fremder Teams (Kaderseite ?p=players&tid=…): Alter und Marktwert je Spieler
+  CREATE TABLE gegner_kader (
+    tid INTEGER NOT NULL,
+    pid INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    alter_jahre INTEGER,
+    wert INTEGER,
+    stand TEXT NOT NULL,
+    PRIMARY KEY (tid, pid)
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

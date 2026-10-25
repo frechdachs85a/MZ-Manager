@@ -32,6 +32,9 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
         // Rangliste roh sichern (Aufbau noch nicht gesehen; Parser folgt nach Prüfung)
         const rang = await s.holeSeite("/?p=rank");
         speichereRohseite(db, { art: "rangliste", url: rang.url, status: rang.status, htmlRoh: rang.htmlRoh, htmlDom: rang.htmlDom });
+        // Ligatabelle (Link aus der Navigation von ManagerZone); angezeigt auf der Übersicht
+        const tab = await s.holeSeite("/?p=league&type=senior");
+        speichereRohseite(db, { art: "tabelle", url: tab.url, status: tab.status, htmlRoh: tab.htmlRoh, htmlDom: tab.htmlDom });
         // Eigenes Team dazu: alle Ligaspiele der Saison für die Saisonstatistik
         for (const t of [...teams, { tid: TEAM.tid, name: TEAM.name, rang: 0, quelle: "", stand: "" }]) {
           const a = await s.sendeForm("/ajax.php?p=matches&sub=list&sport=soccer", {

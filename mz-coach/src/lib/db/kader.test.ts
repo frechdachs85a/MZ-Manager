@@ -17,7 +17,7 @@ describe("Kader-Speicher", () => {
   it("Migration ist wiederholbar", () => {
     const db = frischeDb();
     migrieren(db);
-    expect(db.pragma("user_version", { simple: true })).toBe(7);
+    expect(db.pragma("user_version", { simple: true })).toBe(8);
   });
 
   it("speichert, erkennt Änderungen und setzt Abgänge inaktiv", () => {

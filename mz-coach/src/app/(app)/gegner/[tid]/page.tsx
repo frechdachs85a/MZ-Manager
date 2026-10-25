@@ -9,6 +9,26 @@ import { de } from "@/lib/mz/analyse/gegner";
 import { ANALYSE_SPIELE, LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { HolKnopf } from "./hol-knopf";
+import { KaderKnopf } from "./kader-knopf";
+import { kaderwertVergleich, type ElfWert } from "@/lib/kaderwert";
+import { datumZeit as dz } from "@/lib/format";
+
+const mio = (n: number) => `${(n / 1_000_000).toFixed(1).replace(".", ",")} Mio`;
+function ElfZeile({ titel, w }: { titel: string; w: ElfWert | null }) {
+  if (!w) return <Row title={titel} detail="nicht verfügbar" />;
+  return (
+    <Row
+      title={titel}
+      detail={`Startelf aus Spiel ${w.spiel?.mid ?? "?"} · ${w.mitWert} von ${w.spieler} mit Marktwert${w.fehlt.length ? ` · fehlt: ${w.fehlt.join(", ")}` : ""}`}
+      value={
+        <span className="text-right">
+          <span className="display block text-[18px] font-semibold text-label tabular-nums">{mio(w.summe)}</span>
+          <span className="block text-[12px]">{w.alterSchnitt !== undefined ? `Ø ${w.alterSchnitt.toFixed(1).replace(".", ",")} Jahre` : "Alter n. v."}</span>
+        </span>
+      }
+    />
+  );
+}
 
 const datumDe = (d?: string) => (d ? d.slice(0, 10).split("-").reverse().join(".") : "n. v.");
 const uhr = (clock: string) => {
@@ -28,6 +48,7 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   if (spiele.length === 0) notFound();
   const alleLiga = spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
   const fehlen = liga.filter((s) => !s.xml);
+  const kw = kaderwertVergleich(getDb(), tid);
   const begr = new Map(a?.begruendung.map((b) => [b.mid, b.text]));
 
   return (
@@ -94,6 +115,16 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
           </div>
         </div>
 
+        <Section
+          title="Kaderwert-Vergleich"
+          aktion={<KaderKnopf tid={tid} />}
+          footer={`Summe der Marktwerte der Startelf (mz-wissen.md, Abschnitt 10). Marktwert ist kein Preismaßstab, aber ein Maß für die Stärke. Gegnerkader ${kw.gegnerKaderStand ? `Stand ${dz(kw.gegnerKaderStand)}` : "noch nicht geholt"}.`}
+        >
+          <List>
+            <ElfZeile titel="FC Toho" w={kw.eigen} />
+            <ElfZeile titel={name} w={kw.gegner} />
+          </List>
+        </Section>
         {a && (
           <Section title="Aufstellung je Ligaspiel" footer="Startelf aus der Stats-XML in Editor-Koordinaten (mz-wissen.md, Abschnitt 3), aus Sicht seines Tors.">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

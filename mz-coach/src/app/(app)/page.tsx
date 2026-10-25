@@ -5,6 +5,8 @@ import { Card, Hero, Kachel, List, Row, Section, Unavailable } from "@/component
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { letzterGegner } from "@/lib/gegner-analyse";
 import { spieltagCheckliste } from "@/lib/checkliste";
+import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
+import { tabelleAus } from "@/lib/mz/parser/tabelle";
 import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
 import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
@@ -27,6 +29,9 @@ export default async function Uebersicht() {
   const start = startelfAusLetztemSpiel(db);
   const gegner = letzterGegner(db);
   const check = spieltagCheckliste(db);
+  const tabRoh = letzteRohseite(db, "tabelle");
+  const tabHtml = tabRoh ? ladeRohseite(db, tabRoh.id, "dom") ?? ladeRohseite(db, tabRoh.id, "roh") : null;
+  const tabelle = tabHtml ? tabelleAus(tabHtml.html, TEAM.name) : null;
   const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
   const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.map((s) => s.pid)]).size;
   const kurzDatum = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(spieltag);
@@ -153,8 +158,36 @@ export default async function Uebersicht() {
           )}
         </Section>
 
-        <Section title="Tabelle">
-          <Unavailable title={TEAM.liga} reason="Tabellenabruf folgt mit dem ManagerZone-Abruf." />
+        <Section title="Tabelle" footer={tabRoh ? `Stand ${datumZeit(tabRoh.abgerufen)}, so wie ManagerZone sie zeigt.` : undefined}>
+          {tabelle ? (
+            <Card>
+              <table className="w-full text-[14px]">
+                {tabelle.kopf.length > 0 && (
+                  <thead>
+                    <tr className="border-b border-separator text-left text-[12px] text-label-2">
+                      {tabelle.kopf.map((k, i) => (
+                        <th key={i} className="px-3 py-2 font-medium first:pl-5 last:pr-5">{k}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                )}
+                <tbody className="divide-y divide-separator">
+                  {tabelle.zeilen.map((z, i) => (
+                    <tr key={i} className={z.eigen ? "bg-gold-hell/30 font-semibold" : ""}>
+                      {z.zellen.map((c, j) => (
+                        <td key={j} className="px-3 py-2 tabular-nums first:pl-5 last:pr-5">{c}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          ) : (
+            <Unavailable
+              title={TEAM.liga}
+              reason={tabRoh ? `Tabellenseite vom ${datumZeit(tabRoh.abgerufen)} gespeichert, aber keine Tabelle mit ${TEAM.name} darin erkannt.` : "Wird beim täglichen Abruf (ab 4 Uhr, mit Login) geholt."}
+            />
+          )}
         </Section>
 
         <Section title="Letzte Skill-Änderungen">
