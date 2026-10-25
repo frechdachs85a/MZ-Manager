@@ -17,6 +17,7 @@ Chromium startet im Container.
 | `APP_PASSWORD_HASH` | `npm run hash-password` lokal ausführen, Ergebnis eintragen |
 | `SESSION_SECRET` | mindestens 32 zufällige Zeichen |
 | `MZ_TRESOR_KEY` | 32 Byte base64, z. B. `openssl rand -base64 32` |
+| `ANTHROPIC_API_KEY` | für den Chat; Schlüssel aus der Anthropic Console (kostet je Frage, Abrechnung bei Anthropic). Ohne Schlüssel zeigt die Chat-Seite "nicht verfügbar". |
 | `DATABASE_PATH` | `/data/mz-coach.db` (im Dockerfile schon gesetzt) |
 
 `MZ_TRESOR_KEY` nie ändern, sonst ist der gespeicherte ManagerZone-Zugang nicht mehr lesbar.

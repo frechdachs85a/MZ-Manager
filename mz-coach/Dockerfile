@@ -18,6 +18,8 @@ COPY --from=bau /app/package.json ./
 COPY --from=bau /app/node_modules ./node_modules
 COPY --from=bau /app/.next ./.next
 COPY --from=bau /app/public ./public
+# Wissensbasis für den Chat (Werkzeug "wissen")
+COPY --from=bau /app/mz-wissen.md ./mz-wissen.md
 # Datenbank liegt auf einem dauerhaften Laufwerk unter /data (beim Anbieter als Volume einhängen)
 RUN mkdir -p /data
 EXPOSE 3000
