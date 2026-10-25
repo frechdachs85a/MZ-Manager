@@ -148,3 +148,12 @@ Titel "Kaderübersicht - ManagerZone". Seite auf Deutsch. Auszug der Tabelle lie
 - Rot wird mit zwei Regeln gelöst: eine stellt um (Flügel, Formation 1), eine wechselt (Schobel raus, Kaupa rein).
 - Der Prüfer meldet für diese Taktik keine Fehler; kleinste Abstände 47,5 / 48,3 / 48,0.
 - Gespeichert nur lokal als `src/lib/mz/parser/fixtures/aussenR-2026-10-25.xml` (Repo ist öffentlich).
+
+## Stats-XML für Spiel 1625669278 (25.10.2026, von Marcus abgerufen)
+
+- `getMatchFiles.php?type=stats&mid=1625669278&sport=soccer` lieferte eine leere Seite (`<body></body>`).
+- `ajax.php?p=matchViewer&sub=check-match&type=2d&mid=1625669278&sport=soccer` lieferte
+  `{"response":"queued","content":"Fehler bei der Erstellung des Spiels!"}`.
+  Das Feld `content` mit dieser Meldung steht nicht in mz-wissen.md. Ursache unbekannt
+  (am 21.10. war für dieses Spiel laut mz-wissen.md, Abschnitt 3, eine XML verfügbar).
+  Der Abruf muss diese Antwort als eigenen Fall erkennen und nicht endlos wiederholen.
