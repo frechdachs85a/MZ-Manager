@@ -78,8 +78,8 @@ export default async function Kader(props: PageProps<"/kader">) {
                 return w.ok ? [{ p, wert: w.wert }] : [];
               }).sort((a, b) => b.wert - a.wert)[0];
               return (
-                <li key={s.pid} className="!ml-0 !pr-0">
-                  <Link href={`/kader/${s.pid}`} className="pressable flex min-h-11 items-center gap-3 py-2.5 pl-4 pr-3">
+                <li key={s.pid} className="!px-0">
+                  <Link href={`/kader/${s.pid}`} className="pressable zeile-hover flex min-h-12 items-center gap-3 py-3 pl-5 pr-4">
                     <span className="w-6 shrink-0 text-right text-[15px] tabular-nums text-label-2">{s.nr ?? ""}</span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-medium">

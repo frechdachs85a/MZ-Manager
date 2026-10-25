@@ -129,6 +129,15 @@ const MIGRATIONEN: string[] = [
     stand TEXT NOT NULL
   );
   `,
+  `
+  -- Taktik-Archiv: eigene Reiter mit XML aus dem Editor (exportTactic)
+  CREATE TABLE taktik (
+    reiter TEXT PRIMARY KEY,
+    xml TEXT NOT NULL,
+    gespeichert TEXT NOT NULL,
+    quelle TEXT NOT NULL
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

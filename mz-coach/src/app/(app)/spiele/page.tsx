@@ -19,8 +19,8 @@ export default async function Spiele() {
           ) : (
             <List>
               {spiele.map((s) => (
-                <li key={s.mid} className="!ml-0 !pr-0">
-                  <Link href={`/spiele/${s.mid}`} className="pressable flex min-h-11 items-center gap-3 py-2.5 pl-4 pr-3">
+                <li key={s.mid} className="!px-0">
+                  <Link href={`/spiele/${s.mid}`} className="pressable zeile-hover flex min-h-12 items-center gap-3 py-3 pl-5 pr-4">
                     <span className="min-w-0 flex-1">
                       <span className="block text-[17px]">
                         {s.heim} <span className="font-semibold tabular-nums">{s.tore}</span> {s.gast}
