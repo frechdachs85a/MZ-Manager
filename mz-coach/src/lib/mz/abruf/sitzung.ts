@@ -2,6 +2,7 @@ import "server-only";
 import type Database from "better-sqlite3";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { entschluesseln, tresorSchluessel, verschluesseln } from "@/lib/crypto/tresor";
+import { speichereRohseite } from "@/lib/db/abruf";
 import { ladeZugang } from "@/lib/mz/zugang";
 import { erzeugeDrossel } from "./drossel";
 import { istAbmeldeSeite, istEingeloggt, LOGIN_FEHLER } from "./erkennung";
@@ -83,12 +84,52 @@ const MELDUNG: Record<LoginFehler["grund"], string> = {
     "Login nicht bestätigt: ManagerZone hat weder weitergeleitet noch eine Fehlermeldung gezeigt. Möglicherweise verlangt die Seite ein Captcha (reCAPTCHA ist eingebunden).",
 };
 
+// Für die Diagnose festhalten, was ManagerZone nach dem Login-Versuch zeigt: Adresse, HTML (alle Eingabefelder
+// vorher geleert), Bildschirmfoto und Verlauf der Antworten (Adresse, Status,
+// Weiterleitung, nur NAMEN gesetzter Cookies). Nie das Passwort, nie Cookie-Werte, nie den Anfrageinhalt.
+type Antwort = { url: string; status: number; methode: string; weiter?: string; cookies?: string[] };
+async function merkeLoginSeite(db: Database.Database, page: Page, ergebnis: string, verlauf: Antwort[]) {
+  try {
+    const url = page.url();
+    // Alle Eingabefelder leeren: versteckte Felder wie logindata[md5] tragen ihren Wert sonst im HTML
+    await page.evaluate(() => {
+      for (const i of Array.from(document.querySelectorAll("input, textarea"))) {
+        (i as HTMLInputElement).value = "";
+        i.setAttribute("value", "");
+      }
+    });
+    speichereRohseite(db, { art: "login-ergebnis", url, status: null, htmlRoh: await page.content(), htmlDom: null });
+    const bild = await page.screenshot({ fullPage: false, type: "png" });
+    speichereRohseite(db, { art: "login-bild", url, status: null, htmlRoh: `data:image/png;base64,${bild.toString("base64")}`, htmlDom: null });
+    speichereRohseite(db, { art: "login-verlauf", url, status: null, htmlRoh: JSON.stringify({ ergebnis, verlauf }, null, 2), htmlDom: null });
+  } catch {
+    // Diagnose darf den Ablauf nie stören
+  }
+}
+
 async function login(db: Database.Database, ctx: BrowserContext) {
   const zugang = ladeZugang(db);
   if (!zugang) throw new MzFehler("Kein ManagerZone-Zugang gespeichert (Einstellungen).");
   const page = await ctx.newPage();
+  const verlauf: Antwort[] = [];
+  page.on("response", (r) => {
+    const typ = r.request().resourceType();
+    if (typ !== "document" && typ !== "xhr" && typ !== "fetch") return;
+    if (!r.url().includes(MZ_HOST)) return;
+    const h = r.headers();
+    const cookies = (h["set-cookie"] ?? "")
+      .split("\n")
+      .map((c) => c.split("=")[0].trim())
+      .filter(Boolean);
+    verlauf.push({ url: r.url(), status: r.status(), methode: r.request().method(), weiter: h["location"], cookies: cookies.length ? cookies : undefined });
+  });
   try {
     await page.goto(`${MZ_BASIS}/`, { waitUntil: "domcontentloaded" });
+    // Cookie-Banner (Cookiebot), falls er erscheint: nur notwendige Cookies, damit er nichts verdeckt
+    await page
+      .locator("#CybotCookiebotDialogBodyButtonDecline")
+      .click({ timeout: 4000 })
+      .catch(() => {});
     // Fehler von Playwright nie weiterreichen: Meldungen könnten Eingaben enthalten.
     const ergebnis = await (async () => {
       try {
@@ -113,7 +154,10 @@ async function login(db: Database.Database, ctx: BrowserContext) {
         return "technisch" as const;
       }
     })();
-    if (ergebnis === "technisch") throw new MzFehler("Loginformular von ManagerZone nicht bedienbar (Seitenaufbau geändert?).");
+    if (ergebnis === "technisch") {
+      await merkeLoginSeite(db, page, ergebnis, verlauf);
+      throw new MzFehler("Loginformular von ManagerZone nicht bedienbar (Seitenaufbau geändert?).");
+    }
     let grund: LoginFehler["grund"] | null = ergebnis === "weiter" ? null : ergebnis;
     if (!grund) {
       // Ob ManagerZone den Fehler erst nach einem Seitenwechsel zeigt, ist nicht beobachtet,
@@ -122,6 +166,8 @@ async function login(db: Database.Database, ctx: BrowserContext) {
       if (await page.locator(LOGIN_FEHLER.gesperrt).isVisible().catch(() => false)) grund = "gesperrt";
       else if (await page.locator(LOGIN_FEHLER.falsch).isVisible().catch(() => false)) grund = "falsch";
     }
+    await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
+    await merkeLoginSeite(db, page, grund ?? ergebnis, verlauf);
     if (grund) {
       merkeLoginFehler(db, grund);
       throw new MzFehler(MELDUNG[grund]);
@@ -222,6 +268,7 @@ export async function mitMzSitzung<T>(
             seite = await lade(url, opt?.skripte, opt?.aufSeite);
           }
           if (!istEingeloggt(seite.htmlDom ?? seite.htmlRoh ?? "")) {
+            speichereRohseite(db, { art: "nicht-eingeloggt", url, status: seite.status, htmlRoh: seite.htmlRoh, htmlDom: seite.htmlDom });
             merkeLoginFehler(db, "unbestaetigt");
             throw new MzFehler(
               `Login abgeschickt, aber ${url} zeigt weiterhin nicht eingeloggt. Möglicherweise verlangt ManagerZone ein Captcha.`,
