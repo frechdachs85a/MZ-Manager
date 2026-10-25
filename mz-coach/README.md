@@ -84,7 +84,7 @@ npm run dev             # http://localhost:3000, führt beim ersten Mal zur Erst
 
 ## Hosting
 
-Anleitung für Railway und Oracle Cloud „Always Free“: `docs/hosting.md`. Ersteinrichtung ohne Schlüssel von Hand:
+Anleitung für Hetzner Cloud (gewählt), Oracle Cloud „Always Free“ und Railway: `docs/hosting.md`. Ersteinrichtung ohne Schlüssel von Hand:
 Schlüssel erzeugt der Server selbst (`/data/geheimnisse.json`), das App-Passwort legst du auf `/einrichtung` fest,
 mit dem Einrichtungscode aus dem Serverprotokoll.
 

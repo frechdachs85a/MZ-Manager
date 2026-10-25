@@ -32,7 +32,38 @@ einen Einrichtungscode.
 Optional statt der Datei (haben dann Vorrang): `APP_PASSWORD_HASH`, `SESSION_SECRET`, `MZ_TRESOR_KEY`
 (erzeugen mit `npm run hash-password`). Werden sie später entfernt, gilt wieder die Datei.
 
-## Railway
+## Hetzner Cloud (gewählt am 25.10.2026)
+
+Kosten: CAX11 (2 Kerne Ampere, 4 GB, 40 GB) laut Vergleichsseiten etwa 6,49 € im Monat inklusive IPv4
+(nach der Preiserhöhung im Juni 2026). Vor der Bestellung die Preisseite von Hetzner prüfen. Abrechnung stundengenau,
+Server löschen beendet die Kosten.
+
+1. Konto auf hetzner.com/cloud anlegen (Hetzner prüft neue Konten, das kann einen Moment dauern).
+2. Neues Projekt → „Server hinzufügen“:
+   - Standort: Falkenstein oder Nürnberg (Deutschland)
+   - Image: **Ubuntu 24.04**
+   - Typ: **Arm64 (Ampere) → CAX11**. Ist er gerade nicht bestellbar, geht auch ein x86-Typ (CX-Reihe) mit
+     mindestens 4 GB; das Skript läuft auf beiden.
+   - Netzwerk: öffentliche IPv4 an
+   - SSH-Schlüssel: eigenen öffentlichen Schlüssel hinzufügen (empfohlen). Ohne Schlüssel schickt Hetzner ein
+     root-Passwort per E-Mail.
+   - Firewall: optional eine anlegen mit eingehend TCP 22, 80, 443 erlaubt. Ohne Firewall sind die Ports offen.
+3. Per SSH auf den Server (`ssh root@<öffentliche IP>`) und ausführen:
+   ```bash
+   curl -fsSLO https://raw.githubusercontent.com/frechdachs85a/MZ-Manager/main/mz-coach/deploy/server/einrichten.sh
+   bash einrichten.sh            # oder: bash einrichten.sh meine-domain.de
+   ```
+   Das Skript installiert Docker, legt bei 4 GB Arbeitsspeicher 2 GB Swap an, holt den Code, baut und startet
+   (beim ersten Mal einige Minuten). Ohne Domain läuft die Seite unter `https://<IP-mit-Bindestrichen>.sslip.io`.
+   Mit eigener Domain vorher beim Domain-Anbieter einen A-Eintrag auf die öffentliche IP setzen.
+4. Am Ende zeigt das Skript Adresse und Einrichtungscode. Seite öffnen und einrichten (siehe oben).
+
+Update auf den neuesten Stand: `bash einrichten.sh` erneut ausführen. Protokoll: im Ordner
+`~/MZ-Manager/mz-coach/deploy/server` mit `docker compose logs -f app`. Daten liegen in
+`~/MZ-Manager/mz-coach/deploy/server/daten`. Ubuntu spielt Sicherheitsupdates von selbst ein (unattended-upgrades).
+Hetzner bietet zusätzlich Backups des ganzen Servers gegen Aufpreis (Preis bei der Serverauswahl).
+
+## Railway (Anmeldung war am 25.10.2026 gesperrt)
 
 Kosten: Hobby-Tarif 5 $ im Monat inklusive 5 $ Verbrauch (Stand Oktober 2026, railway.com/pricing). Geschätzt
 reicht das für diese Seite; den echten Verbrauch zeigt Railway nach ein paar Tagen.
@@ -62,16 +93,14 @@ Kreditkarte nur zur Prüfung bei der Anmeldung.
    Quelle `0.0.0.0/0`, TCP, Zielport `80` und eine zweite Regel für `443`.
 4. Per SSH auf den Server (`ssh -i <schlüssel> ubuntu@<öffentliche IP>`) und ausführen:
    ```bash
-   curl -fsSLO https://raw.githubusercontent.com/frechdachs85a/MZ-Manager/main/mz-coach/deploy/oracle/einrichten.sh
+   curl -fsSLO https://raw.githubusercontent.com/frechdachs85a/MZ-Manager/main/mz-coach/deploy/server/einrichten.sh
    bash einrichten.sh            # oder: bash einrichten.sh meine-domain.de
    ```
    Ohne Domain läuft die Seite unter `https://<IP-mit-Bindestrichen>.sslip.io`. Mit eigener Domain vorher beim
    Domain-Anbieter einen A-Eintrag auf die öffentliche IP setzen.
 5. Am Ende zeigt das Skript Adresse und Einrichtungscode. Seite öffnen und einrichten (siehe oben).
 
-Update auf den neuesten Stand: `bash einrichten.sh` erneut ausführen. Protokoll: im Ordner
-`~/MZ-Manager/mz-coach/deploy/oracle` mit `sudo docker compose logs -f app`. Daten liegen in
-`~/MZ-Manager/mz-coach/deploy/oracle/daten`.
+Update und Protokoll wie bei Hetzner (mit `sudo` vor `docker`).
 
 ## Zeitplan, Aufräumen, Sicherung
 
