@@ -9,6 +9,8 @@ import { parseSpielliste, spiellisteHtmlAus } from "@/lib/mz/parser/spielliste";
 import { auswahlLernspiele } from "./top-auswahl";
 import { meldungAus, spielXmlEinlesen, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler } from "./sitzung";
+import { TEAM } from "@/lib/wissen/startbasis";
+import { letzteLigaspiele, type ListenSpiel } from "@/lib/mz/parser/spielliste";
 import { holeStatsXml } from "./spiele";
 
 // Lernmaterial aus den Topteams (Auftrag Marcus, 25.10.2026): je Team die letzten 10 Liga- und 10
@@ -30,7 +32,8 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
         // Rangliste roh sichern (Aufbau noch nicht gesehen; Parser folgt nach Prüfung)
         const rang = await s.holeSeite("/?p=rank");
         speichereRohseite(db, { art: "rangliste", url: rang.url, status: rang.status, htmlRoh: rang.htmlRoh, htmlDom: rang.htmlDom });
-        for (const t of teams) {
+        // Eigenes Team dazu: alle Ligaspiele der Saison für die Saisonstatistik
+        for (const t of [...teams, { tid: TEAM.tid, name: TEAM.name, rang: 0, quelle: "", stand: "" }]) {
           const a = await s.sendeForm("/ajax.php?p=matches&sub=list&sport=soccer", {
             type: "played",
             hidescore: "false",
@@ -55,11 +58,14 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
     );
 
     // 2. Stats-XML ohne Login, nacheinander mit Pause
-    const fehlen = teams
-      .flatMap((t) => {
-        const { liga, weltliga } = auswahlLernspiele(ladeTeamSpiele(db, t.tid));
-        return [...liga, ...weltliga];
-      })
+    const eigene: ListenSpiel[] = letzteLigaspiele(ladeTeamSpiele(db, TEAM.tid), 99).filter((s) => s.tore !== undefined);
+    const fehlen = eigene
+      .concat(
+        teams.flatMap((t) => {
+          const { liga, weltliga } = auswahlLernspiele(ladeTeamSpiele(db, t.tid));
+          return [...liga, ...weltliga];
+        }),
+      )
       .filter((s, i, alle) => alle.findIndex((x) => x.mid === s.mid) === i && !spielVorhanden(db, s.mid));
     let geholt = 0;
     for (const s of fehlen.slice(0, MAX_XML_JE_LAUF)) {

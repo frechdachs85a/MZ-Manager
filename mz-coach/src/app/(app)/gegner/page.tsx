@@ -7,12 +7,12 @@ import { listeEchteGegner } from "@/lib/db/gegner";
 import { ladeTopTeams } from "@/lib/db/top";
 import { datumZeit } from "@/lib/format";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
-import { QUELLE_TOP10, TOP10 } from "@/lib/wissen/startbasis";
+import { QUELLE_TOP10, TEAM, TOP10 } from "@/lib/wissen/startbasis";
 
 export default async function Gegner() {
   await connection();
   const db = getDb();
-  const gegner = listeEchteGegner(db, LIGA_MID_AB, new Set(ladeTopTeams(db).map((t) => t.tid)));
+  const gegner = listeEchteGegner(db, LIGA_MID_AB, new Set([...ladeTopTeams(db).map((t) => t.tid), TEAM.tid]));
   return (
     <>
       <PageHeader title="Gegner" />

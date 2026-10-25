@@ -82,6 +82,15 @@ const TABS: Tab[] = [
 // Nur in der Seitenleiste am Laptop (die Tab-Leiste am Handy hat Platz für 6)
 const MEHR: Tab[] = [
   {
+    href: "/saison",
+    label: "Saison",
+    icon: (
+      <svg viewBox="0 0 24 24" {...s}>
+        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+      </svg>
+    ),
+  },
+  {
     href: "/top10",
     label: "Top 10",
     icon: (

@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { ladeTeamSpiele, listeEchteGegner, teamName } from "@/lib/db/gegner";
 import { ladeTopTeams } from "@/lib/db/top";
+import { TEAM } from "@/lib/wissen/startbasis";
 import { ladeSpiel } from "@/lib/db/spiele";
 import { analysiereGegner, type GegnerAnalyse } from "@/lib/mz/analyse/gegner";
 import { LIGA_MID_AB, letzteLigaspiele } from "@/lib/mz/parser/spielliste";
@@ -20,6 +21,6 @@ export function gegnerAnalyseLaden(db: Database.Database, tid: number) {
 
 // Zuletzt eingelesener Gegner (ob er wirklich der nächste ist, weiß die Seite erst mit dem Spielplan-Abruf)
 export function letzterGegner(db: Database.Database) {
-  const g = listeEchteGegner(db, LIGA_MID_AB, new Set(ladeTopTeams(db).map((t) => t.tid)))[0];
+  const g = listeEchteGegner(db, LIGA_MID_AB, new Set([...ladeTopTeams(db).map((t) => t.tid), TEAM.tid]))[0];
   return g ? { ...gegnerAnalyseLaden(db, g.tid), stand: g.stand } : null;
 }

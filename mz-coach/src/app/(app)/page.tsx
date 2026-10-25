@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Hero, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
+import { Card, Hero, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { letzterGegner } from "@/lib/gegner-analyse";
+import { spieltagCheckliste } from "@/lib/checkliste";
 import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
 import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
@@ -25,6 +26,7 @@ export default async function Uebersicht() {
   const gesperrt = kader.filter((s) => s.status?.gesperrt);
   const start = startelfAusLetztemSpiel(db);
   const gegner = letzterGegner(db);
+  const check = spieltagCheckliste(db);
   const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
   const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.map((s) => s.pid)]).size;
   const kurzDatum = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(spieltag);
@@ -64,6 +66,32 @@ export default async function Uebersicht() {
           unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
           href="/markt"
         />
+      </div>
+      <div className="seite">
+        <Section title="Spieltag-Checkliste" footer="Aus den gespeicherten Daten. Gelb: veraltet oder mit Fehlern, grau: noch offen.">
+          <Card>
+            <ul className="grid divide-y divide-separator lg:grid-cols-2 lg:divide-y-0">
+              {check.map((c) => (
+                <li key={c.titel} className="lg:border-b lg:border-separator lg:odd:border-r">
+                  <Link href={c.href ?? "/"} className="zeile-hover flex items-start gap-3 px-5 py-4">
+                    <span
+                      aria-label={c.status === "ok" ? "erledigt" : c.status === "warnung" ? "prüfen" : "offen"}
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                        c.status === "ok" ? "bg-tint text-white" : c.status === "warnung" ? "bg-yellow text-ink" : "border border-label-3 text-label-3"
+                      }`}
+                    >
+                      {c.status === "ok" ? "✓" : c.status === "warnung" ? "!" : ""}
+                    </span>
+                    <span>
+                      <span className="block text-[15px] font-medium">{c.titel}</span>
+                      <span className="block text-[13px] leading-relaxed text-label-2">{c.text}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </Section>
       </div>
       <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-10">
 
