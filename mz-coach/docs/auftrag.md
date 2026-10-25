@@ -123,7 +123,9 @@ Frag mich, wenn eine Entscheidung wirklich bei mir liegt (Hosting, Kosten, Daten
 
 - Laut Marcus von ManagerZone genehmigt: Freundschaftsspiele zwischen beiden Teams erlaubt, Transfers untereinander nicht.
 - Jeden Dienstag zwischen 6 und 11 Uhr von Marcus' Konto eine Einladung an ihr Team schicken: Donnerstag 11 und 19 Uhr, Freitag 11 und 19 Uhr.
-  Feste Uhrzeit, keine absichtlich wechselnden Zeiten.
+  Feste Uhrzeit, keine absichtlich wechselnden Zeiten. Taktik immer Reiter "freund".
 - Annehmen macht sie selbst. Die Webseite loggt sich nicht in ihr Konto ein (General Rules: "you must not log into any account other than your own").
 - Transfermarkt: Spieler ihres Teams nie vorschlagen und nie bieten.
-- Offen: Seite zum Verschicken einer Einladung (HTML) und ihre tid.
+- Herausforderungsseite gespeichert (25.10.2026): ?p=challenges&challenge-tid=<tid>, je Tag Knopf
+  "Herausforderungen" mit challenges.challenge.challengeButtonAction(<Tag>), je Tag Spiel 1 (11 Uhr) und Spiel 2 (19 Uhr).
+- Offen: challenges.js (was der Knopf abschickt). Die Webseite sichert sie beim ersten Marktabruf mit Login.

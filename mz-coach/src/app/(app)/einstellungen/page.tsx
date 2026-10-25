@@ -11,6 +11,8 @@ import { AbrufButton } from "./abruf-button";
 import { HochladenForm } from "./hochladen-form";
 import { zugangLoeschen } from "./actions";
 import { ZugangForm } from "./zugang-form";
+import { FreundForm } from "./freund-form";
+import { ladeFreundTeam } from "@/lib/db/freunde";
 
 export default async function Einstellungen() {
   await connection();
@@ -18,6 +20,7 @@ export default async function Einstellungen() {
   const zugang = zugangStatus(db);
   const abruf = letzterAbruf(db, "kader");
   const roh = letzteRohseite(db, "kader");
+  const freund = ladeFreundTeam(db);
   return (
     <>
       <PageHeader title="Einstellungen" />
@@ -29,6 +32,12 @@ export default async function Einstellungen() {
             <Row title="Team-ID" value={TEAM.tid} />
             <Row title="Liga" value={<span className="text-[15px]">div1.1</span>} />
           </List>
+        </Section>
+        <Section
+          title="Freundschaftsspiele"
+          footer="Team, das jeden Dienstag eingeladen wird (Do und Fr, je 11 und 19 Uhr). Annehmen macht das andere Team selbst. Mit diesem Team sind laut ManagerZone-Support keine Transfers erlaubt: seine Spieler werden auf dem Markt nie vorgeschlagen."
+        >
+          <FreundForm tid={freund?.tid} taktik={freund?.taktik} />
         </Section>
         <Section
           title="ManagerZone-Zugang"

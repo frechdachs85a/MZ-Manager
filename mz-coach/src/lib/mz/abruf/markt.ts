@@ -1,8 +1,9 @@
 import "server-only";
 import type Database from "better-sqlite3";
 import { parse } from "node-html-parser";
-import { abrufBeenden, abrufBeginnen, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
+import { abrufBeenden, abrufBeginnen, letzteRohseite, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
 import { speichereMarktSuche } from "@/lib/db/markt";
+import { ladeFreundTeam } from "@/lib/db/freunde";
 import { zugangStatus } from "@/lib/mz/zugang";
 import { parseTransferSuche, type MarktSpieler } from "@/lib/mz/parser/transfer";
 import { meldungAus, type Ergebnis } from "./kader";
@@ -76,6 +77,14 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
           if (suche.spieler.length < JE_SEITE || o + JE_SEITE >= treffer) break;
         }
         const id = speichereMarktSuche(db, { treffer, seiten, spieler });
+        // Für die automatischen Einladungen: Herausforderungsseite samt challenges.js einmal sichern
+        // (enthält challengeButtonAction, also wie eine Einladung abgeschickt wird). Nur lesen.
+        const freund = ladeFreundTeam(db);
+        if (freund && !letzteRohseite(db, "skript-challenges")) {
+          const ch = await s.holeSeite(`/?p=challenges&challenge-tid=${freund.tid}`, { skripte: /\/challenges[^/]*\.js/ });
+          speichereRohseite(db, { art: "challenges", url: ch.url, status: ch.status, htmlRoh: ch.htmlRoh, htmlDom: ch.htmlDom });
+          for (const sk of ch.skripte ?? []) speichereRohseite(db, { art: "skript-challenges", url: sk.url, status: null, htmlRoh: sk.text, htmlDom: null });
+        }
         return { id, treffer, seiten, anzahl: spieler.length };
       },
       opt,

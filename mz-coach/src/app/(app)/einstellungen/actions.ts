@@ -45,3 +45,16 @@ export async function kaderHochladen(_prev: AbrufState, formData: FormData): Pro
   revalidatePath("/", "layout");
   return r;
 }
+
+export type FreundState = { meldung?: string; ok?: boolean };
+
+export async function freundTeamSpeichern(_prev: FreundState, formData: FormData): Promise<FreundState> {
+  const { speichereFreundTeam } = await import("@/lib/db/freunde");
+  const tid = String(formData.get("tid") ?? "").trim();
+  const taktik = String(formData.get("taktik") ?? "").trim();
+  if (!/^\d+$/.test(tid)) return { meldung: "Die tid ist eine Zahl (aus ?p=team&tid=…)." };
+  if (!taktik) return { meldung: "Taktik-Reiter angeben, z. B. freund." };
+  speichereFreundTeam(getDb(), { tid: Number(tid), taktik });
+  revalidatePath("/", "layout");
+  return { ok: true, meldung: "Gespeichert." };
+}

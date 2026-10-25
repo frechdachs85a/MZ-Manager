@@ -9,7 +9,7 @@ const block = `<div class="playerContainer"><h2><span class="player_name">Test S
 <tr><td>Nationalität: <img src="x"> <span class="nobreak bold">Deutschland</span></td></tr></table>
 <table class="player_skills"><tr><td><span class="skill_name"><span>Sprint</span></span></td><td class="skillval">(<span class="maxed">9</span>)</td></tr></table>
 <div class="transfer-control-area"><div>
-<div class="box_dark"><table><tr><td>a</td></tr><tr><td>b</td></tr><tr><td><strong>27-10-2026 18:30</strong></td></tr><tr><td><strong>1 500 000 EUR</strong></td></tr></table></div>
+<div class="box_dark"><table><tr><td>Verein: <a href="https://www.managerzone.com/?p=team&amp;tid=4711">X</a></td></tr><tr><td>b</td></tr><tr><td><strong>27-10-2026 18:30</strong></td></tr><tr><td><strong>1 500 000 EUR</strong></td></tr></table></div>
 <div><table><tr><td>x</td></tr><tr><td><strong>1 750 000 EUR</strong></td></tr></table></div>
 </div></div></div>`;
 
@@ -23,7 +23,7 @@ describe("Transfermarktsuche (Nachbau)", () => {
       alter: 25,
       nationalitaet: "Deutschland",
       skills: { sprint: { wert: 9, gemaxt: true } },
-      markt: { gefordert: 1_500_000, hoechstgebot: 1_750_000, ende: "27-10-2026 18:30" },
+      markt: { gefordert: 1_500_000, hoechstgebot: 1_750_000, ende: "27-10-2026 18:30", verkaeuferTid: 4711 },
     });
     expect(endeAlsDatum("27-10-2026 18:30")).toBe("2026-10-27T18:30");
   });

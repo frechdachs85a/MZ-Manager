@@ -82,6 +82,13 @@ describe("Schwachstellen und Marktbewertung", () => {
     expect(mitBewilligung?.vorbehalte.some((v) => v.startsWith("Arbeitsbewilligung nötig"))).toBe(true);
   });
 
+  it("Spieler vom gesperrten Verein (Team der Frau) werden nie vorgeschlagen", () => {
+    const k = [markt(30, alle(9), { markt: { gefordert: 1, verkaeuferTid: 99, kasten: "" } }), markt(31, alle(9))];
+    const e = bewerteMarkt(k, liste, rahmen({ gesperrteTeams: new Set([99]) }));
+    expect(e.empfehlung).toBeNull();
+    expect(e.ausgeschlossen).toEqual({ "gesperrter-verein": 1, "verein-unbekannt": 1 });
+  });
+
   it("Mindestpreis ist das höhere aus gefordert und Höchstgebot", () => {
     expect(mindestpreis(markt(1, {}, { markt: { gefordert: 100, hoechstgebot: 250, kasten: "" } }))).toBe(250);
     expect(mindestpreis(markt(1, {}, { markt: { kasten: "" } }))).toBeUndefined();

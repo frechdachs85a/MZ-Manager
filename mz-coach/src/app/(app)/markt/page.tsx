@@ -4,6 +4,7 @@ import { Badge, Card, Hero, List, Row, Section, Unavailable } from "@/components
 import { getDb } from "@/lib/db";
 import { letzterAbruf } from "@/lib/db/abruf";
 import { ladeKader } from "@/lib/db/kader";
+import { ladeFreundTeam } from "@/lib/db/freunde";
 import { ladeAblehnungen, ladeLetzteSuche, ladeMarktRahmen, startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { datumZeit, euro, spielDatum } from "@/lib/format";
 import { bewerteMarkt, GRUND_TEXT, HEIMATLAND, schwachstellen, type Bewertung, type Grund, type Schwachstelle } from "@/lib/mz/analyse/markt";
@@ -20,6 +21,7 @@ export default async function Markt() {
   const start = startelfAusLetztemSpiel(db);
   const suche = ladeLetzteSuche(db);
   const rahmen = ladeMarktRahmen(db);
+  const freund = ladeFreundTeam(db);
   const abgelehnt = ladeAblehnungen(db);
   const abruf = letzterAbruf(db, "markt");
   const schwach = start ? schwachstellen(start.elf, kader) : null;
@@ -32,6 +34,7 @@ export default async function Markt() {
           bewilligungenFrei: r.bewilligungenMax - r.bewilligungen,
           abgelehnt: new Set(abgelehnt.map((a) => a.pid)),
           eigene: new Set(kader.map((s) => s.pid)),
+          gesperrteTeams: new Set(freund ? [freund.tid] : []),
         })
       : null;
   const auslaender = kader.filter((s) => s.nationalitaet && s.nationalitaet !== HEIMATLAND);

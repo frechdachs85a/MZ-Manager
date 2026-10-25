@@ -15,6 +15,7 @@ export type MarktSpieler = SpielerBlock & {
     gefordert?: number; // EUR, erstes Feld im Transferkasten (Mazyar: "fee")
     hoechstgebot?: number; // EUR, zweites Feld (Mazyar: "latestBid")
     ende?: string; // Auktionsende wie auf der Seite
+    verkaeuferTid?: number; // Link ?p=team&tid=… im Transferkasten (Gebotsfenster zeigt "Verein: …")
     kasten: string; // gesamter Text des Transferkastens, zur Kontrolle
   };
 };
@@ -39,7 +40,12 @@ function marktFelder(block: HTMLElement): MarktSpieler["markt"] {
   const ende = text(zeilen(spalten[0])[2]?.querySelector("strong")) || undefined;
   const gefordert = text(zeilen(spalten[0]).at(-1)?.querySelector("strong"));
   const gebot = text(zeilen(spalten[1]).at(-1)?.querySelector("strong"));
+  const tid = kasten
+    .querySelectorAll("a")
+    .map((a) => (a.getAttribute("href") ?? "").match(/[?&]tid=(\d+)/)?.[1])
+    .find(Boolean);
   return {
+    verkaeuferTid: tid ? Number(tid) : undefined,
     gefordert: gefordert ? euro(gefordert) : undefined,
     hoechstgebot: gebot ? euro(gebot) : undefined,
     ende,

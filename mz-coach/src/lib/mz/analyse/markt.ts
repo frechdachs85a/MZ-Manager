@@ -62,6 +62,8 @@ export type MarktRahmen = {
   bewilligungenFrei?: number;
   abgelehnt: Set<number>;
   eigene: Set<number>;
+  // Vereine, mit denen keine Transfers erlaubt sind (Team der Frau, Support-Mail ManagerZone)
+  gesperrteTeams?: Set<number>;
 };
 
 export type Grund =
@@ -73,7 +75,9 @@ export type Grund =
   | "preis-unbekannt"
   | "zu-teuer"
   | "nationalitaet-unbekannt"
-  | "auslaender";
+  | "auslaender"
+  | "gesperrter-verein"
+  | "verein-unbekannt";
 
 export const GRUND_TEXT: Record<Grund, string> = {
   abgelehnt: "von dir abgelehnt",
@@ -85,6 +89,8 @@ export const GRUND_TEXT: Record<Grund, string> = {
   "zu-teuer": "teurer als dein Kapital",
   "nationalitaet-unbekannt": "Nationalität nicht lesbar",
   auslaender: "kein freier Ausländerplatz und keine freie Arbeitsbewilligung",
+  "gesperrter-verein": "Verein, mit dem keine Transfers erlaubt sind",
+  "verein-unbekannt": "Verein nicht lesbar (Transfersperre nicht prüfbar)",
 };
 
 export type Bewertung = {
@@ -137,6 +143,10 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
   const bewertet = kandidaten.map((k): Bewertung | null => {
     if (rahmen.eigene.has(k.pid)) return raus("eigener");
     if (rahmen.abgelehnt.has(k.pid)) return raus("abgelehnt");
+    if (rahmen.gesperrteTeams?.size) {
+      if (k.markt.verkaeuferTid === undefined) return raus("verein-unbekannt");
+      if (rahmen.gesperrteTeams.has(k.markt.verkaeuferTid)) return raus("gesperrter-verein");
+    }
     if (FORMEL_SKILLS.some((s) => k.skills[s] === undefined)) return raus("skills");
     if (k.skills.sprint!.wert < MIN_SPRINT || k.skills.ausdauer!.wert < MIN_AUSDAUER) return raus("99-regel");
 
