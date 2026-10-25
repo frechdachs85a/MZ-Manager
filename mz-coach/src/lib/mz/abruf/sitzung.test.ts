@@ -56,6 +56,8 @@ describe.skipIf(!browserDa)("MZ-Sitzung gegen lokalen Nachbau", () => {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       if (p === "players") return res.end(eingeloggt ? "<html><title>Spieler</title><body>Kader</body></html>" : ABMELDUNG);
       if (p === "home" && eingeloggt) return res.end("<html><title>Home</title></html>");
+      if (url.pathname === "/js/transfer.js") return res.end("function buy(pid) { /* Nachbau */ }");
+      if (p === "transfer" && eingeloggt) return res.end('<html><title>Transfer</title><script src="/js/transfer.js"></script></html>');
       res.end(START(url.searchParams.get("fehler") ? "wrong_username_or_password" : ""));
     }).listen(0);
     process.env.MZ_BASIS_URL = `http://localhost:${(server.address() as AddressInfo).port}`;
@@ -87,6 +89,16 @@ describe.skipIf(!browserDa)("MZ-Sitzung gegen lokalen Nachbau", () => {
     const nochmal = await mitMzSitzung(db, (s) => s.holeSeite("/?p=players"));
     expect(nochmal.htmlDom).toContain("Kader");
     expect(logins).toBe(1);
+  }, 60_000);
+
+  it("liest Skripte mit, die die Seite selbst lädt (transfer.js)", async () => {
+    const { mitMzSitzung, speichereZugang } = await module();
+    const db = new Database(":memory:");
+    migrieren(db);
+    speichereZugang(db, { benutzer: "marcus", passwort: "geheim" });
+    const seite = await mitMzSitzung(db, (s) => s.holeSeite("/?p=transfer", { skripte: /\/transfer[^/]*\.js/ }));
+    expect(seite.skripte).toHaveLength(1);
+    expect(seite.skripte?.[0].text).toContain("function buy");
   }, 60_000);
 
   it("falsches Passwort: Fehler gemerkt, kein weiterer Versuch bis zum neuen Zugang", async () => {

@@ -19,7 +19,14 @@ const LOGIN_FEHLER_KEY = "mz_login_fehler";
 
 export class MzFehler extends Error {}
 
-export type Seite = { url: string; status: number | null; htmlRoh: string | null; htmlDom: string | null };
+export type Seite = {
+  url: string;
+  status: number | null;
+  htmlRoh: string | null;
+  htmlDom: string | null;
+  // Skripte, die die Seite selbst geladen hat und die auf `skripte` passen (nur auf Wunsch)
+  skripte?: { url: string; text: string }[];
+};
 
 type Cookie = Awaited<ReturnType<BrowserContext["cookies"]>>[number];
 
@@ -123,7 +130,7 @@ async function login(db: Database.Database, ctx: BrowserContext) {
 }
 
 export type MzSitzung = {
-  holeSeite: (pfad: string) => Promise<Seite>;
+  holeSeite: (pfad: string, opt?: { skripte?: RegExp }) => Promise<Seite>;
   // Antworttext ohne Browserseite (z. B. ajax.php), mit den Cookies der Sitzung. Loggt nicht
   // selbst ein: vorher eine Seite mit holeSeite laden.
   holeText: (pfad: string) => Promise<{ url: string; status: number; text: string }>;
@@ -154,8 +161,15 @@ export async function mitMzSitzung<T>(
     // Ein gemeinsamer Login je Sitzung, auch wenn zwei Abrufe gleichzeitig laufen.
     let loginLauf: Promise<void> | null = null;
 
-    async function lade(url: string): Promise<Seite> {
+    async function lade(url: string, skriptMuster?: RegExp): Promise<Seite> {
       const page = await ctx.newPage();
+      // Was der Browser beim Laden ohnehin holt, mitlesen; keine zusätzliche Anfrage
+      const skripte: Promise<{ url: string; text: string } | null>[] = [];
+      if (skriptMuster) {
+        page.on("response", (r) => {
+          if (skriptMuster.test(r.url())) skripte.push(r.text().then((text) => ({ url: r.url(), text })).catch(() => null));
+        });
+      }
       try {
         // Die Serverantwort beim Laden mitschneiden (eine Anfrage). Nachträglich ist sie nicht
         // mehr sicher lesbar, wenn die Seite sofort weiterleitet (Abmeldeseite mit Meta-Refresh 0).
@@ -180,23 +194,25 @@ export async function mitMzSitzung<T>(
         if (htmlRoh !== null && istAbmeldeSeite(htmlRoh)) return { url, status, htmlRoh, htmlDom: null };
         await page.waitForLoadState("load", { timeout: 60_000 });
         await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-        return { url, status, htmlRoh, htmlDom: await page.content() };
+        const htmlDom = await page.content();
+        const gelesen = (await Promise.all(skripte)).filter((x): x is { url: string; text: string } => x !== null);
+        return { url, status, htmlRoh, htmlDom, ...(skriptMuster ? { skripte: gelesen } : {}) };
       } finally {
         await page.close();
       }
     }
 
     const sitzung: MzSitzung = {
-      holeSeite: (pfad) =>
+      holeSeite: (pfad, opt) =>
         drossel(async () => {
           const url = pfad.startsWith("http") ? pfad : `${MZ_BASIS}${pfad}`;
-          let seite = await lade(url);
+          let seite = await lade(url, opt?.skripte);
           if (!istEingeloggt(seite.htmlDom ?? seite.htmlRoh ?? "")) {
             // Höchstens ein Login je Sitzung: Läuft die Sitzung später erneut ab, wird nicht
             // noch einmal eingeloggt, die Prüfung unten meldet dann den Fehler.
             loginLauf ??= login(db, ctx);
             await loginLauf;
-            seite = await lade(url);
+            seite = await lade(url, opt?.skripte);
           }
           if (!istEingeloggt(seite.htmlDom ?? seite.htmlRoh ?? "")) {
             merkeLoginFehler(db, "unbestaetigt");

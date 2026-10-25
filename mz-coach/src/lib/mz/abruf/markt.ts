@@ -53,9 +53,14 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
     const r = await mitMzSitzung(
       db,
       async (s) => {
-        const seite = await s.holeSeite(MARKT_PFAD);
+        // transfer.js enthält buy() (Gebotsfenster). Die Seite lädt sie ohnehin; sie wird zum Auswerten
+        // für den Biet-Automaten mitgespeichert.
+        const seite = await s.holeSeite(MARKT_PFAD, { skripte: /\/transfer[^/]*\.js/ });
         const html = seite.htmlDom ?? seite.htmlRoh ?? "";
         speichereRohseite(db, { art: "markt", url: seite.url, status: seite.status, htmlRoh: seite.htmlRoh, htmlDom: seite.htmlDom });
+        for (const sk of seite.skripte ?? []) {
+          speichereRohseite(db, { art: "skript-transfer", url: sk.url, status: null, htmlRoh: sk.text, htmlDom: null });
+        }
         const params = suchParameter(html);
         const spieler: MarktSpieler[] = [];
         let treffer = 0;
