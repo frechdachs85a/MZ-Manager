@@ -55,6 +55,13 @@ Nur echte Daten von managerzone.com. Nichts schätzen, nichts erfinden. Fehlt ei
    - Filter nach meinen Regeln: 99-Regel (Sprint und Ausdauer 9+, Ausnahme Ausdauer 8 bei günstigen Einwechslern), Alter, Budget.
    - Anzeige: Skills, MZ-Wert je Position, Unterschied zu meinem Spieler, Alter, Marktwert, aktuelles Gebot, Auktionsende.
    - Marktwert ist kein Preismaßstab, das in der Bewertung berücksichtigen.
+   - Ergänzung Marcus, 25.10.2026:
+     - Größte Schwachstelle des Teams erkennen und den Spieler vom Markt suchen, der am meisten hilft.
+     - Grenzen beachten: erlaubte Zahl nicht einheimischer Spieler und verfügbares Kapital.
+     - Vorschlag ablehnen können, dann wird der nächstbeste gesucht. Abgelehnte Spieler werden nicht erneut vorgeschlagen.
+     - Jeden Tag automatisch neu suchen.
+     - Ist kein passender Spieler da, wird das ausdrücklich gesagt.
+     - Zu jedem Vorschlag sichtbar: warum dieser Spieler, um wie viel er das Team verstärkt und wodurch (Position, MZ-Wert vorher/nachher).
 
 7. **Lernendes Gedächtnis**
    - Jedes abgerufene Spiel (eigene, Gegner, Topteams) wird dauerhaft gespeichert: Roh-XML plus ausgewertete Felder.
