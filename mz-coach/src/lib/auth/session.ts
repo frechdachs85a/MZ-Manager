@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { sessionSecretAusDatei } from "./geheimnisse";
 
 // Session-Cookie für den Zugangsschutz der App (ein Nutzer).
 // Inhalt: Ablaufzeit in Sekunden, signiert mit HMAC-SHA256.
@@ -11,10 +12,12 @@ function sign(payload: string, secret: string): string {
   return createHmac("sha256", secret).update(payload).digest("base64url");
 }
 
+// Aus der Umgebungsvariable SESSION_SECRET, sonst aus geheimnisse.json auf dem Laufwerk (beim ersten Start erzeugt)
+let ausDatei: string | null = null;
 export function getSessionSecret(): string {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret || secret.length < 32) {
-    throw new Error("SESSION_SECRET fehlt oder ist kürzer als 32 Zeichen");
+  const secret = process.env.SESSION_SECRET || (ausDatei ??= sessionSecretAusDatei());
+  if (secret.length < 32) {
+    throw new Error("SESSION_SECRET ist kürzer als 32 Zeichen");
   }
   return secret;
 }

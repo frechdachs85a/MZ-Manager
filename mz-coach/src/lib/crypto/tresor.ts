@@ -1,11 +1,13 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { tresorKeyAusDatei } from "@/lib/auth/geheimnisse";
 
 // AES-256-GCM für ManagerZone-Zugangsdaten und Session-Cookie.
-// Schlüssel nur aus der Umgebungsvariable MZ_TRESOR_KEY (32 Byte, base64).
+// Schlüssel aus der Umgebungsvariable MZ_TRESOR_KEY (32 Byte, base64), sonst aus geheimnisse.json auf dem
+// Laufwerk (beim ersten Start erzeugt, ändert sich danach nie).
 // Format: v1.<iv>.<tag>.<daten> (base64url)
 
 export function tresorSchluessel(): Buffer {
-  const raw = process.env.MZ_TRESOR_KEY;
+  const raw = process.env.MZ_TRESOR_KEY || tresorKeyAusDatei();
   const key = raw ? Buffer.from(raw, "base64") : Buffer.alloc(0);
   if (key.length !== 32) throw new Error("MZ_TRESOR_KEY fehlt oder ist nicht 32 Byte (base64)");
   return key;

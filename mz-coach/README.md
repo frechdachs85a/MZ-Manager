@@ -23,9 +23,8 @@ Fachgrundlage: `mz-wissen.md`. Auftrag: `docs/auftrag.md`.
 ```bash
 npm install
 npx playwright install --with-deps chromium   # Browser für den ManagerZone-Abruf
-cp .env.example .env.local
-npm run hash-password   # Passwort eingeben, Ausgabe in .env.local eintragen
-npm run dev             # http://localhost:3000
+npm run dev             # http://localhost:3000, führt beim ersten Mal zur Ersteinrichtung
+                        # (Einrichtungscode steht in der Konsole)
 ```
 
 ## Befehle
@@ -82,6 +81,12 @@ npm run dev             # http://localhost:3000
 - Zeitplan (`src/lib/zeitplan.ts`): 4 Uhr Top 10 und eigene Spiele, 6 Uhr Markt, täglich Aufräumen, wöchentlich Sicherung.
 - Echte Seiten als Testdaten liegen nur lokal in `src/lib/mz/parser/fixtures/` (Repo ist öffentlich).
 - Regeln von ManagerZone zu automatisierten Abrufen: siehe `docs/mz-seiten.md`. Der Abruf läuft auf eigenes Risiko.
+
+## Hosting
+
+Anleitung für Railway und Oracle Cloud „Always Free“: `docs/hosting.md`. Ersteinrichtung ohne Schlüssel von Hand:
+Schlüssel erzeugt der Server selbst (`/data/geheimnisse.json`), das App-Passwort legst du auf `/einrichtung` fest,
+mit dem Einrichtungscode aus dem Serverprotokoll.
 
 ## Sicherheit
 

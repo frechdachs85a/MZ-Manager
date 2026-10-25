@@ -1,8 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { istEingerichtet } from "@/lib/auth/geheimnisse";
 import { getSessionSecret, SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 
-// Alles außer Login und Icons ist nur mit gültiger Session erreichbar.
+// Alles außer Login, Einrichtung, Gesundheitsprüfung und Icons ist nur mit gültiger Session erreichbar.
+// Ohne App-Passwort (Ersteinrichtung) führt jede Seite zu /einrichtung.
+let eingerichtet = false; // einmal eingerichtet, bleibt es so
 export function proxy(request: NextRequest) {
+  if (!eingerichtet && !(eingerichtet = istEingerichtet())) {
+    if (request.nextUrl.pathname.startsWith("/api/")) return NextResponse.json({ error: "nicht eingerichtet" }, { status: 503 });
+    const url = request.nextUrl.clone();
+    url.pathname = "/einrichtung";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (verifySessionToken(token, getSessionSecret())) return NextResponse.next();
 
@@ -17,6 +27,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!login|_next/static|_next/image|icons/|apple-touch-icon.png|favicon.png).*)",
+    "/((?!login|einrichtung|api/gesund|_next/static|_next/image|icons/|apple-touch-icon.png|favicon.png).*)",
   ],
 };

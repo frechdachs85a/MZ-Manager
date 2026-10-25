@@ -2,6 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { passwortHash } from "@/lib/auth/geheimnisse";
 import { verifyPassword } from "@/lib/auth/password";
 import {
   createSessionToken,
@@ -24,8 +25,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     return { error: "Zu viele Fehlversuche. Probier es in 15 Minuten nochmal." };
   }
 
-  const stored = process.env.APP_PASSWORD_HASH;
-  if (!stored) return { error: "APP_PASSWORD_HASH ist auf dem Server nicht gesetzt." };
+  const stored = passwortHash();
+  if (!stored) redirect("/einrichtung");
 
   const password = String(formData.get("password") ?? "");
   if (!(await verifyPassword(password, stored))) {

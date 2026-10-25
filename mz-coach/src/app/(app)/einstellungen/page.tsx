@@ -41,7 +41,7 @@ export default async function Einstellungen() {
         </Section>
         <Section
           title="ManagerZone-Zugang"
-          footer="Wird nur auf dem Server gespeichert, mit AES-256-GCM verschlüsselt. Der Schlüssel liegt in der Umgebungsvariable MZ_TRESOR_KEY, nie im Code oder Browser."
+          footer="Wird nur auf dem Server gespeichert, mit AES-256-GCM verschlüsselt. Der Schlüssel liegt nur auf dem Server (geheimnisse.json auf dem Laufwerk oder Umgebungsvariable MZ_TRESOR_KEY), nie im Code oder Browser."
         >
           {zugang.eingerichtet ? (
             <List>

@@ -21,4 +21,5 @@ COPY --from=bau /app/public ./public
 # Datenbank liegt auf einem dauerhaften Laufwerk unter /data (beim Anbieter als Volume einhängen)
 RUN mkdir -p /data
 EXPOSE 3000
-CMD ["npx", "next", "start", "-p", "3000"]
+# Port vom Hoster (Railway setzt PORT), sonst 3000
+CMD ["sh", "-c", "exec npx next start -p ${PORT:-3000}"]
