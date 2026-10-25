@@ -62,6 +62,14 @@ Nur echte Daten von managerzone.com. Nichts schätzen, nichts erfinden. Fehlt ei
      - Jeden Tag automatisch neu suchen.
      - Ist kein passender Spieler da, wird das ausdrücklich gesagt.
      - Zu jedem Vorschlag sichtbar: warum dieser Spieler, um wie viel er das Team verstärkt und wodurch (Position, MZ-Wert vorher/nachher).
+   - Biet-Automat (Marcus, 25.10.2026):
+     - Maximalgebot je Spieler, Knopf "Max" setzt den verfügbaren Saldo ein.
+     - Liegt Marcus in der Schlussphase nicht vorne, eine Stufe höher bieten, nie über das Maximum.
+     - Geboten wird zwischen 1 und 3 Minuten vor Ende, nicht knapper. Jedes Gebot in den letzten 3 Minuten
+       verlängert die Frist um 3 Minuten (laut ManagerZone); weiter, bis Marcus allein vorne ist oder das
+       Maximum erreicht ist.
+     - Jedes Gebot mit Zeit und Betrag protokollieren.
+     - Offen: wie das Gebot abgeschickt wird (Funktion buy() in transfer.js, Datei angefragt).
 
 7. **Lernendes Gedächtnis**
    - Jedes abgerufene Spiel (eigene, Gegner, Topteams) wird dauerhaft gespeichert: Roh-XML plus ausgewertete Felder.
