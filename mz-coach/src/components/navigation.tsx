@@ -116,7 +116,9 @@ export function Navigation() {
                     active ? "text-tint" : "text-label-2"
                   }`}
                 >
-                  <span className="h-[26px] w-[26px]">{tab.icon}</span>
+                  <span className={`flex h-[26px] w-[44px] items-center justify-center rounded-full transition-colors ${active ? "bg-tint/12" : ""}`}>
+                    <span className="h-[22px] w-[22px]">{tab.icon}</span>
+                  </span>
                   {tab.label}
                 </Link>
               </li>
@@ -127,7 +129,7 @@ export function Navigation() {
 
       <nav
         aria-label="Hauptnavigation"
-        className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-separator bg-card px-3 py-6 lg:flex"
+        className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-separator bg-card/80 px-3 py-6 backdrop-blur-xl lg:flex"
       >
         <Link href="/" className="mb-6 flex items-center gap-3 px-3">
           <Image src="/icons/icon-192.png" alt="" width={36} height={36} className="rounded-[9px]" />
@@ -144,8 +146,8 @@ export function Navigation() {
                 <Link
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-10 items-center gap-3 rounded-[10px] px-3 text-[15px] font-medium transition-colors ${
-                    active ? "bg-tint/12 text-tint" : "text-label hover:bg-fill"
+                  className={`relative flex min-h-10 items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium transition-colors ${
+                    active ? "bg-tint/12 text-tint before:absolute before:inset-y-2 before:-left-3 before:w-[3px] before:rounded-r-full before:bg-tint" : "text-label hover:bg-fill"
                   }`}
                 >
                   <span className="h-[22px] w-[22px] shrink-0">{tab.icon}</span>

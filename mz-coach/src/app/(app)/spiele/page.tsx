@@ -15,7 +15,7 @@ export default async function Spiele() {
       <div className="seite lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
         <Section title="Gespeicherte Spiele" footer="Jedes Spiel wird einmal gespeichert (Roh-XML und Auswertung) und nie erneut abgerufen.">
           {spiele.length === 0 ? (
-            <p className="rounded-[14px] bg-card p-4 text-[15px] text-label-2">Noch keine Spiele gespeichert.</p>
+            <p className="karte rounded-[18px] bg-card p-4 text-[15px] text-label-2">Noch keine Spiele gespeichert.</p>
           ) : (
             <List>
               {spiele.map((s) => (

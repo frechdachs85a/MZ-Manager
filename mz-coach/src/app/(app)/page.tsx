@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Card, List, Row, Section, Unavailable } from "@/components/ui";
+import { Hero, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
 import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
@@ -42,11 +42,14 @@ export default async function Uebersicht() {
       />
       <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
         <Section title="Nächstes Ligaspiel" footer="Datum aus der Regel: Ligaspiele immer mittwochs und sonntags. Gegner und Anstoß kommen mit dem Spielplan-Abruf.">
-          <Card className="p-4">
-            <div className="text-[13px] font-semibold uppercase tracking-wide text-tint">Ligaspieltag</div>
-            <div className="mt-1 text-[22px] font-bold tracking-tight">{datum}</div>
-            <div className="mt-1 text-[15px] text-label-2">Gegner und Countdown: noch nicht verfügbar</div>
-          </Card>
+          <Hero>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">Ligaspieltag</div>
+            <div className="mt-1.5 text-[26px] font-bold leading-tight tracking-tight">{datum}</div>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-white/15 px-3 py-1.5 text-[13px] font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
+              Gegner und Countdown: noch nicht verfügbar
+            </div>
+          </Hero>
         </Section>
 
         <Section title="Empfohlene Taktik">

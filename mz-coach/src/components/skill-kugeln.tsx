@@ -16,19 +16,19 @@ export function SkillKugeln({ label, skill }: { label: string; skill?: SkillWert
             {Array.from({ length: 10 }, (_, i) => (
               <span
                 key={i}
-                className={`h-[11px] flex-1 rounded-full ${
+                className={`h-[10px] flex-1 rounded-[3px] ${
                   i < skill.wert
                     ? skill.gemaxt === undefined
-                      ? "bg-label-2"
+                      ? "bg-skill-fix"
                       : skill.gemaxt
-                        ? "bg-red"
-                        : "bg-tint"
+                        ? "bg-skill-max"
+                        : "bg-skill-train"
                     : "bg-fill"
                 }`}
               />
             ))}
           </span>
-          <span className={`w-6 text-right text-[15px] font-semibold tabular-nums ${skill.gemaxt ? "text-red" : ""}`}>
+          <span className={`w-6 text-right text-[15px] font-semibold tabular-nums ${skill.gemaxt ? "text-skill-max" : ""}`}>
             {skill.wert}
           </span>
           {skill.gemaxt !== undefined && <span className="sr-only">{skill.gemaxt ? "ausgemaxt" : "trainierbar"}</span>}

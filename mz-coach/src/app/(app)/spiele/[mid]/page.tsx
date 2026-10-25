@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
-import { Card, List, Row, Section } from "@/components/ui";
+import { StatVergleich } from "@/components/stat-vergleich";
+import { Card, Hero, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeSpiel } from "@/lib/db/spiele";
 import { datumZeit } from "@/lib/format";
@@ -38,6 +39,11 @@ const uhr = (clock: string) => {
   return m ? `${m[1]}:${m[2].padStart(2, "0")}` : clock;
 };
 // Kartenarten laut mz-wissen.md: yellow, second yellow. Unbekannte Werte unverändert.
+// "2026-10-21 14:45:00" -> "21.10.2026, 14:45" (nur umformatiert, keine Zeitzonen-Umrechnung)
+const anzeigeDatum = (d?: string) => {
+  const m = d?.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  return m ? `${m[3]}.${m[2]}.${m[1]}${m[4] ? `, ${m[4]}:${m[5]}` : ""}` : d;
+};
 const KARTE: Record<string, string> = { yellow: "Gelb", "second yellow": "Gelb-Rot" };
 
 export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
@@ -53,10 +59,31 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
   return (
     <>
       <PageHeader
-        title={`${heim.statistik.goals ?? "?"}:${gast.statistik.goals ?? "?"}`}
-        subtitle={`${heim.name} – ${gast.name} · ${s.datum ?? "Datum n. v."} · mid ${s.mid}`}
+        title="Spielbericht"
+        subtitle={`${heim.name} – ${gast.name} · mid ${s.mid}`}
       />
       <div className="seite">
+        <Hero className="mt-5">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/70">
+            {anzeigeDatum(s.datum) ?? "Datum n. v."} · Endstand
+          </div>
+          <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <div className="min-w-0 text-[17px] font-semibold leading-tight">
+              {heim.name}
+              {heim.id === TEAM.tid && <span className="block text-[12px] font-medium text-white/70">du · Heim</span>}
+              {heim.id !== TEAM.tid && <span className="block text-[12px] font-medium text-white/70">Heim</span>}
+            </div>
+            <div className="text-[44px] font-bold leading-none tracking-tight tabular-nums">
+              {heim.statistik.goals ?? "?"}
+              <span className="px-1 text-white/50">:</span>
+              {gast.statistik.goals ?? "?"}
+            </div>
+            <div className="min-w-0 text-right text-[17px] font-semibold leading-tight">
+              {gast.name}
+              <span className="block text-[12px] font-medium text-white/70">{gast.id === TEAM.tid ? "du · Gast" : "Gast"}</span>
+            </div>
+          </div>
+        </Hero>
         {s.hinweise.length > 0 && (
           <Section title="Hinweise">
             <Card className="p-4 text-[15px] text-orange">{s.hinweise.join(" ")}</Card>
@@ -132,24 +159,12 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
           </div>
           <Section title="Statistik" footer={`Quelle: Stats-XML, gespeichert ${datumZeit(s.abgerufen)}.`}>
             <Card>
-              <table className="w-full text-[15px]">
-                <thead>
-                  <tr className="border-b border-separator text-[13px] text-label-2">
-                    <th className="py-2 pl-4 text-left font-normal" />
-                    <th className="py-2 text-right font-normal">{heim.name}</th>
-                    <th className="py-2 pr-4 text-right font-normal">{gast.name}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-separator">
-                  {STAT.map(([k, label]) => (
-                    <tr key={k}>
-                      <td className="py-2 pl-4">{label}</td>
-                      <td className="py-2 text-right tabular-nums">{heim.statistik[k] ?? "n. v."}</td>
-                      <td className="py-2 pr-4 text-right tabular-nums">{gast.statistik[k] ?? "n. v."}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <StatVergleich
+                links={heim.name}
+                rechts={gast.name}
+                akzent={gast.id === TEAM.tid ? "rechts" : "links"}
+                zeilen={STAT.map(([k, label]) => ({ label, links: heim.statistik[k], rechts: gast.statistik[k] }))}
+              />
             </Card>
           </Section>
         </div>

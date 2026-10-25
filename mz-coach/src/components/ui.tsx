@@ -10,18 +10,18 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-7">
+    <section className="mt-8">
       {title && (
-        <h2 className="mb-1.5 px-4 text-[13px] uppercase tracking-wide text-label-2">{title}</h2>
+        <h2 className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-label-2">{title}</h2>
       )}
       {children}
-      {footer && <p className="mt-1.5 px-4 text-[13px] text-label-2">{footer}</p>}
+      {footer && <p className="mt-2 px-1 text-[13px] leading-relaxed text-label-3">{footer}</p>}
     </section>
   );
 }
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`overflow-hidden rounded-[14px] bg-card ${className}`}>{children}</div>;
+  return <div className={`karte overflow-hidden rounded-[18px] bg-card ${className}`}>{children}</div>;
 }
 
 export function List({ children }: { children: React.ReactNode }) {
@@ -85,8 +85,13 @@ export function Badge({
     tint: "bg-tint/15 text-tint",
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold ${tones[tone]}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide ${tones[tone]}`}>
       {children}
     </span>
   );
+}
+
+// Kopfkarte mit Verlauf für die wichtigste Information einer Seite
+export function Hero({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`hero relative overflow-hidden rounded-[22px] p-5 ${className}`}>{children}</div>;
 }

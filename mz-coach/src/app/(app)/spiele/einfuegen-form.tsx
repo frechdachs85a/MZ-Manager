@@ -12,12 +12,12 @@ export function EinfuegenForm() {
         rows={5}
         spellCheck={false}
         placeholder="<?xml …?><SoccerStatistics …> … </SoccerStatistics> einfügen"
-        className="block w-full rounded-[14px] bg-card px-4 py-3 font-mono text-[13px] outline-none placeholder:text-label-3"
+        className="block w-full karte rounded-[18px] bg-card px-4 py-3 font-mono text-[13px] outline-none placeholder:text-label-3"
       />
       <button
         type="submit"
         disabled={pending}
-        className="pressable mt-3 min-h-[50px] w-full rounded-[14px] bg-tint text-[17px] font-semibold text-white disabled:opacity-50"
+        className="pressable mt-3 min-h-[50px] w-full rounded-[14px] bg-tint shadow-[0_6px_16px_-6px_var(--tint)] text-[17px] font-semibold text-white disabled:opacity-50"
       >
         {pending ? "Wird gelesen …" : "Spiel speichern"}
       </button>

@@ -7,7 +7,7 @@ export function HochladenForm() {
   const [state, action, pending] = useActionState<AbrufState, FormData>(kaderHochladen, {});
   return (
     <form action={action}>
-      <div className="rounded-[14px] bg-card px-4 py-3">
+      <div className="karte rounded-[18px] bg-card px-4 py-3">
         <label htmlFor="datei" className="block text-[15px] font-medium">
           Gespeicherte Seiten (.html), mehrere auf einmal möglich
         </label>
@@ -24,7 +24,7 @@ export function HochladenForm() {
       <button
         type="submit"
         disabled={pending}
-        className="pressable mt-3 min-h-[50px] w-full rounded-[14px] bg-tint text-[17px] font-semibold text-white disabled:opacity-50"
+        className="pressable mt-3 min-h-[50px] w-full rounded-[14px] bg-tint shadow-[0_6px_16px_-6px_var(--tint)] text-[17px] font-semibold text-white disabled:opacity-50"
       >
         {pending ? "Wird gelesen …" : "Seiten übernehmen"}
       </button>

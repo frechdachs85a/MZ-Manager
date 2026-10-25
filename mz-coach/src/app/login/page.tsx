@@ -19,7 +19,7 @@ export default function LoginPage() {
         <form action={action} className="mt-8">
           {/* verstecktes Benutzerfeld, damit der iCloud-Schlüsselbund das Passwort zuordnen kann */}
           <input type="text" name="username" autoComplete="username" defaultValue="marcus" hidden readOnly />
-          <div className="overflow-hidden rounded-[14px] bg-card">
+          <div className="overflow-hidden karte rounded-[18px] bg-card">
             <label className="sr-only" htmlFor="password">Passwort</label>
             <input
               id="password"
@@ -38,7 +38,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="pressable mt-5 min-h-[50px] w-full rounded-[14px] bg-tint text-[17px] font-semibold text-white disabled:opacity-50"
+            className="pressable mt-5 min-h-[50px] w-full rounded-[14px] bg-tint shadow-[0_6px_16px_-6px_var(--tint)] text-[17px] font-semibold text-white disabled:opacity-50"
           >
             {pending ? "Anmelden …" : "Anmelden"}
           </button>
