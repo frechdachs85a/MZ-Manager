@@ -2,12 +2,15 @@ import type Database from "better-sqlite3";
 import { ladeTeamSpiele } from "@/lib/db/gegner";
 import { ladeTopTeams, type TopTeam } from "@/lib/db/top";
 import { ladeTopSpiele } from "@/lib/db/top-spiel";
-import { stilMatrix, teamMuster, type SpielMuster, type TeamMuster } from "@/lib/mz/analyse/muster";
+import { regelMuster, stilMatrix, teamMuster, type RegelSatz, type SpielMuster, type TeamMuster } from "@/lib/mz/analyse/muster";
 import { auswahlLernspiele, JE_ART } from "@/lib/mz/abruf/top-auswahl";
 
+// regeln: Wechsel- und Taktikmuster als Sätze über alle Spiele dieser Art
+type ArtAuswertung = { gewaehlt: number; mitXml: number; muster: TeamMuster | null; regeln: RegelSatz[]; spiele: SpielMuster[] };
+
 export type TopTeamAuswertung = TopTeam & {
-  liga: { gewaehlt: number; mitXml: number; muster: TeamMuster | null; spiele: SpielMuster[] };
-  weltliga: { gewaehlt: number; mitXml: number; muster: TeamMuster | null; spiele: SpielMuster[] };
+  liga: ArtAuswertung;
+  weltliga: ArtAuswertung;
   arten: [string, number][]; // Spielarten in der gespeicherten Liste (zur Kontrolle der Weltliga-Erkennung)
 };
 
@@ -20,7 +23,7 @@ export function topAuswertung(db: Database.Database) {
     const auswerten = (art: "liga" | "weltliga", gewaehlt: number) => {
       const muster = ladeTopSpiele(db, t.tid, art, JE_ART);
       alle.push(...muster);
-      return { gewaehlt, mitXml: muster.length, muster: muster.length ? teamMuster(muster) : null, spiele: muster };
+      return { gewaehlt, mitXml: muster.length, muster: muster.length ? teamMuster(muster) : null, regeln: regelMuster(muster), spiele: muster };
     };
     const arten = new Map<string, number>();
     for (const s of spiele) arten.set(s.art || "?", (arten.get(s.art || "?") ?? 0) + 1);

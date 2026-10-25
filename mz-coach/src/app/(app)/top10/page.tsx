@@ -5,7 +5,8 @@ import { getDb } from "@/lib/db";
 import { letzterAbruf } from "@/lib/db/abruf";
 import { datumZeit } from "@/lib/format";
 import { de } from "@/lib/mz/analyse/gegner";
-import { stilText, type Bilanz, type SpielMuster, type TeamMuster } from "@/lib/mz/analyse/muster";
+import { stilText, type Bilanz, type RegelSatz, type SpielMuster, type TeamMuster } from "@/lib/mz/analyse/muster";
+import { RegelSaetze } from "@/components/regel-saetze";
 import { topAuswertung } from "@/lib/top-auswertung";
 import { ladeTopArchiv } from "@/lib/archiv";
 import { TopAbrufKnopf } from "./abruf-knopf";
@@ -55,7 +56,7 @@ function Ablauf({ spiele }: { spiele: SpielMuster[] }) {
   );
 }
 
-function Muster({ m, titel }: { m: TeamMuster | null; titel: string }) {
+function Muster({ m, titel, regeln }: { m: TeamMuster | null; titel: string; regeln: RegelSatz[] }) {
   if (!m) return <p className="text-[13px] text-label-3">{titel}: noch keine Spiele mit Stats-XML.</p>;
   const min = m.wechselMinuten;
   return (
@@ -84,6 +85,7 @@ function Muster({ m, titel }: { m: TeamMuster | null; titel: string }) {
           ? m.taktikwechsel.map((t) => `${lageDe[t.lage]}: ${t.aenderung} (${t.anzahl}×, Min. ${t.minuten.join(", ")})`).join(" · ")
           : "keine ausgelöst"}
       </div>
+      <RegelSaetze regeln={regeln} />
       <div>
         <span className="text-label-2">Gegen: </span>
         {m.gegenKlasse.map((g) => `${g.klasse} ${bil(g.bilanz)} mit ${g.stile.map(([s]) => stilDe(s)).join(" / ")}`).join(" · ")}
@@ -162,9 +164,9 @@ export default async function Top10() {
                   <span className="text-[12px] text-label-3">tid {t.tid}</span>
                 </div>
                 <div className="mt-4 space-y-5">
-                  <Muster m={t.liga.muster} titel={`Liga (${t.liga.mitXml} von ${t.liga.gewaehlt})`} />
+                  <Muster m={t.liga.muster} regeln={t.liga.regeln} titel={`Liga (${t.liga.mitXml} von ${t.liga.gewaehlt})`} />
                   <Ablauf spiele={t.liga.spiele} />
-                  <Muster m={t.weltliga.muster} titel={`Weltliga (${t.weltliga.mitXml} von ${t.weltliga.gewaehlt})`} />
+                  <Muster m={t.weltliga.muster} regeln={t.weltliga.regeln} titel={`Weltliga (${t.weltliga.mitXml} von ${t.weltliga.gewaehlt})`} />
                   <Ablauf spiele={t.weltliga.spiele} />
                 </div>
                 {t.arten.length > 0 && (

@@ -4,6 +4,7 @@ import { LinkZeile } from "@/components/link-zeile";
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
 import { Card, List, Row, Section, Unavailable } from "@/components/ui";
+import { RegelSaetze } from "@/components/regel-saetze";
 import { getDb } from "@/lib/db";
 import { de } from "@/lib/mz/analyse/gegner";
 import { ANALYSE_SPIELE, LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
@@ -46,7 +47,7 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   await connection();
   const { tid: tidText } = await props.params;
   const tid = Number(tidText);
-  const { spiele, name, liga, stats, analyse: a } = gegnerAnalyseLaden(getDb(), tid);
+  const { spiele, name, liga, stats, analyse: a, regeln } = gegnerAnalyseLaden(getDb(), tid);
   if (spiele.length === 0) notFound();
   const alleLiga = spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
   const fehlen = liga.filter((s) => !s.xml);
@@ -71,6 +72,11 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
                     <div className="mt-2 text-[15px] text-label-2">
                       Bilanz: {a.bilanz.siege} S, {a.bilanz.remis} U, {a.bilanz.niederlagen} N · Tore {a.bilanz.tore}:{a.bilanz.gegentore}
                     </div>
+                  </Card>
+                </Section>
+                <Section title="Wechsel- und Taktikregeln" footer={`Aus allen ${stats.length} ausgewerteten Ligaspielen: jeder Substitution- und Tactic-Eintrag der Stats-XML mit Minute und Spielstand.`}>
+                  <Card className="p-4 text-[14px]">
+                    <RegelSaetze regeln={regeln} />
                   </Card>
                 </Section>
                 <Section title="Taktikvorschlag" footer="Nach den Faustregeln aus mz-wissen.md, Abschnitt 10. Vor dem Einsatz den XML-Code der Taktik unter „Taktik“ prüfen lassen.">

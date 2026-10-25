@@ -60,3 +60,16 @@ describe.skipIf(!XML)("Echte Stats-XML, Spiel 1625669278", () => {
     expect(s.karten).toEqual([expect.objectContaining({ art: "yellow", clock: "65:17.666", stand: "0:5" })]);
   });
 });
+
+const TAKTIK = new URL("./fixtures/stats-1625669263.xml", import.meta.url);
+describe.skipIf(!existsSync(TAKTIK))("Tactic ohne frame: Spielstand aus time", () => {
+  it("Taktikwechsel zur Halbzeit bei 2:2, am Ende bei 4:2", () => {
+    const s = parseStatsXml(readFileSync(TAKTIK, "utf8"));
+    expect(s.taktikwechsel.map((t) => [t.zeit, t.art, t.stand])).toEqual([
+      ["45:55.333", "playstyle", "2:2"],
+      ["45:55.333", "aggression", "2:2"],
+      ["93:7.0", "playstyle", "4:2"],
+      ["93:7.0", "aggression", "4:2"],
+    ]);
+  });
+});

@@ -171,6 +171,11 @@ const MIGRATIONEN: string[] = [
   );
   CREATE INDEX top_spiel_tid ON top_spiel(tid, art, datum);
   `,
+  `
+  -- Muster Version 2 (Rollen nach Vorgabe vom 25.10.2026, Spielstand bei Taktikwechseln, Torverlauf):
+  -- alte Muster verwerfen, der nächste Abruf holt die Stats-XML neu
+  DELETE FROM top_spiel;
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

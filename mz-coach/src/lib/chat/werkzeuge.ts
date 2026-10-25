@@ -118,7 +118,7 @@ const WERKZEUGE: Werkzeug[] = [
     def: {
       name: "gegner",
       description:
-        "Gegneranalyse aus den letzten 8 gespeicherten Ligaspielen eines Teams: spielt er gleich oder wechselnd, Formationen, Einstellungen, Wechsel, Bilanz und Taktikempfehlung. Ohne tid: Liste der eingelesenen Gegner.",
+        "Gegneranalyse aus den letzten 8 gespeicherten Ligaspielen eines Teams: spielt er gleich oder wechselnd, Formationen, Einstellungen, Wechsel, Regelmuster als Sätze (Wechsel- und Taktikregeln nach Minute und Spielstand), Bilanz und Taktikempfehlung. Ohne tid: Liste der eingelesenen Gegner.",
       input_schema: {
         type: "object",
         properties: { tid: { type: "integer", description: "Team-ID des Gegners (optional)" } },
@@ -131,7 +131,7 @@ const WERKZEUGE: Werkzeug[] = [
       }
       const g = gegnerAnalyseLaden(db, Number(input.tid));
       if (!g.spiele.length) return { fehler: `Zu tid ${input.tid} ist keine Spielliste gespeichert.` };
-      return { name: g.name, ligaspieleBetrachtet: g.liga.length, mitXml: g.stats.length, analyse: g.analyse };
+      return { name: g.name, ligaspieleBetrachtet: g.liga.length, mitXml: g.stats.length, analyse: g.analyse, regelmuster: g.regeln.map((r) => r.text) };
     },
   },
   {
@@ -198,7 +198,7 @@ const WERKZEUGE: Werkzeug[] = [
     def: {
       name: "top10",
       description:
-        "Muster der Top 10 der Managerwertung aus ihren gespeicherten Liga- und Weltligaspielen: Startstile, Regelwechsel-Minuten, Taktikwechsel nach Spielstand, Bilanz gegen Gegnerklassen und eine Matrix Stil gegen Gegnerklasse.",
+        "Muster der Top 10 der Managerwertung aus ihren gespeicherten Liga- und Weltligaspielen: Startstile, Regelwechsel-Minuten, Taktikwechsel nach Spielstand, Regelmuster als Sätze (wer wann bei welchem Spielstand gewechselt wird, wann auf welche Einstellung umgestellt wird, für welche Lage sehr wahrscheinlich keine Regel existiert; Rolle des Einwechslers und Formationswechsel sind nicht erkennbar), Bilanz gegen Gegnerklassen und eine Matrix Stil gegen Gegnerklasse.",
       input_schema: ohneEingabe,
     },
     run: (db) => topAuswertung(db),

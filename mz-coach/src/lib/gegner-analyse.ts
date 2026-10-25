@@ -4,6 +4,7 @@ import { ladeTopTeams } from "@/lib/db/top";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { ladeSpiel } from "@/lib/db/spiele";
 import { analysiereGegner, type GegnerAnalyse } from "@/lib/mz/analyse/gegner";
+import { regelMuster, spielMuster } from "@/lib/mz/analyse/muster";
 import { LIGA_MID_AB, letzteLigaspiele } from "@/lib/mz/parser/spielliste";
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
 
@@ -16,7 +17,9 @@ export function gegnerAnalyseLaden(db: Database.Database, tid: number) {
     .map((s) => ladeSpiel(db, s.mid))
     .filter((s): s is StatsSpiel & { abgerufen: string } => !!s);
   const analyse: GegnerAnalyse | null = stats.length ? analysiereGegner(tid, stats) : null;
-  return { tid, name: teamName(db, tid) ?? `tid ${tid}`, spiele, liga, stats, analyse };
+  // Wechsel- und Taktikregeln über die ausgewerteten Ligaspiele (nur ausgelöste Regeln stehen in der XML)
+  const regeln = regelMuster(stats.map((s) => spielMuster(s, tid)));
+  return { tid, name: teamName(db, tid) ?? `tid ${tid}`, spiele, liga, stats, analyse, regeln };
 }
 
 // Zuletzt eingelesener Gegner (ob er wirklich der nächste ist, weiß die Seite erst mit dem Spielplan-Abruf)
