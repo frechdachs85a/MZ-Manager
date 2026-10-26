@@ -177,7 +177,15 @@ export async function wertScanAbrufen(db: Database.Database, opt = { manuell: fa
           // Tabelle wird per JavaScript geladen: Seite im Browser öffnen
           const wl = await s.holeSeite(WELTLIGA_PFAD);
           speichereRohseite(db, { art: "weltliga", url: wl.url, status: wl.status, htmlRoh: wl.htmlRoh, htmlDom: wl.htmlDom });
-          const wlTeams = teamsAusTabelle(wl.htmlDom ?? wl.htmlRoh ?? "");
+          // Die Tabelle steht nicht im Seiten-HTML, sondern kommt per Reiter "Tabelle" (a#league_tab_table, ajax.php …&sub=table;
+          // gesehen 26.10.2026 in der gespeicherten Seite). Diesen Link wie die Seite selbst abrufen.
+          let wlTeams = teamsAusTabelle(wl.htmlDom ?? wl.htmlRoh ?? "");
+          const reiter = parse(wl.htmlDom ?? wl.htmlRoh ?? "").querySelector("a#league_tab_table")?.getAttribute("href");
+          if (!wlTeams.length && reiter) {
+            const t = await s.holeText(reiter.replace(/&amp;/g, "&"));
+            speichereRohseite(db, { art: "weltliga-tabelle", url: t.url, status: t.status, htmlRoh: t.text, htmlDom: null });
+            wlTeams = teamsAusTabelle(t.text);
+          }
           for (const t of wlTeams) teams.set(t.tid, t.name);
           teile.push(`Weltliga-Tabelle: ${wlTeams.length} Teams.`);
         } catch (e) {

@@ -24,7 +24,7 @@ const FARBE = { S: "text-green", U: "text-label-2", N: "text-red" } as const;
 export default async function Spieltag() {
   await connection();
   const l = spieltagLage(getDb());
-  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, verlauf, erwartet, skala } = l;
+  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, verlauf, erwartet } = l;
   const gName = gegner?.name ?? lauf?.gegnerName ?? "Gegner";
 
   return (
@@ -85,10 +85,10 @@ export default async function Spieltag() {
                     : `Startelf-Wert ${euro(erwartet.summe)}${erwartet.ohneWert.length ? ` (ohne Wert: ${erwartet.ohneWert.join(", ")})` : ""}`}
                 </div>
                 <div className="mx-auto mt-3 max-w-[360px]">
-                  <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} heatmap={erwartet.ohneWert.length < erwartet.feld.length} skala={skala} />
+                  <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} heatmap={erwartet.ohneWert.length < erwartet.feld.length} />
                 </div>
                 <p className="mt-2 text-[12px] leading-relaxed text-label-3">
-                  Seine Sicht (sein Tor unten). Seine linke Seite = deine rechte. Farbe = Marktwert, gleiche Skala wie deine Aufstellung.
+                  Seine Sicht (sein Tor unten). Seine linke Seite = deine rechte. Farbe = Marktwert, feste Grenzen für alle Teams.
                 </p>
               </Card>
             )}

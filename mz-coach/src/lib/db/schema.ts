@@ -247,6 +247,28 @@ const MIGRATIONEN: string[] = [
   ALTER TABLE wert_spiel ADD COLUMN aufstellung_json TEXT;
   DELETE FROM wert_spiel;
   `,
+  `
+  -- Bietomat (Marcus, 26.10.2026): Gebotsaufträge für selbst eingegebene oder vorgeschlagene Spieler und
+  -- ein Protokoll jedes Schritts (Laden, Gebot, Ergebnis)
+  CREATE TABLE gebot_auftrag (
+    pid INTEGER PRIMARY KEY,
+    name TEXT,
+    maximum INTEGER NOT NULL,
+    bieten_bis TEXT,
+    auktion_ende TEXT,
+    spieler_json TEXT,
+    status TEXT NOT NULL,
+    erstellt TEXT NOT NULL,
+    geaendert TEXT NOT NULL
+  );
+  CREATE TABLE gebot_log (
+    id INTEGER PRIMARY KEY,
+    pid INTEGER NOT NULL,
+    zeit TEXT NOT NULL,
+    betrag INTEGER,
+    text TEXT NOT NULL
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

@@ -10,37 +10,37 @@ export const FELD = { x0: 8.4, x1: 200, y0: 8, y1: 318, mitte: 163 } as const;
 // zusatz: zweite Zeile unter dem Namen. wert: Marktwert für die Heatmap und den Tooltip
 export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; wert?: number; ton?: "normal" | "rot" | "grau"; torwart?: boolean };
 
-// Heatmap (Marcus, 26.10.2026): Ampel-Verlauf, gleiche Skala für beide Teams. Hellgrün = niedrigster Marktwert,
-// dann dunkelgrün, gelb, rot, dunkelrot = höchster ("ganz gefährlich"). Der farbige Ring je Spieler trägt die Farbe,
-// weil Grün als Schein auf dem Rasen kaum zu sehen ist.
-export type Skala = { min: number; max: number };
-export function skalaAus(werte: (number | undefined)[]): Skala | undefined {
-  const w = werte.filter((x): x is number => x !== undefined);
-  return w.length ? { min: Math.min(...w), max: Math.max(...w) } : undefined;
-}
-const AMPEL: [number, number, number][] = [
-  [187, 247, 208], // hellgrün
-  [21, 128, 61], // dunkelgrün
-  [250, 204, 21], // gelb
-  [239, 68, 68], // rot
-  [127, 29, 29], // dunkelrot
+// Heatmap (Marcus, 26.10.2026): Ampel-Verlauf mit FESTEN Wertgrenzen, für alle Teams gleich. Damit ist jedes Feld
+// mit jedem vergleichbar: nur Grün = leichter Gegner, viel Dunkelrot = heftiger Gegner. Grenzen: ab 1,5 Mio maximal
+// (dunkelrot), bis 0,7 Mio grün (Marcus' Beispiele); 0,3 / 1,0 / 1,25 Mio dazwischen gleichmäßig gesetzt.
+// Der farbige Ring je Spieler trägt die Farbe, weil Grün als Schein auf dem Rasen kaum zu sehen ist.
+export const WERT_STUFEN: { wert: number; farbe: [number, number, number]; name: string }[] = [
+  { wert: 300_000, farbe: [187, 247, 208], name: "hellgrün" },
+  { wert: 700_000, farbe: [21, 128, 61], name: "dunkelgrün" },
+  { wert: 1_000_000, farbe: [250, 204, 21], name: "gelb" },
+  { wert: 1_250_000, farbe: [239, 68, 68], name: "rot" },
+  { wert: 1_500_000, farbe: [127, 29, 29], name: "dunkelrot" },
 ];
-export function heatFarbe(t: number): string {
-  const k = Math.max(0, Math.min(1, t)) * (AMPEL.length - 1);
-  const i = Math.min(AMPEL.length - 2, Math.floor(k));
-  const f = k - i;
-  const [x, y] = [AMPEL[i], AMPEL[i + 1]];
-  return `rgb(${x.map((v, j) => Math.round(v + (y[j] - v) * f)).join(" ")})`;
+const rgb = (f: [number, number, number]) => `rgb(${f.join(" ")})`;
+export function heatFarbe(wert: number): string {
+  const st = WERT_STUFEN;
+  if (wert <= st[0].wert) return rgb(st[0].farbe);
+  for (let i = 1; i < st.length; i++) {
+    if (wert <= st[i].wert) {
+      const f = (wert - st[i - 1].wert) / (st[i].wert - st[i - 1].wert);
+      return rgb(st[i - 1].farbe.map((v, j) => Math.round(v + (st[i].farbe[j] - v) * f)) as [number, number, number]);
+    }
+  }
+  return rgb(st.at(-1)!.farbe);
 }
-const anteil = (wert: number, sk: Skala) => (sk.max > sk.min ? (wert - sk.min) / (sk.max - sk.min) : 0.5);
-const mioText = (n: number) => `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`;
+const mioText = (n: number) => `${(n / 1_000_000).toFixed(n % 100_000 ? 2 : 1).replace(".", ",")}`;
 
 const STREIFEN = 10;
 
 // Heatmap erscheint automatisch, sobald Marktwerte da sind (Marcus, 26.10.2026: überall, immer)
-export function Spielfeld({ spieler, titel, heatmap, skala }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean; skala?: Skala }) {
+export function Spielfeld({ spieler, titel, heatmap }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean }) {
   const zeigen = heatmap ?? spieler.some((p) => p.wert !== undefined && !p.torwart);
-  const sk = zeigen ? (skala ?? skalaAus(spieler.filter((p) => !p.torwart).map((p) => p.wert))) : undefined;
+  const sk = zeigen && spieler.some((p) => p.wert !== undefined && !p.torwart);
   const id = useId().replace(/:/g, "");
   const rand = 24; // Platz für Namen am Rand (Eckstürmer x 200)
   const randUnten = spieler.some((p) => p.zusatz) ? 34 : rand; // zweite Zeile unter dem Torwart
@@ -94,7 +94,7 @@ export function Spielfeld({ spieler, titel, heatmap, skala }: { spieler: FeldSpi
           <text x={FELD.x1 - 2} y={61} textAnchor="end">MIN y 63</text>
           <text x={FELD.x1 - 2} y={ABWEHR_Y + 7} textAnchor="end">ABWEHR ab y {ABWEHR_Y}</text>
         </g>
-        {/* Heatmap der Marktwerte: weiche Farbflächen unter den Spielern, relativ zur gezeigten Elf */}
+        {/* Heatmap der Marktwerte: weiche Farbflächen unter den Spielern, feste Wertgrenzen */}
         {sk && (
           <g>
             <defs>
@@ -105,7 +105,7 @@ export function Spielfeld({ spieler, titel, heatmap, skala }: { spieler: FeldSpi
             {spieler
               .filter((p) => p.wert !== undefined && !p.torwart)
               .map((p, i) => (
-                <circle key={i} cx={p.x} cy={p.y} r={20} fill={heatFarbe(anteil(p.wert!, sk))} opacity={0.6} filter={`url(#weich-${id})`} />
+                <circle key={i} cx={p.x} cy={p.y} r={20} fill={heatFarbe(p.wert!)} opacity={0.6} filter={`url(#weich-${id})`} />
               ))}
           </g>
         )}
@@ -120,7 +120,7 @@ export function Spielfeld({ spieler, titel, heatmap, skala }: { spieler: FeldSpi
               {sk && s.wert !== undefined && !s.torwart && (
                 <>
                   <circle r={11.4} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="1" />
-                  <circle r={10.2} fill="none" stroke={heatFarbe(anteil(s.wert, sk))} strokeWidth="3" />
+                  <circle r={10.2} fill="none" stroke={heatFarbe(s.wert)} strokeWidth="3" />
                 </>
               )}
               <rect x={-breite / 2} y={10.5} width={breite} height={s.zusatz ? 18 : 10} rx={5} fill="rgba(0,0,0,.5)" />
@@ -138,10 +138,13 @@ export function Spielfeld({ spieler, titel, heatmap, skala }: { spieler: FeldSpi
       </svg>
       {sk && (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-label-2">
-          <span className="whitespace-nowrap">Marktwert</span>
-          <span className="whitespace-nowrap">{mioText(sk.min)}</span>
-          <span className="h-2.5 w-24 rounded-full" style={{ background: `linear-gradient(90deg, ${[0, 0.25, 0.5, 0.75, 1].map(heatFarbe).join(", ")})` }} />
-          <span className="whitespace-nowrap">{mioText(sk.max)}</span>
+          <span className="whitespace-nowrap">Marktwert (Mio, fest für alle Teams)</span>
+          {WERT_STUFEN.map((st, k) => (
+            <span key={st.wert} className="inline-flex items-center gap-1 whitespace-nowrap">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: rgb(st.farbe) }} />
+              {k === 0 ? `≤ ${mioText(st.wert)}` : k === WERT_STUFEN.length - 1 ? `≥ ${mioText(st.wert)}` : mioText(st.wert)}
+            </span>
+          ))}
         </div>
       )}
       {titel && <figcaption className="mt-2 text-center text-[13px] font-medium text-label-2">{titel}</figcaption>}
