@@ -5,7 +5,7 @@ import { abrufBeenden, abrufBeginnen, letzterAbruf, speichereRohseite } from "@/
 import { ladeGegnerKader, speichereGegnerKader } from "@/lib/db/gegner-kader";
 import { ladeTopTeams } from "@/lib/db/top";
 import { zugangStatus } from "@/lib/mz/zugang";
-import { speichereWertSpiel, wertSpielVorhanden, type WertSpiel } from "@/lib/db/wertspiel";
+import { ladeWertSpiele, speichereWertSpiel, wertSpielVorhanden, type WertSpiel } from "@/lib/db/wertspiel";
 import { de } from "@/lib/mz/analyse/gegner";
 import { wertverlauf } from "@/lib/mz/analyse/wertverlauf";
 import { parseKaderSeite } from "@/lib/mz/parser/kader";
@@ -72,11 +72,11 @@ async function kaderLesen(db: Database.Database, s: MzSitzung, tid: number): Pro
   const a = await s.holeText(`/?p=players&sub=alt&tid=${tid}`);
   let spieler;
   try {
-    spieler = parseKaderSeite(a.text).spieler;
-  } catch {
-    // Tabelle erst nach JavaScript da: Seite im Browser laden
-    const seite = await s.holeSeite(`/?p=players&sub=alt&tid=${tid}`);
-    spieler = parseKaderSeite(seite.htmlDom ?? seite.htmlRoh ?? "").spieler;
+    spieler = parseKaderSeite(a.text, { ohneSkills: true }).spieler;
+  } catch (e) {
+    // Für die Diagnose aufheben (nur einmal je Lauf, siehe Aufrufer)
+    speichereRohseite(db, { art: "kader-fremd", url: a.url, status: a.status, htmlRoh: a.text, htmlDom: null });
+    throw e;
   }
   speichereGegnerKader(db, tid, spieler.map((x) => ({ pid: x.pid, name: x.name, alter: x.alter, wert: x.marktwert })) as never);
   return spieler.length;
@@ -87,47 +87,77 @@ function kaderAktuell(db: Database.Database, tid: number, jetzt = Date.now()): b
   return k.length > 0 && jetzt - new Date(k[0].stand).getTime() < KADER_GUELTIG_TAGE * 86_400_000;
 }
 
-// Ein Spiel aus der Stats-XML auswerten; Team A = das Team der Liste, aus dessen Sicht das Ergebnis gilt
-export function werteWertSpiel(spiel: StatsSpiel, tidA: number, wettbewerb: "liga" | "weltliga", wert: (tid: number, pid: number) => number | undefined): WertSpiel {
-  const a = spiel.teams.find((t) => t.id === tidA)!;
-  const b = spiel.teams.find((t) => t.id !== tidA)!;
-  const elf = (tid: number) => spiel.spieler.filter((p) => p.teamId === tid && p.origin).map((p) => p.id);
-  const wechsel = (tid: number) => spiel.wechsel.filter((w) => w.teamId === tid).map((w) => ({ minute: w.minute, raus: w.raus, rein: w.rein }));
-  const teamVon = new Map(spiel.spieler.map((p) => [p.id, p.teamId]));
-  let fehlend = 0;
-  const w = (pid: number) => {
-    const x = wert(teamVon.get(pid) ?? 0, pid);
-    if (x === undefined) fehlend++;
-    return x;
-  };
-  const summe = (pids: number[]) => pids.reduce((n, p) => n + (w(p) ?? 0), 0);
-  const elfA = summe(elf(a.id));
-  const elfB = summe(elf(b.id));
-  const fehlendElf = fehlend;
-  const v = wertverlauf({ eigeneElf: elf(a.id), gegnerElf: elf(b.id), eigeneWechsel: wechsel(a.id), gegnerWechsel: wechsel(b.id), wert: (p) => wert(teamVon.get(p) ?? 0, p), name: String });
-  const toreA = Number(a.statistik.goals ?? NaN);
-  const toreB = Number(b.statistik.goals ?? NaN);
+// Werte eines Spiels aus Aufstellung und Wechseln berechnen (ohne Abruf, auch für bereits gespeicherte Spiele)
+export function berechneWerte(w: WertSpiel, wert: (tid: number, pid: number) => number | undefined): WertSpiel {
+  const auf = w.aufstellung!;
+  const teamVon = new Map<number, number>();
+  for (const pid of [...auf.a.elf, ...auf.a.wechsel.map((x) => x.rein)]) teamVon.set(pid, w.tidA);
+  for (const pid of [...auf.b.elf, ...auf.b.wechsel.map((x) => x.rein)]) teamVon.set(pid, w.tidB);
+  const wv = (pid: number) => wert(teamVon.get(pid) ?? 0, pid);
+  const fehlend = new Set<number>();
+  const summe = (pids: number[]) =>
+    pids.reduce((n, p) => {
+      const x = wv(p);
+      if (x === undefined) fehlend.add(p);
+      return n + (x ?? 0);
+    }, 0);
+  const elfA = summe(auf.a.elf);
+  const elfB = summe(auf.b.elf);
+  const v = wertverlauf({ eigeneElf: auf.a.elf, gegnerElf: auf.b.elf, eigeneWechsel: auf.a.wechsel, gegnerWechsel: auf.b.wechsel, wert: wv, name: String });
+  for (const n of v.fehlend) fehlend.add(Number(n));
   return {
-    mid: spiel.mid,
-    datum: spiel.datum,
-    wettbewerb,
-    tidA: a.id,
-    tidB: b.id,
-    nameA: a.name,
-    nameB: b.name,
+    ...w,
     elfA,
     elfB,
     feldA: Math.round(v.gewichtet.eigen),
     feldB: Math.round(v.gewichtet.gegner),
     verhaeltnisElf: elfB ? elfA / elfB : undefined,
     verhaeltnisFeld: v.gewichtet.gegner ? v.gewichtet.eigen / v.gewichtet.gegner : undefined,
-    toreA,
-    toreB,
-    ergebnisA: toreA > toreB ? "S" : toreA < toreB ? "N" : "U",
-    einstellungA: `${de(a.tactic)}/${de(a.playstyle)}/${de(a.aggression)}`,
-    einstellungB: `${de(b.tactic)}/${de(b.playstyle)}/${de(b.aggression)}`,
-    fehlendeWerte: fehlendElf + v.fehlend.length,
+    fehlendeWerte: fehlend.size,
   };
+}
+
+// Ein Spiel aus der Stats-XML auswerten; Team A = das Team der Liste, aus dessen Sicht das Ergebnis gilt
+export function werteWertSpiel(spiel: StatsSpiel, tidA: number, wettbewerb: "liga" | "weltliga", wert: (tid: number, pid: number) => number | undefined): WertSpiel {
+  const a = spiel.teams.find((t) => t.id === tidA)!;
+  const b = spiel.teams.find((t) => t.id !== tidA)!;
+  const elf = (tid: number) => spiel.spieler.filter((p) => p.teamId === tid && p.origin).map((p) => p.id);
+  const wechsel = (tid: number) => spiel.wechsel.filter((w) => w.teamId === tid).map((w) => ({ minute: w.minute, raus: w.raus, rein: w.rein }));
+  const toreA = Number(a.statistik.goals ?? NaN);
+  const toreB = Number(b.statistik.goals ?? NaN);
+  return berechneWerte(
+    {
+      mid: spiel.mid,
+      datum: spiel.datum,
+      wettbewerb,
+      tidA: a.id,
+      tidB: b.id,
+      nameA: a.name,
+      nameB: b.name,
+      toreA,
+      toreB,
+      ergebnisA: toreA > toreB ? "S" : toreA < toreB ? "N" : "U",
+      einstellungA: `${de(a.tactic)}/${de(a.playstyle)}/${de(a.aggression)}`,
+      einstellungB: `${de(b.tactic)}/${de(b.playstyle)}/${de(b.aggression)}`,
+      fehlendeWerte: 0,
+      aufstellung: { a: { elf: elf(a.id), wechsel: wechsel(a.id) }, b: { elf: elf(b.id), wechsel: wechsel(b.id) } },
+    },
+    wert,
+  );
+}
+
+// Alle gespeicherten Spiele mit den aktuell gespeicherten Kaderwerten neu berechnen (kein Abruf)
+export function wertSpieleNeuBerechnen(db: Database.Database): number {
+  const werte = new Map<number, Map<number, number | undefined>>();
+  const wertVon = (tid: number, pid: number) => {
+    if (!werte.has(tid)) werte.set(tid, new Map(ladeGegnerKader(db, tid).map((k) => [k.pid, k.wert ?? undefined])));
+    return werte.get(tid)!.get(pid);
+  };
+  const alle = ladeWertSpiele(db);
+  db.transaction(() => {
+    for (const w of alle) speichereWertSpiel(db, berechneWerte(w, wertVon));
+  })();
+  return alle.length;
 }
 
 export async function wertScanAbrufen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
@@ -144,9 +174,10 @@ export async function wertScanAbrufen(db: Database.Database, opt = { manuell: fa
       async (s) => {
         const teams = new Map<number, string>(ladeTopTeams(db).map((t) => [t.tid, t.name]));
         try {
-          const wl = await s.holeText(WELTLIGA_PFAD);
-          speichereRohseite(db, { art: "weltliga", url: wl.url, status: wl.status, htmlRoh: wl.text, htmlDom: null });
-          const wlTeams = teamsAusTabelle(wl.text);
+          // Tabelle wird per JavaScript geladen: Seite im Browser öffnen
+          const wl = await s.holeSeite(WELTLIGA_PFAD);
+          speichereRohseite(db, { art: "weltliga", url: wl.url, status: wl.status, htmlRoh: wl.htmlRoh, htmlDom: wl.htmlDom });
+          const wlTeams = teamsAusTabelle(wl.htmlDom ?? wl.htmlRoh ?? "");
           for (const t of wlTeams) teams.set(t.tid, t.name);
           teile.push(`Weltliga-Tabelle: ${wlTeams.length} Teams.`);
         } catch (e) {
@@ -193,9 +224,14 @@ export async function wertScanAbrufen(db: Database.Database, opt = { manuell: fa
     teile.push(`Stats-XML: ${xml.size} gelesen, ${leer} leer oder fehlerhaft.`);
 
     // 5. Kaderseiten der beteiligten Teams (eingeloggt, höchstens alle 7 Tage je Team)
+    for (const w of ladeWertSpiele(db)) {
+      sitzungTeams.add(w.tidA);
+      sitzungTeams.add(w.tidB);
+    }
     const fehlen = [...sitzungTeams].filter((tid) => !kaderAktuell(db, tid));
     if (fehlen.length) {
       let gelesen = 0;
+      const fehler = new Map<string, number[]>();
       await mitMzSitzung(
         db,
         async (s) => {
@@ -204,29 +240,30 @@ export async function wertScanAbrufen(db: Database.Database, opt = { manuell: fa
               await kaderLesen(db, s, tid);
               gelesen++;
             } catch (e) {
-              teile.push(`Kader tid ${tid}: ${meldungAus(e)}`);
+              const m = meldungAus(e);
+              fehler.set(m, [...(fehler.get(m) ?? []), tid]);
+              // Nach 5 gleichen Fehlern ohne einen Erfolg abbrechen (Seite anders aufgebaut als erwartet)
+              if (gelesen === 0 && [...fehler.values()].reduce((n, x) => n + x.length, 0) >= 5) break;
             }
           }
         },
         opt,
       );
       teile.push(`Kaderseiten: ${gelesen} von ${fehlen.length} gelesen.`);
+      for (const [m, tids] of fehler) teile.push(`${tids.length}× „${m}“ (z. B. tid ${tids[0]}).`);
     }
 
-    // 4. Auswerten und speichern
-    const werte = new Map<number, Map<number, number | undefined>>();
-    const wertVon = (tid: number, pid: number) => {
-      if (!werte.has(tid)) werte.set(tid, new Map(ladeGegnerKader(db, tid).map((k) => [k.pid, k.wert ?? undefined])));
-      return werte.get(tid)!.get(pid);
-    };
+    // 4. Speichern (Aufstellungen und Wechsel), dann alle Spiele mit den aktuellen Kaderwerten neu berechnen
     let gespeichert = 0;
     for (const [mid, sp] of xml) {
       const a = auftraege.get(mid)!;
       if (!sp.teams.some((t) => t.id === a.tidA)) continue;
-      speichereWertSpiel(db, werteWertSpiel(sp, a.tidA, a.wettbewerb, wertVon));
+      speichereWertSpiel(db, werteWertSpiel(sp, a.tidA, a.wettbewerb, () => undefined));
       gespeichert++;
     }
-    teile.push(`${gespeichert} Spiele gespeichert.`);
+    const neu = wertSpieleNeuBerechnen(db);
+    const vollstaendig = (db.prepare("SELECT COUNT(*) AS n FROM wert_spiel WHERE fehlende_werte = 0").get() as { n: number }).n;
+    teile.push(`${gespeichert} Spiele neu gespeichert, ${neu} berechnet, davon ${vollstaendig} mit allen Marktwerten.`);
   } catch (e) {
     ok = false;
     teile.push(meldungAus(e));

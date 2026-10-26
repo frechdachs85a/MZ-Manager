@@ -15,6 +15,8 @@ import { ladeGegnerKader } from "@/lib/db/gegner-kader";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { wertbereich, wertverlauf, type Wertverlauf } from "@/lib/mz/analyse/wertverlauf";
 import { seitenVergleich } from "@/lib/mz/analyse/seiten";
+import { duelle } from "@/lib/mz/analyse/duelle";
+import { skalaAus } from "@/components/spielfeld";
 import { quotenJeBereich } from "@/lib/db/wertspiel";
 import { topGegenKlasse } from "@/lib/portfolio";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
@@ -375,7 +377,26 @@ export function spieltagLage(db: Database.Database) {
 
   if (erwartet?.seiten.text) kurzfassung.splice(2, 0, { titel: "Angriffsseite", text: erwartet.seiten.text });
 
+  // Deine Aufstellung mit Marktwerten für Heatmap und Duelle: Archiv-Reiter des Vorschlags, sonst die Startelf
+  // deines letzten Ligaspiels (tatsächliche Plätze aus der Stats-XML)
+  const kaderAlle = ladeKader(db);
+  const mwEigen = new Map(kaderAlle.map((k) => [k.pid, k.marktwert]));
+  const nameEigen = new Map(kaderAlle.map((k) => [k.pid, k.name.split(" ").at(-1)!]));
+  const archivReiter = vorschlag ? archiv.find((a) => a.reiter === vorschlag.taktik)?.taktik : undefined;
+  const letzteElf = startelfAusLetztemSpiel(db);
+  const eigeneAufstellung = archivReiter
+    ? { quelle: `Reiter ${vorschlag!.taktik} aus deinem Archiv`, feld: archivReiter.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: nameEigen.get(p.pid) ?? "?", wert: mwEigen.get(p.pid), torwart: p.pos === "goalie" })) }
+    : letzteElf
+      ? { quelle: `Startelf und Plätze aus deinem letzten Ligaspiel (Reiter ${vorschlag?.taktik ?? ""} nicht im Archiv)`, feld: letzteElf.elf.map((p) => ({ x: p.x, y: p.y, label: nameEigen.get(p.pid) ?? "?", wert: mwEigen.get(p.pid), torwart: p.torwart })) }
+      : null;
+  const skala = skalaAus([...(eigeneAufstellung?.feld ?? []), ...(erwartet?.feld ?? [])].filter((p) => !p.torwart).map((p) => p.wert));
+  const duellListe = eigeneAufstellung && erwartet ? { ...duelle(eigeneAufstellung.feld.map((p) => ({ ...p, name: p.label })), erwartet.feld.map((p) => ({ ...p, name: p.label }))), quelle: eigeneAufstellung.quelle } : null;
+  if (duellListe?.saetze.length) kurzfassung.splice(3, 0, { titel: "Duelle", text: duellListe.saetze.join(" ") });
+
   return {
+    eigeneAufstellung,
+    skala,
+    duelle: duellListe,
     erwartet,
     verlauf,
     elfWerte,

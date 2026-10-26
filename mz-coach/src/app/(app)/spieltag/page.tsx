@@ -24,7 +24,7 @@ const FARBE = { S: "text-green", U: "text-label-2", N: "text-red" } as const;
 export default async function Spieltag() {
   await connection();
   const l = spieltagLage(getDb());
-  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, verlauf, erwartet } = l;
+  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, verlauf, erwartet, skala } = l;
   const gName = gegner?.name ?? lauf?.gegnerName ?? "Gegner";
 
   return (
@@ -76,10 +76,10 @@ export default async function Spieltag() {
                     : `Startelf-Wert ${euro(erwartet.summe)}${erwartet.ohneWert.length ? ` (ohne Wert: ${erwartet.ohneWert.join(", ")})` : ""}`}
                 </div>
                 <div className="mx-auto mt-3 max-w-[360px]">
-                  <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} heatmap={erwartet.ohneWert.length < erwartet.feld.length} />
+                  <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} heatmap={erwartet.ohneWert.length < erwartet.feld.length} skala={skala} />
                 </div>
                 <p className="mt-2 text-[12px] leading-relaxed text-label-3">
-                  Aus seiner Sicht (sein Tor unten). Farbe = Marktwert im Vergleich zu seiner übrigen Elf (Kaderseite), genauer Wert beim Antippen. Seine linke Seite liegt deiner rechten gegenüber (x = 208 − x).
+                  Aus seiner Sicht (sein Tor unten). Farbe = Marktwert laut Kaderseite, gleiche Skala wie deine Aufstellung im Matchplan; genauer Wert beim Antippen. Seine linke Seite liegt deiner rechten gegenüber (x = 208 − x).
                 </p>
                 {erwartet.seiten.text && (
                   <div className="mt-3 rounded-[8px] bg-tint/[0.08] p-3 text-[13.5px] leading-relaxed">

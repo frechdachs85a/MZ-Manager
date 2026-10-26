@@ -241,6 +241,12 @@ const MIGRATIONEN: string[] = [
   );
   CREATE INDEX wert_spiel_v ON wert_spiel(verhaeltnis_elf);
   `,
+  `
+  -- Aufstellungen und Wechsel je Spiel, damit die Werte ohne neuen Abruf neu berechnet werden können. Erster Scan
+  -- (26.10.2026) lief ohne Marktwerte der fremden Teams: diese Zeilen verwerfen, der nächste Scan holt sie neu.
+  ALTER TABLE wert_spiel ADD COLUMN aufstellung_json TEXT;
+  DELETE FROM wert_spiel;
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

@@ -139,7 +139,7 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
             <>
               <div className="kapitaelchen mb-3">Aufstellung {vorschlag?.taktik}</div>
               <div className="mx-auto max-w-[340px]">
-                <Spielfeld spieler={aufstellung.feld} titel={`Aufstellung ${vorschlag?.taktik}`} />
+                <Spielfeld spieler={aufstellung.feld} titel={`Aufstellung ${vorschlag?.taktik}`} heatmap={aufstellung.feld.some((p) => p.wert !== undefined)} skala={l.skala} />
               </div>
               <p className="mt-3 text-[12px] leading-relaxed text-label-3">{aufstellung.quelle}</p>
             </>
