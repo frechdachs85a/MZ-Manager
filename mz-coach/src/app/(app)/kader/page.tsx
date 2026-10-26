@@ -89,13 +89,23 @@ export default async function Kader(props: PageProps<"/kader">) {
       <PageHeader title="Kader" subtitle={`${alleSpieler.length} Spieler · Stand ${datumZeit(stand)}`} />
       <div className="seite">
         {unbekannt.length > 0 && (
-          <Section title="Scoutbericht unbekannt" footer="Sterne und Schlüsselwort passen nicht zusammen oder der Text ist unbekannt. Es wird nicht geraten: bitte prüfen und bei Bedarf als neue Kombination bestätigen.">
-            <ScoutBestaetigen
+          // Hinweisbalken statt großer Liste: aufklappen nur bei Bedarf
+          <details className="group mt-6 rounded-[10px] border border-red/30 bg-red/[0.07]">
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-[14px]">
+              <span className="flex h-5 w-5 items-center justify-center rounded-[4px] bg-red text-[11px] font-bold text-ink">!</span>
+              <span className="font-semibold">{unbekannt.length} Scoutbericht{unbekannt.length === 1 ? "" : "e"} unbekannt</span>
+              <span className="hidden text-label-2 sm:inline">Sterne und Text passen nicht zusammen. Nicht geraten: bitte prüfen.</span>
+              <span className="ml-auto text-[12px] font-semibold uppercase tracking-wider text-red group-open:hidden">Prüfen</span>
+              <span className="ml-auto hidden text-[12px] font-semibold uppercase tracking-wider text-label-2 group-open:inline">Zuklappen</span>
+            </summary>
+            <div className="border-t border-red/20 p-3">
+              <ScoutBestaetigen
               faelle={unbekannt.map((z) => ({ pid: z.pid, name: z.name, sterne: z.scout.sterne, grund: z.scout.grund ?? "", text: z.scoutText, hoch: z.scoutSterne?.hoch, niedrig: z.scoutSterne?.niedrig }))}
             />
-          </Section>
+            </div>
+          </details>
         )}
-        <div className="mb-4 flex flex-wrap items-center gap-1.5 text-[13px]">
+        <div className="-mx-4 mt-4 mb-4 flex items-center gap-1.5 overflow-x-auto px-4 text-[13px] whitespace-nowrap sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
           <span className="mr-1 text-label-2">Scout:</span>
           {filterLink(undefined, "Alle", alleSpieler.length)}
           {kombis
@@ -189,10 +199,10 @@ function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
   const kMin = Math.min(...alle);
   const kMax = Math.max(...alle);
   return (
-    <Card>
+    <Card className="!overflow-clip">
       <table className="w-full text-left text-[15px]">
-        <thead>
-          <tr className="border-b border-separator text-[13px] text-label-2">
+        <thead className="sticky top-0 z-10 lg:top-12">
+          <tr className="border-b border-separator bg-card-2 text-[11px] uppercase tracking-wider text-label-3">
             <th className="w-12 py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Nr" wert="nr" sort={sort} /></th>
             <th className="py-2.5 pl-4 font-normal">Name</th>
             <th className="py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Alter" wert="alter" sort={sort} /></th>
@@ -209,16 +219,16 @@ function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
             const max = Math.max(...POSITIONEN.map((p) => { const w = werte[p]; return w.ok ? w.wert : -1; }));
             return (
               <tr key={s.pid} className="zeile-hover transition-colors">
-                <td className="py-2.5 pl-4 text-right tabular-nums text-label-2">{s.nr ?? ""}</td>
-                <td className="py-2.5 pl-4 font-medium">
+                <td className="py-1.5 pl-4 text-right tabular-nums text-label-3">{s.nr ?? ""}</td>
+                <td className="whitespace-nowrap py-1.5 pl-4 font-semibold">
                   <Link href={`/kader/${s.pid}`} className="hover:text-tint">{s.name}</Link>
                 </td>
-                <td className="py-2.5 pl-4 text-right tabular-nums">{s.alter ?? "n. v."}</td>
-                <td className="py-2.5 pl-4 whitespace-nowrap"><ScoutAbzeichen e={s.scout} mitSternen /></td>
+                <td className="py-1.5 pl-4 text-right tabular-nums text-label-2">{s.alter ?? "n. v."}</td>
+                <td className="py-1.5 pl-4 whitespace-nowrap"><ScoutAbzeichen e={s.scout} mitSternen /></td>
                 {POSITIONEN.map((p) => {
                   const w = werte[p];
                   return (
-                    <td key={p} className="py-1.5 pl-2 text-right">
+                    <td key={p} className="py-1 pl-2 text-right">
                       <span
                         className={`inline-block min-w-[3.6rem] rounded-[8px] px-2 py-1 tabular-nums ${w.ok && w.wert === max ? "font-semibold text-label" : w.ok ? "text-label" : "text-label-3"}`}
                         style={w.ok ? { background: hinterlegung(w.wert, kMin, kMax) } : undefined}
@@ -229,7 +239,7 @@ function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
                     </td>
                   );
                 })}
-                <td className="py-2.5 pr-4 pl-4">
+                <td className="py-1.5 pr-4 pl-4">
                   <span className="flex flex-wrap gap-1">
                     <StatusBadges s={s} />
                   </span>

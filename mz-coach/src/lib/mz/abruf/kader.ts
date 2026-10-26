@@ -34,6 +34,11 @@ export const UNAVAILABLE_PFAD = "/?p=players&sub=unavailable";
 export const TRAININGSLAGER_PFAD = "/?p=training_camp";
 export const TAKTIK_PFAD = "/?p=tactics";
 export const SPIELER_PFAD = "/?p=players";
+// Seiten, deren Inhalt ManagerZone erst nachträglich per Skript einfügt: darauf warten (26.10.2026)
+const WARTE_AUF: Record<string, string> = {
+  "/?p=tactics": 'dd[id^="n_"]',
+  "/?p=players&sub=unavailable": "#squad_unavailable",
+};
 
 export type Ergebnis = { ok: boolean; meldung: string };
 
@@ -124,7 +129,7 @@ export async function kaderAbrufen(db: Database.Database, opt = { manuell: false
           // Spieleransicht: zusätzlich die Scoutberichte anklicken (nur fehlende oder mit geänderten Sternen)
           const aufSeite = pfad === SPIELER_PFAD ? scoutKlicker(new Map(ladeKader(db).map((k) => [k.pid, k]))) : undefined;
           try {
-            const seite = await s.holeSeite(pfad, aufSeite ? { aufSeite } : undefined);
+            const seite = await s.holeSeite(pfad, { aufSeite, warteAuf: WARTE_AUF[pfad] });
             const html = seite.htmlDom ?? seite.htmlRoh ?? "";
             teile.push(seiteEinlesen(db, html, { url: seite.url, quelle: `${MZ_BASIS}${pfad}`, htmlDom: seite.htmlDom }));
             if (aufSeite && seite.extra) {

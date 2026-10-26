@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Barlow_Condensed, Inter } from "next/font/google";
 import { AlteServiceWorkerEntfernen } from "@/components/service-worker";
 import "./globals.css";
 
 // Schriften werden beim Build geladen und selbst ausgeliefert (keine Anfragen an Google im Browser)
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
-const playfair = Playfair_Display({ subsets: ["latin"], display: "swap", variable: "--font-playfair" });
+// Überschriften und Zahlen wie in Fußballmanager-Spielen: schmal, kräftig
+const barlow = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700"], display: "swap", variable: "--font-barlow" });
 
 export const metadata: Metadata = {
   title: "MZ Coach",
@@ -21,12 +22,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f5f2ea",
+  themeColor: "#0b1118",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="de" className={`h-full antialiased ${inter.variable} ${playfair.variable}`}>
+    <html lang="de" className={`h-full antialiased ${inter.variable} ${barlow.variable}`}>
       <body className="min-h-full">
         {children}
         <AlteServiceWorkerEntfernen />

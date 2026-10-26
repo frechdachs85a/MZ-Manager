@@ -185,13 +185,16 @@ async function login(db: Database.Database, ctx: BrowserContext) {
 export type MzSitzung = {
   // aufSeite: läuft auf der fertig geladenen, eingeloggten Seite, bevor sie geschlossen wird (z. B. Klicks wie
   // ein Mensch, die das Seiten-Skript selbst nachladen lässt)
-  holeSeite: (pfad: string, opt?: { skripte?: RegExp; aufSeite?: (page: Page, html: string) => Promise<unknown> }) => Promise<Seite>;
+  // warteAuf: CSS-Selektor, der erst nachträglich per Skript erscheint (z. B. Spielerliste im Taktik-Editor)
+  holeSeite: (pfad: string, opt?: LadeOpt) => Promise<Seite>;
   // Antworttext ohne Browserseite (z. B. ajax.php), mit den Cookies der Sitzung. Loggt nicht
   // selbst ein: vorher eine Seite mit holeSeite laden.
   holeText: (pfad: string) => Promise<{ url: string; status: number; text: string }>;
   // Formular abschicken wie die Seite selbst (POST, Felder als application/x-www-form-urlencoded)
   sendeForm: (pfad: string, felder: Record<string, string>) => Promise<{ url: string; status: number; text: string }>;
 };
+
+type LadeOpt = { skripte?: RegExp; aufSeite?: (page: Page, html: string) => Promise<unknown>; warteAuf?: string };
 
 let laeuft = false;
 
@@ -218,7 +221,8 @@ export async function mitMzSitzung<T>(
     // Ein gemeinsamer Login je Sitzung, auch wenn zwei Abrufe gleichzeitig laufen.
     let loginLauf: Promise<void> | null = null;
 
-    async function lade(url: string, skriptMuster?: RegExp, aufSeite?: (page: Page, html: string) => Promise<unknown>): Promise<Seite> {
+    async function lade(url: string, opt: LadeOpt = {}): Promise<Seite> {
+      const { skripte: skriptMuster, aufSeite, warteAuf } = opt;
       const page = await ctx.newPage();
       // Was der Browser beim Laden ohnehin holt, mitlesen; keine zusätzliche Anfrage
       const skripte: Promise<{ url: string; text: string } | null>[] = [];
@@ -247,7 +251,9 @@ export async function mitMzSitzung<T>(
           }
         });
         await page.goto(url, { waitUntil: "commit", timeout: 60_000 });
-        await page.unroute(nurZiel);
+        // Kein page.unroute hier: Das Abschalten der Umleitung während die Seite ihre Skripte anfordert, ließ diese
+        // Anfragen hängen (gemessen 26.10.2026: /js/transfer.js kam nie beim Server an, DOMContentLoaded blieb aus).
+        // Die Umleitung greift nur für die Zieladresse und endet mit dem Schließen der Seite.
         if (htmlRoh !== null && istAbmeldeSeite(htmlRoh)) return { url, status, htmlRoh, htmlDom: null };
         // Manche MZ-Seiten melden "load" nie (beobachtet 25.10.2026: Abbruch nach 60 s). Das HTML ist dann trotzdem da,
         // deshalb nur auf domcontentloaded bestehen und auf load/networkidle höchstens kurz warten.
@@ -255,6 +261,8 @@ export async function mitMzSitzung<T>(
         await page.waitForLoadState("domcontentloaded", { timeout: 45_000 }).catch(() => {});
         await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
         await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
+        // Inhalte, die ManagerZone erst nachträglich lädt (beobachtet 26.10.2026: Spielerliste im Taktik-Editor)
+        if (warteAuf) await page.waitForSelector(warteAuf, { timeout: 30_000 }).catch(() => {});
         const htmlDom = await page.content();
         const gelesen = (await Promise.all(skripte)).filter((x): x is { url: string; text: string } => x !== null);
         const extra = aufSeite && istEingeloggt(htmlDom) ? await aufSeite(page, htmlDom) : undefined;
@@ -268,13 +276,13 @@ export async function mitMzSitzung<T>(
       holeSeite: (pfad, opt) =>
         drossel(async () => {
           const url = pfad.startsWith("http") ? pfad : `${MZ_BASIS}${pfad}`;
-          let seite = await lade(url, opt?.skripte, opt?.aufSeite);
+          let seite = await lade(url, opt);
           if (!istEingeloggt(seite.htmlDom ?? seite.htmlRoh ?? "")) {
             // Höchstens ein Login je Sitzung: Läuft die Sitzung später erneut ab, wird nicht
             // noch einmal eingeloggt, die Prüfung unten meldet dann den Fehler.
             loginLauf ??= login(db, ctx);
             await loginLauf;
-            seite = await lade(url, opt?.skripte, opt?.aufSeite);
+            seite = await lade(url, opt);
           }
           if (!istEingeloggt(seite.htmlDom ?? seite.htmlRoh ?? "")) {
             speichereRohseite(db, { art: "nicht-eingeloggt", url, status: seite.status, htmlRoh: seite.htmlRoh, htmlDom: seite.htmlDom });
