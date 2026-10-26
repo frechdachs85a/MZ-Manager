@@ -76,11 +76,17 @@ export default async function Spieltag() {
                     : `Startelf-Wert ${euro(erwartet.summe)}${erwartet.ohneWert.length ? ` (ohne Wert: ${erwartet.ohneWert.join(", ")})` : ""}`}
                 </div>
                 <div className="mx-auto mt-3 max-w-[360px]">
-                  <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} />
+                  <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} heatmap={erwartet.ohneWert.length < erwartet.feld.length} />
                 </div>
                 <p className="mt-2 text-[12px] leading-relaxed text-label-3">
-                  Aus seiner Sicht (sein Tor unten), Marktwert je Spieler laut seiner Kaderseite. In deine Editor-Sicht gespiegelt: x = 208 − x.
+                  Aus seiner Sicht (sein Tor unten). Farbe = Marktwert im Vergleich zu seiner übrigen Elf (Kaderseite), genauer Wert beim Antippen. Seine linke Seite liegt deiner rechten gegenüber (x = 208 − x).
                 </p>
+                {erwartet.seiten.text && (
+                  <div className="mt-3 rounded-[8px] bg-tint/[0.08] p-3 text-[13.5px] leading-relaxed">
+                    <span className="font-bold">Angriffsseite: </span>
+                    {erwartet.seiten.text}
+                  </div>
+                )}
               </Card>
             )}
             </div>

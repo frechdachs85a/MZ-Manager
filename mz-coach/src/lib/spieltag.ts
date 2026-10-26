@@ -14,6 +14,7 @@ import { kaderwertVergleich, startelfWerte } from "@/lib/kaderwert";
 import { ladeGegnerKader } from "@/lib/db/gegner-kader";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { wertbereich, wertverlauf, type Wertverlauf } from "@/lib/mz/analyse/wertverlauf";
+import { seitenVergleich } from "@/lib/mz/analyse/seiten";
 import { quotenJeBereich } from "@/lib/db/wertspiel";
 import { topGegenKlasse } from "@/lib/portfolio";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
@@ -184,10 +185,9 @@ export function spieltagLage(db: Database.Database) {
       const namen = new Map(kaderL.map((k) => [k.pid, k.name]));
       const mw = new Map(kaderL.map((k) => [k.pid, k.marktwert]));
       const kurz = (n?: string) => (n ? n.split(" ").at(-1)! : "?");
-      const wertText = (v?: number) => (v === undefined ? undefined : `${(v / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
       aufstellung = {
         quelle: `Taktik-Archiv, Reiter ${a.reiter} (gespeichert ${a.gespeichert.slice(0, 10).split("-").reverse().join(".")})`,
-        feld: a.taktik.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: kurz(namen.get(p.pid)), zusatz: wertText(mw.get(p.pid)), torwart: p.pos === "goalie" })),
+        feld: a.taktik.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: kurz(namen.get(p.pid)), wert: mw.get(p.pid), torwart: p.pos === "goalie" })),
         einstellung: [a.taktik.team.tactics, a.taktik.team.playstyle, a.taktik.team.aggression].filter(Boolean).map((v) => de(v!)).join(" / ") || undefined,
         fehler: a.pruefung?.fehler ?? [],
         hinweise: a.pruefung?.hinweise ?? [],
@@ -355,7 +355,6 @@ export function spieltagLage(db: Database.Database) {
   }
 
   // Seine wahrscheinliche Aufstellung gegen dich: die häufigste Aufstellung seiner Ligaspiele, mit Marktwert je Platz
-  const mio = (n?: number) => (n === undefined ? "Wert n. v." : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
   const erwartet =
     brief?.stammElf && gegner
       ? (() => {
@@ -363,7 +362,8 @@ export function spieltagLage(db: Database.Database) {
           const elf = brief.stammElf!.elf;
           const summe = elf.reduce((n, p) => n + (werte.get(p.pid) ?? 0), 0);
           return {
-            feld: elf.map((p) => ({ x: p.x, y: p.y, label: p.name.split(" ").at(-1)!, zusatz: mio(werte.get(p.pid)), torwart: p.torwart })),
+            feld: elf.map((p) => ({ x: p.x, y: p.y, label: p.name.split(" ").at(-1)!, wert: werte.get(p.pid), torwart: p.torwart })),
+            seiten: seitenVergleich(elf.map((p) => ({ name: p.name.split(" ").at(-1)!, x: p.x, y: p.y, wert: werte.get(p.pid), torwart: p.torwart }))),
             formation: formation(elf.filter((p) => !p.torwart)).text,
             positionen: brief.stammElf!.positionen,
             von: brief.stammElf!.von,
@@ -372,6 +372,8 @@ export function spieltagLage(db: Database.Database) {
           };
         })()
       : null;
+
+  if (erwartet?.seiten.text) kurzfassung.splice(2, 0, { titel: "Angriffsseite", text: erwartet.seiten.text });
 
   return {
     erwartet,

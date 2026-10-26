@@ -7,12 +7,27 @@ import { ABWEHR_Y } from "@/lib/mz/analyse/gegner";
 
 export const FELD = { x0: 8.4, x1: 200, y0: 8, y1: 318, mitte: 163 } as const;
 
-// zusatz: zweite Zeile unter dem Namen, z. B. Marktwert
-export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; ton?: "normal" | "rot" | "grau"; torwart?: boolean };
+// zusatz: zweite Zeile unter dem Namen. wert: Marktwert für die Heatmap und den Tooltip
+export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; wert?: number; ton?: "normal" | "rot" | "grau"; torwart?: boolean };
+
+// Farbe der Heatmap: rot (niedrigster Wert der Elf) über gelb zu blau (höchster); blau statt grün, weil es sich
+// vom Rasen abhebt
+const STOPS: [number, number, number][] = [
+  [239, 68, 68],
+  [250, 204, 21],
+  [59, 130, 246],
+];
+export function heatFarbe(t: number): string {
+  const k = Math.max(0, Math.min(1, t)) * 2;
+  const i = Math.min(1, Math.floor(k));
+  const f = k - i;
+  const [a, b] = [STOPS[i], STOPS[i + 1]];
+  return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * f)).join(" ")})`;
+}
 
 const STREIFEN = 10;
 
-export function Spielfeld({ spieler, titel }: { spieler: FeldSpieler[]; titel?: string }) {
+export function Spielfeld({ spieler, titel, heatmap = false }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean }) {
   const id = useId().replace(/:/g, "");
   const rand = 24; // Platz für Namen am Rand (Eckstürmer x 200)
   const randUnten = spieler.some((p) => p.zusatz) ? 34 : rand; // zweite Zeile unter dem Torwart
@@ -66,12 +81,31 @@ export function Spielfeld({ spieler, titel }: { spieler: FeldSpieler[]; titel?: 
           <text x={FELD.x1 - 2} y={61} textAnchor="end">MIN y 63</text>
           <text x={FELD.x1 - 2} y={ABWEHR_Y + 7} textAnchor="end">ABWEHR ab y {ABWEHR_Y}</text>
         </g>
+        {/* Heatmap der Marktwerte: weiche Farbflächen unter den Spielern, relativ zur gezeigten Elf */}
+        {heatmap &&
+          (() => {
+            const mit = spieler.filter((p) => p.wert !== undefined && !p.torwart);
+            const min = Math.min(...mit.map((p) => p.wert!));
+            const max = Math.max(...mit.map((p) => p.wert!));
+            return (
+              <g>
+                <defs>
+                  <filter id={`weich-${id}`} x="-100%" y="-100%" width="300%" height="300%">
+                    <feGaussianBlur stdDeviation="9" />
+                  </filter>
+                </defs>
+                {mit.map((p, i) => (
+                  <circle key={i} cx={p.x} cy={p.y} r={24} fill={heatFarbe(max > min ? (p.wert! - min) / (max - min) : 0.5)} opacity={0.75} filter={`url(#weich-${id})`} />
+                ))}
+              </g>
+            );
+          })()}
         {spieler.map((s, i) => {
           const farbe = s.ton === "rot" ? "var(--red)" : s.ton === "grau" ? "rgba(255,255,255,.4)" : s.torwart ? "var(--yellow)" : "#fff";
           const breite = Math.max(14, Math.max(s.label.length * 4.6, (s.zusatz?.length ?? 0) * 4.2) + 6);
           return (
             <g key={i} transform={`translate(${s.x} ${s.y})`}>
-              <title>{`${s.label}${s.zusatz ? ` · ${s.zusatz}` : ""}${s.torwart ? " (Torwart)" : ""} · x ${s.x} / y ${s.y}`}</title>
+              <title>{`${s.label}${s.zusatz ? ` · ${s.zusatz}` : ""}${s.wert !== undefined ? ` · ${new Intl.NumberFormat("de-DE").format(s.wert)} €` : ""}${s.torwart ? " (Torwart)" : ""} · x ${s.x} / y ${s.y}`}</title>
               <circle r={8} fill={farbe} stroke="rgba(0,0,0,.18)" strokeWidth="0.8" filter={`url(#schatten-${id})`} />
               <circle r={8} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth="1" opacity={s.ton === "grau" ? 0 : 0.5} />
               <rect x={-breite / 2} y={10.5} width={breite} height={s.zusatz ? 18 : 10} rx={5} fill="rgba(0,0,0,.5)" />
@@ -87,6 +121,13 @@ export function Spielfeld({ spieler, titel }: { spieler: FeldSpieler[]; titel?: 
           );
         })}
       </svg>
+      {heatmap && (
+        <div className="mt-2 flex items-center justify-center gap-2 text-[11.5px] text-label-2">
+          <span>Marktwert niedrig</span>
+          <span className="h-2 w-24 rounded-full" style={{ background: `linear-gradient(90deg, ${heatFarbe(0)}, ${heatFarbe(0.5)}, ${heatFarbe(1)})` }} />
+          <span>hoch</span>
+        </div>
+      )}
       {titel && <figcaption className="mt-2 text-center text-[13px] font-medium text-label-2">{titel}</figcaption>}
     </figure>
   );
