@@ -192,6 +192,10 @@ const MIGRATIONEN: string[] = [
   -- Chat entfernt (Marcus, 25.10.2026): gespeicherten Gesprächsverlauf löschen
   DELETE FROM einstellung WHERE schluessel = 'chat';
   `,
+  `
+  -- Login-Verlauf vom 25.10.2026 enthielt die Login-Adresse mit md5 des Passworts: löschen (künftig geschwärzt)
+  DELETE FROM rohseite WHERE art IN ('login-verlauf', 'login-ergebnis');
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

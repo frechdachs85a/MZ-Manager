@@ -3,6 +3,7 @@ import type Database from "better-sqlite3";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { entschluesseln, tresorSchluessel, verschluesseln } from "@/lib/crypto/tresor";
 import { speichereRohseite } from "@/lib/db/abruf";
+import { schwaerzen } from "@/lib/schwaerzen";
 import { ladeZugang } from "@/lib/mz/zugang";
 import { erzeugeDrossel } from "./drossel";
 import { istAbmeldeSeite, istEingeloggt, LOGIN_FEHLER } from "./erkennung";
@@ -98,10 +99,10 @@ async function merkeLoginSeite(db: Database.Database, page: Page, ergebnis: stri
         i.setAttribute("value", "");
       }
     });
-    speichereRohseite(db, { art: "login-ergebnis", url, status: null, htmlRoh: await page.content(), htmlDom: null });
+    speichereRohseite(db, { art: "login-ergebnis", url: schwaerzen(url), status: null, htmlRoh: schwaerzen(await page.content()), htmlDom: null });
     const bild = await page.screenshot({ fullPage: false, type: "png" });
-    speichereRohseite(db, { art: "login-bild", url, status: null, htmlRoh: `data:image/png;base64,${bild.toString("base64")}`, htmlDom: null });
-    speichereRohseite(db, { art: "login-verlauf", url, status: null, htmlRoh: JSON.stringify({ ergebnis, verlauf }, null, 2), htmlDom: null });
+    speichereRohseite(db, { art: "login-bild", url: schwaerzen(url), status: null, htmlRoh: `data:image/png;base64,${bild.toString("base64")}`, htmlDom: null });
+    speichereRohseite(db, { art: "login-verlauf", url: schwaerzen(url), status: null, htmlRoh: JSON.stringify({ ergebnis, verlauf }, null, 2), htmlDom: null });
   } catch {
     // Diagnose darf den Ablauf nie stören
   }
@@ -121,7 +122,8 @@ async function login(db: Database.Database, ctx: BrowserContext) {
       .split("\n")
       .map((c) => c.split("=")[0].trim())
       .filter(Boolean);
-    verlauf.push({ url: r.url(), status: r.status(), methode: r.request().method(), weiter: h["location"], cookies: cookies.length ? cookies : undefined });
+    // Adressen geschwärzt: die Login-Anfrage trägt md5 des Passworts und Benutzernamen in der Adresse
+    verlauf.push({ url: schwaerzen(r.url()), status: r.status(), methode: r.request().method(), weiter: h["location"] ? schwaerzen(h["location"]) : undefined, cookies: cookies.length ? cookies : undefined });
   });
   try {
     await page.goto(`${MZ_BASIS}/`, { waitUntil: "domcontentloaded" });

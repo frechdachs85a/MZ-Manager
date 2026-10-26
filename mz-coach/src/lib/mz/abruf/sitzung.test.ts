@@ -92,6 +92,8 @@ describe.skipIf(!browserDa)("MZ-Sitzung gegen lokalen Nachbau", () => {
     expect(diag.find((d) => d.art === "login-bild")!.html_roh.startsWith("data:image/png;base64,")).toBe(true);
     expect(JSON.parse(diag.find((d) => d.art === "login-verlauf")!.html_roh).verlauf.some((v: { methode: string }) => v.methode === "POST")).toBe(true);
     for (const d of diag.filter((x) => x.art !== "login-bild")) expect(d.html_roh).not.toContain("geheim");
+    // Die Login-Adressen sind geschwärzt (der Nachbau schickt das Passwort wie ManagerZone im Formular)
+    expect(diag.find((d) => d.art === "login-verlauf")!.html_roh).not.toMatch(/logindata[^=]*=(?!\*\*\*)[^&"\s]+/);
 
     const nochmal = await mitMzSitzung(db, (s) => s.holeSeite("/?p=players"));
     expect(nochmal.htmlDom).toContain("Kader");
