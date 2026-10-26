@@ -18,7 +18,8 @@ const sterneText = (s?: SpielerDaten["scoutSterne"]) => (s?.hoch !== undefined &
 
 // Welche Spieler einen (neuen) Text brauchen: Scoutbericht vorhanden und Text fehlt oder Sterne geändert
 export function brauchtText(alt: SpielerDaten | undefined, sterne: string): boolean {
-  return !alt?.scoutText || alt.scoutTextSterne !== sterne;
+  // Ein Text ohne "Scoutbericht" ist eine falsch mitgelesene Antwort (25.10.2026: "off") und gilt als fehlend
+  return !alt?.scoutText || !alt.scoutText.includes("Scoutbericht") || alt.scoutTextSterne !== sterne;
 }
 
 export function scoutKlicker(gespeichert: Map<number, SpielerDaten>) {

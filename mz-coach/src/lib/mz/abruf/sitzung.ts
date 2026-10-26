@@ -251,7 +251,8 @@ export async function mitMzSitzung<T>(
         if (htmlRoh !== null && istAbmeldeSeite(htmlRoh)) return { url, status, htmlRoh, htmlDom: null };
         // Manche MZ-Seiten melden "load" nie (beobachtet 25.10.2026: Abbruch nach 60 s). Das HTML ist dann trotzdem da,
         // deshalb nur auf domcontentloaded bestehen und auf load/networkidle höchstens kurz warten.
-        await page.waitForLoadState("domcontentloaded", { timeout: 60_000 });
+        // Auch domcontentloaded bleibt bei manchen Seiten aus (Verletzt/Gesperrt, 26.10.2026); das HTML ist trotzdem da
+        await page.waitForLoadState("domcontentloaded", { timeout: 45_000 }).catch(() => {});
         await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
         await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
         const htmlDom = await page.content();
