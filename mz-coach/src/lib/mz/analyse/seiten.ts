@@ -12,7 +12,7 @@ export type Seite = { seite: "links" | "mitte" | "rechts"; abwehr: SeitenSpieler
 const seiteVon = (x: number): Seite["seite"] => (x < LINKS_BIS ? "links" : x > RECHTS_AB ? "rechts" : "mitte");
 const mio = (n?: number) => (n === undefined ? "Wert n. v." : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
 
-export function seitenVergleich(elf: SeitenSpieler[]): { seiten: Seite[]; text?: string; kurz?: string[] } {
+export function seitenVergleich(elf: SeitenSpieler[]): { seiten: Seite[]; text?: string; kurz?: string[]; angriff?: "links" | "rechts" } {
   const feld = elf.filter((p) => !p.torwart);
   const seiten: Seite[] = (["links", "mitte", "rechts"] as const).map((seite) => {
     const alle = feld.filter((p) => seiteVon(p.x) === seite);
@@ -35,6 +35,7 @@ export function seitenVergleich(elf: SeitenSpieler[]): { seiten: Seite[]; text?:
   const unterschied = Math.round((1 - schwach.abwehrSchnitt! / stark.abwehrSchnitt!) * 100);
   return {
     seiten,
+    angriff: schwach.seite === "links" ? "rechts" : "links",
     kurz: [
       `Schwächer: ${schwach.seite} (${schwach.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")})`,
       `Stärker: ${stark.seite} (${stark.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")})`,

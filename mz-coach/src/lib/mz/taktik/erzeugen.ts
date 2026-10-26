@@ -3,6 +3,7 @@ import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { rolle } from "@/lib/mz/analyse/markt";
 import { BANK_Y, STURM_Y, istAussen } from "./pruefer";
+import { KOPFBALL_GEWICHT } from "./gegner-gewichte";
 
 // Taktik-Code mit der bestmöglichen Besetzung aus deinem Kader (Auftrag Marcus, 26.10.2026).
 // Positionen: echte Startaufstellung eines Topteams (Editor-Koordinaten aus der Stats-XML). Besetzung: die
@@ -110,6 +111,10 @@ export function erzeugeTaktik(opt: {
   kader: SpielerDaten[];
   spieltag: Date;
   kapitaenPid?: number; // z. B. Kapitän aus deinem Archiv
+  // Gegnerbezogen (gegner-gewichte.ts), je Feldplatz in der Reihenfolge von feld
+  faktor?: number[];
+  kopfball?: boolean[];
+  regeln?: string[]; // fertige TacticRule-Zeilen (z. B. Wechselregeln aus dem Archiv), ersetzen die Rot-Regel nicht
 }): ErzeugteTaktik {
   const hinweise: string[] = [];
   const { ja, nein } = verfuegbar(opt.kader, opt.spieltag);
@@ -119,7 +124,16 @@ export function erzeugeTaktik(opt: {
   // Nur Spieler mit vollständig bekannten Skills; Kosten = minus MZ-Wert (unbekannt = sehr teuer)
   const kandidaten = ja.filter((s) => POSITIONEN.some((r) => wertIn(s, r) !== undefined));
   if (kandidaten.length < 11) throw new Error(`Nur ${kandidaten.length} aufstellbare Spieler mit bekannten Skills, 11 nötig.`);
-  const kosten = rollen.map((r) => kandidaten.map((s) => -(wertIn(s, r) ?? -1000)));
+  // Gegnerbezogene Gewichte gelten nur für die Wahl, der ausgewiesene Wert bleibt der MZ-Wert
+  const kosten = rollen.map((r, i) =>
+    kandidaten.map((s) => {
+      const w = wertIn(s, r);
+      if (w === undefined) return 1000;
+      const f = i > 0 ? (opt.faktor?.[i - 1] ?? 1) : 1;
+      const k = i > 0 && opt.kopfball?.[i - 1] ? KOPFBALL_GEWICHT * (s.skills.kopfball?.wert ?? 0) : 0;
+      return -(w * f + k);
+    }),
+  );
   const zu = zuordnen(kosten);
   const elf: Besetzung[] = plaetze.map((platz, i) => ({ platz, rolle: rollen[i], spieler: kandidaten[zu[i]], wert: wertIn(kandidaten[zu[i]], rollen[i]) ?? 0 }));
 
@@ -187,6 +201,7 @@ export function erzeugeTaktik(opt: {
       formation: 1,
     })} />`,
   );
+  for (const r of opt.regeln ?? []) zeilen.push(`\t${r}`);
   const xml = `<?xml version="1.0" ?>\n<SoccerTactics>\n${zeilen.join("\n")}\n</SoccerTactics>\n`;
   return { xml, elf, bank, kapitaen, summe: Math.round(elf.reduce((n, e) => n + e.wert, 0) * 100) / 100, hinweise, ausgeschlossen: nein };
 }

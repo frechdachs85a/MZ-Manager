@@ -15,7 +15,7 @@ const anstossText = (iso: string) =>
   new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
-  const { lauf, vorschlag, aufstellung, gegner, anpassungen, taktikCode } = l;
+  const { lauf, vorschlag, aufstellung, gegner, anpassungen, taktikCode, liga } = l;
   if (!lauf?.anstoss || !lauf.gegnerTid) {
     return (
       <Hero>
@@ -141,7 +141,29 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
         </div>
 
         <div className="border-t border-separator bg-black/10 p-6 lg:border-l lg:border-t-0 lg:p-8">
-          {aufstellung ? (
+          {liga ? (
+            <>
+              <div className="kapitaelchen mb-3">Formation Liga · {liga.reiter} gegen {lauf.gegnerName ?? "ihn"}</div>
+              <div className="mx-auto max-w-[340px]">
+                <Spielfeld spieler={liga.feld} titel={`Formation Liga (${liga.reiter})`} />
+              </div>
+              <ul className="mt-3 space-y-1 text-[12.5px] leading-snug text-label-2">
+                {liga.kurz.map((k) => (
+                  <li key={k} className="flex gap-2">
+                    <span aria-hidden className="text-tint">•</span>
+                    <span>{k}</span>
+                  </li>
+                ))}
+                <li className="flex gap-2">
+                  <span aria-hidden className="text-tint">•</span>
+                  <span>Bank: {liga.bank.join(", ")}</span>
+                </li>
+              </ul>
+              <div className="mt-3">
+                <DateiKnopf text={liga.xml} dateiname={`Liga-${lauf.gegnerName ?? "gegner"}.xml`.replace(/[^\w.-]+/g, "_")} label="Formation Liga als XML" />
+              </div>
+            </>
+          ) : aufstellung ? (
             <>
               <div className="kapitaelchen mb-3">Aufstellung {vorschlag?.taktik}</div>
               <div className="mx-auto max-w-[340px]">

@@ -27,6 +27,8 @@ import { scoutBericht, scoutEntscheidung } from "@/lib/wissen/scoutspiele";
 import { ladeTaktiken } from "@/lib/db/taktik";
 import { anpassen } from "@/lib/mz/taktik/anpassen";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
+import { gegnerGewichte } from "@/lib/mz/taktik/gegner-gewichte";
+import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 
 // Spieltag (Auftrag Marcus, 26.10.2026): Spielbericht des letzten Ligaspiels und Taktikvorschlag für das nächste,
 // alles aus gespeicherten Daten. Der Vorschlag ist die Empfehlung nach den Faustregeln (mz-wissen.md, Abschnitt 10,
@@ -423,7 +425,84 @@ export function spieltagLage(db: Database.Database) {
   const duellListe = eigeneAufstellung && erwartet ? { ...duelle(eigeneAufstellung.feld.map((p) => ({ ...p, name: p.label })), erwartet.feld.map((p) => ({ ...p, name: p.label }))), quelle: eigeneAufstellung.quelle } : null;
   if (duellListe?.kurz.length) kurzfassung.splice(3, 0, { titel: "Duelle", punkte: duellListe.kurz });
 
+  // Formation "Liga" (Auftrag Marcus, 26.10.2026): Plätze und Einstellung des Vorschlags, besetzt gegen diesen Gegner
+  // (gegner-gewichte.ts). Wird im Editor auf den Reiter "Liga" geschrieben; welche Formation gespielt wird, entscheidet Marcus.
+  const liga = (() => {
+    if (!vorschlag) return null;
+    let plaetze: { x: number; y: number }[] | undefined;
+    let torwart: { x: number; y: number } | undefined;
+    let team: Record<string, string> = {};
+    let archivRegeln: Record<string, string>[] = [];
+    if (taktikCode?.xml) {
+      try {
+        const t = parseTaktikXml(taktikCode.xml);
+        plaetze = t.pos.filter((p) => p.pos === "normal").map((p) => p.start);
+        torwart = t.pos.find((p) => p.pos === "goalie")?.start;
+        team = t.team;
+        archivRegeln = t.regeln;
+      } catch {
+        // unlesbar: Koordinaten aus mz-wissen.md
+      }
+    }
+    if (!plaetze) {
+      const t = TAKTIKEN.find((x) => x.name === vorschlag.taktik);
+      if (!t?.koordinaten) return null;
+      plaetze = t.koordinaten.map((k) => ({ x: k.x, y: k.y }));
+      const st = scout?.taktiken.find((x) => x.reiter === vorschlag.taktik)?.einstellung.split(" / ");
+      const rueck: Record<string, string> = { Flügel: "wings", Kurzpass: "shortpass", "lange Bälle": "longball", offensiv: "offensive", normal: "normal", defensiv: "defensive", aggressiv: "aggressive", passiv: "passive" };
+      if (st) team = { tactics: rueck[st[0]], playstyle: rueck[st[1]], aggression: rueck[st[2]] };
+    }
+    const g = erwartet
+      ? gegnerGewichte({ feld: plaetze, gegner: erwartet.feld, seinStil: brief?.einstellungen[0]?.[0], angriffUeber: erwartet.seiten.angriff })
+      : null;
+    const spieltagDatum = lauf?.anstoss ? new Date(new Date(lauf.anstoss).toLocaleString("en-US", { timeZone: "Europe/Berlin" })) : new Date();
+    const basis = {
+      feld: g?.feld ?? plaetze,
+      torwart,
+      tactics: team.tactics,
+      playstyle: team.playstyle,
+      aggression: team.aggression,
+      kader: kaderAlle,
+      spieltag: spieltagDatum,
+      kapitaenPid: team.captain ? Number(team.captain) : undefined,
+      faktor: g?.faktor,
+      kopfball: g?.kopfball,
+    };
+    try {
+      const erst = erzeugeTaktik(basis);
+      // Regeln aus dem Archiv übernehmen, wenn ihre Spieler passen (Rot-Regel kommt aus der Erzeugung)
+      const inElf = new Set(erst.elf.map((e) => e.spieler.pid));
+      const aufBank = new Set(erst.bank.map((b) => b.spieler.pid));
+      const name = new Map(kaderAlle.map((k) => [k.pid, k.name.split(" ").at(-1)!]));
+      const weg: string[] = [];
+      const regeln = archivRegeln.filter((r) => {
+        if (r.player_event === "sent_off" && r.check_player_event === "true") return false;
+        const raus = /^\d+$/.test(r.out_player ?? "") ? Number(r.out_player) : undefined;
+        const rein = /^\d+$/.test(r.in_player_id ?? "") ? Number(r.in_player_id) : undefined;
+        const ok = (raus === undefined || inElf.has(raus)) && (rein === undefined || aufBank.has(rein));
+        if (!ok) weg.push(`${r.time}. ${name.get(rein ?? 0) ?? "?"} für ${name.get(raus ?? 0) ?? "?"}`);
+        return ok;
+      });
+      const zeile = (r: Record<string, string>) =>
+        `<TacticRule ${Object.entries(r)
+          .map(([k, v]) => `${k}="${v.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`)
+          .join(" ")} />`;
+      const e = regeln.length ? erzeugeTaktik({ ...basis, regeln: regeln.map(zeile) }) : erst;
+      return {
+        reiter: vorschlag.taktik,
+        xml: e.xml,
+        feld: e.elf.map((b) => ({ x: b.platz.x, y: b.platz.y, label: b.spieler.name.split(" ").at(-1)!, wert: b.spieler.marktwert, torwart: b.platz.torwart })) as FeldSpieler[],
+        bank: e.bank.map((b) => b.spieler.name.split(" ").at(-1)!),
+        kurz: [...(g?.kurz ?? ["Keine erwartete Aufstellung des Gegners: beste Elf ohne Gegnerbezug"]), ...(weg.length ? [`Wechselregeln nicht übernommen (Spieler nicht in Elf/Bank): ${weg.join(", ")}`] : [])],
+        hinweise: e.hinweise,
+      };
+    } catch {
+      return null;
+    }
+  })();
+
   return {
+    liga,
     eigeneAufstellung,
     duelle: duellListe,
     erwartet,

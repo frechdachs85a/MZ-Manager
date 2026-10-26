@@ -120,15 +120,24 @@ export function meldungAus(e: unknown): string {
 // Klickt "Importieren" im Taktik-Editor und gibt das geöffnete Fenster zurück. Gespeichert wird dabei nichts:
 // die Seite wird danach ohne Speichern geschlossen.
 async function importFensterAnsehen(page: Page): Promise<string | undefined> {
-  const knopf = page.locator("#import_button");
-  if (!(await knopf.count())) return undefined;
-  await knopf.first().click();
-  await page.waitForTimeout(3000);
-  return page.evaluate(() => {
-    const kandidaten = [...document.querySelectorAll('[id*="powerbox"], .powerbox, [class*="powerbox"]')] as HTMLElement[];
-    const sichtbar = kandidaten.filter((e) => e.offsetParent !== null);
-    return (sichtbar.length ? sichtbar : kandidaten).map((e) => e.outerHTML).join("\n<!-- naechstes -->\n").slice(0, 200_000);
-  });
+  // Fehler hier dürfen das Einlesen der Taktikseite nie stören (26.10.2026: Playwright-Klick lief ins Zeitlimit,
+  // der Knopf war für Playwright nicht klickbar). Deshalb per DOM-Klick, der denselben onclick auslöst.
+  try {
+    const da = await page.evaluate(() => {
+      const k = document.querySelector("#import_button") as HTMLElement | null;
+      k?.click();
+      return !!k;
+    });
+    if (!da) return "Kein #import_button auf der Seite.";
+    await page.waitForTimeout(3000);
+    return await page.evaluate(() => {
+      const kandidaten = [...document.querySelectorAll('[id*="powerbox"], .powerbox, [class*="powerbox"], textarea')] as HTMLElement[];
+      const sichtbar = kandidaten.filter((e) => e.offsetParent !== null);
+      return (sichtbar.length ? sichtbar : kandidaten).map((e) => e.outerHTML).join("\n<!-- naechstes -->\n").slice(0, 200_000) || "Nach dem Klick kein Fenster gefunden.";
+    });
+  } catch (e) {
+    return `Import-Fenster nicht lesbar: ${(e instanceof Error ? e.message : String(e)).split("\n")[0]}`;
+  }
 }
 
 // Automatischer Abruf: Kaderübersicht zuerst, dann Status-Seiten. Ein Fehler bei einer Seite
