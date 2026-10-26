@@ -6,6 +6,10 @@ import { speichereMarktSuche } from "@/lib/db/markt";
 import { ladeFreundTeam } from "@/lib/db/freunde";
 import { zugangStatus } from "@/lib/mz/zugang";
 import { parseTransferSuche, type MarktSpieler } from "@/lib/mz/parser/transfer";
+import { ladeKader } from "@/lib/db/kader";
+import { startelfAusLetztemSpiel } from "@/lib/db/markt";
+import { schwachstellen } from "@/lib/mz/analyse/markt";
+import { mitFiltern, suchZiele } from "./markt-ziel";
 import { meldungAus, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler } from "./sitzung";
 
@@ -16,6 +20,8 @@ import { mitMzSitzung, MzFehler } from "./sitzung";
 export const MARKT_PFAD = "/?p=transfer";
 export const MAX_SEITEN = 25;
 const JE_SEITE = 20;
+const JE_ZIEL = 40; // Kandidaten je Rolle, dann nächste Rolle
+const SEITEN_JE_STUFE = 3;
 
 // Felder des Suchformulars als Parameter, wie Mazyar sie bildet: jedes input/select mit Namen,
 // Kontrollkästchen als 1/0, Auswahllisten mit der gewählten Option.
@@ -50,6 +56,7 @@ export function suchParameter(html: string): string {
 
 export async function marktAbrufen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "markt");
+  const ziel: string[] = [];
   try {
     const r = await mitMzSitzung(
       db,
@@ -63,20 +70,44 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
           speichereRohseite(db, { art: "skript-transfer", url: sk.url, status: null, htmlRoh: sk.text, htmlDom: null });
         }
         const params = suchParameter(html);
-        const spieler: MarktSpieler[] = [];
+        const spieler = new Map<number, MarktSpieler>();
         let treffer = 0;
         let seiten = 0;
-        for (let o = 0; seiten < MAX_SEITEN; o += JE_SEITE) {
-          const a = await s.holeText(`/ajax.php?p=transfer&sub=transfer-search&sport=soccer${params}&o=${o}`);
+        const lies = async (p: string, o: number) => {
+          const a = await s.holeText(`/ajax.php?p=transfer&sub=transfer-search&sport=soccer${p}&o=${o}`);
           // Erste Antwort immer roh speichern, damit der Aufbau geprüft werden kann
-          if (o === 0) speichereRohseite(db, { art: "markt-suche", url: a.url, status: a.status, htmlRoh: a.text, htmlDom: null });
-          const suche = parseTransferSuche(a.text);
+          if (seiten === 0) speichereRohseite(db, { art: "markt-suche", url: a.url, status: a.status, htmlRoh: a.text, htmlDom: null });
           seiten++;
-          treffer = suche.treffer;
-          spieler.push(...suche.spieler);
-          if (suche.spieler.length < JE_SEITE || o + JE_SEITE >= treffer) break;
+          return parseTransferSuche(a.text);
+        };
+        // Gezielt (Marcus, 26.10.2026): je schwächster Rolle der Startelf mit den Filtern von ManagerZone suchen,
+        // Hauptskill der Rolle von 10 abwärts, bis genug Kandidaten da sind; sonst wie bisher den Markt durchgehen
+        const start = startelfAusLetztemSpiel(db);
+        const ziele = start ? suchZiele(schwachstellen(start.elf, ladeKader(db)).liste) : [];
+        if (ziele.length) {
+          for (const z of ziele) {
+            const vorher = spieler.size;
+            for (const stufe of z.stufen) {
+              if (seiten >= MAX_SEITEN || spieler.size - vorher >= JE_ZIEL) break;
+              const p = mitFiltern(params, z.filter(stufe));
+              for (let o = 0; seiten < MAX_SEITEN && o < SEITEN_JE_STUFE * JE_SEITE; o += JE_SEITE) {
+                const suche = await lies(p, o);
+                for (const x of suche.spieler) spieler.set(x.pid, x);
+                if (o === 0) treffer += suche.treffer;
+                if (suche.spieler.length < JE_SEITE || o + JE_SEITE >= suche.treffer) break;
+              }
+            }
+            ziel.push(`${z.text}: ${spieler.size - vorher} Kandidaten`);
+          }
+        } else {
+          for (let o = 0; seiten < MAX_SEITEN; o += JE_SEITE) {
+            const suche = await lies(params, o);
+            treffer = suche.treffer;
+            for (const x of suche.spieler) spieler.set(x.pid, x);
+            if (suche.spieler.length < JE_SEITE || o + JE_SEITE >= treffer) break;
+          }
         }
-        const id = speichereMarktSuche(db, { treffer, seiten, spieler });
+        const id = speichereMarktSuche(db, { treffer, seiten, spieler: [...spieler.values()] });
         // Für die automatischen Einladungen: Herausforderungsseite samt challenges.js einmal sichern
         // (enthält challengeButtonAction, also wie eine Einladung abgeschickt wird). Nur lesen.
         const freund = ladeFreundTeam(db);
@@ -85,11 +116,11 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
           speichereRohseite(db, { art: "challenges", url: ch.url, status: ch.status, htmlRoh: ch.htmlRoh, htmlDom: ch.htmlDom });
           for (const sk of ch.skripte ?? []) speichereRohseite(db, { art: "skript-challenges", url: sk.url, status: null, htmlRoh: sk.text, htmlDom: null });
         }
-        return { id, treffer, seiten, anzahl: spieler.length };
+        return { id, treffer, seiten, anzahl: spieler.size };
       },
       opt,
     );
-    const meldung = `Transfermarkt: ${r.anzahl} Spieler auf ${r.seiten} Seiten gelesen (laut Suche ${r.treffer} Treffer).`;
+    const meldung = `Transfermarkt: ${r.anzahl} Spieler auf ${r.seiten} Seiten gelesen (laut Suche ${r.treffer} Treffer).${ziel.length ? ` Gezielt: ${ziel.join(" · ")}.` : ""}`;
     abrufBeenden(db, log, true, meldung);
     return { ok: true, meldung };
   } catch (e) {
