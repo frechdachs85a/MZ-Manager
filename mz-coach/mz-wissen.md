@@ -267,3 +267,11 @@ Weitere Beobachtungen von Marcus zu Sydney (Ligaspiele): Gegentore bekam Sydney 
 - Direkte Messung gegen Sydney (22 Scoutspiele vom 26.10.2026): alle 22: 8 S (36 %), 5 U (23 %), 9 N (41 %); außenR: 4 S (36 %), 2 U (18 %), 5 N (45 %); kupass: 4 S (36 %), 3 U (27 %), 4 N (36 %). Die neue außenR-Version (Hyuga bis zur 70.) ist darin noch nicht enthalten.
 - Regel: Gibt es Scoutspiele gegen den konkreten Gegner, haben diese Vorrang vor der allgemeinen Wertbereich-Statistik. Grenze: Im Scoutspiel spielt der Gegner fest mit der Aufstellung seines letzten Ligaspiels und reagiert nicht.
 - Nach dem Spiel am Mi 28.10. prüfen: Ergebnis und Tore nach Zeitfenster (bis 50., 51. bis 70., ab 71.) mit den Scoutwerten vergleichen; hat Sydney live die Standardformation gespielt oder wie gegen BOD auf Viererkette umgestellt?
+
+## 15. Bietomat: Regeln (Marcus, 26.10.2026)
+
+- Eigene Spieler per Spielernummer aufnehmen, nicht nur Vorschläge der Seite; Endpreis (Maximalgebot) legt Marcus fest, nie darüber bieten.
+- Kurz vor Schluss bieten (Wunsch: 3 bis 2 Minuten vor Ende), aber nur, wenn man nicht selbst Höchstbietender ist.
+- Laut Marcus verlängert ein Gebot kurz vor Schluss die Auktion. Ziel ist also nicht ein Gebot, sondern am Ende allein Höchstbietender zu sein: nach jedem Gebot und bis zum tatsächlichen Ende das Auktionsende und das Höchstgebot neu lesen; wird man überboten (auch in der Verlängerung), erneut bieten, solange der Endpreis reicht.
+- Wie lange MZ verlängert, ist hier noch nicht geprüft: die Seite liest das Ende jedes Mal neu von ManagerZone, statt eine Dauer anzunehmen.
+- Zeitpunkt fest (kein bewusst zufälliger Zeitpunkt). Erst scharf nach Prüfung des Gebotsfensters und einem Testgebot mit Zustimmung von Marcus.
