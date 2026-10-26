@@ -1,5 +1,7 @@
 import "server-only";
 import type Database from "better-sqlite3";
+import { rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { entschluesseln, tresorSchluessel, verschluesseln } from "@/lib/crypto/tresor";
 import { speichereRohseite } from "@/lib/db/abruf";
@@ -198,6 +200,18 @@ type LadeOpt = { skripte?: RegExp; aufSeite?: (page: Page, html: string) => Prom
 
 let laeuft = false;
 
+// Markierung auf dem Datenlaufwerk, solange ein Abruf läuft. Das automatische Update (deploy/server/aktualisieren.sh)
+// wartet dann, statt den Abruf durch den Neustart abzubrechen (passiert am 26.10.2026 mit dem Top-10-Abruf).
+export const ABRUF_MARKE = join(dirname(process.env.DATABASE_PATH ?? "./data/mz-coach.db"), "abruf.laeuft");
+function marke(an: boolean) {
+  try {
+    if (an) writeFileSync(ABRUF_MARKE, new Date().toISOString());
+    else rmSync(ABRUF_MARKE, { force: true });
+  } catch {
+    // nur ein Hinweis für das Update, darf den Abruf nie stören
+  }
+}
+
 // Öffnet Browser und Sitzung, führt `arbeit` aus, speichert die Cookies und schließt alles.
 // Es läuft immer nur ein Abruf gleichzeitig.
 export async function mitMzSitzung<T>(
@@ -211,6 +225,7 @@ export async function mitMzSitzung<T>(
   if (vorher && !opt.manuell) throw new MzFehler(`Letzter Login fehlgeschlagen (${vorher.zeit}). ${MELDUNG[vorher.grund]}`);
 
   laeuft = true;
+  marke(true);
   let browser: Browser | null = null;
   try {
     browser = await chromium.launch();
@@ -313,6 +328,7 @@ export async function mitMzSitzung<T>(
     return ergebnis;
   } finally {
     laeuft = false;
+    marke(false);
     await browser?.close().catch(() => {});
   }
 }

@@ -7,6 +7,13 @@ cd "$(dirname "$(readlink -f "$0")")/../../.."
 exec 9>/tmp/mz-coach-update.lock
 flock -n 9 || { echo "Update läuft bereits"; exit 0; }
 
+# Läuft gerade ein Abruf (Markierung der App, jünger als 3 Stunden), nicht neu starten: nächste Runde versuchen
+MARKE="mz-coach/deploy/server/daten/abruf.laeuft"
+if [ -f "$MARKE" ] && [ -n "$(find "$MARKE" -mmin -180)" ]; then
+  echo "Abruf läuft, Update später"
+  exit 0
+fi
+
 git fetch -q origin main
 if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
   exit 0
