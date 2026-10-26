@@ -27,8 +27,8 @@ export async function Spielleiste() {
             <span className="font-semibold text-label">
               {lauf.heim ? "gegen" : "bei"} {lauf.gegnerName}
             </span>
-            {l?.empfehlung && (
-              <span className="rounded-[4px] bg-tint px-2 py-[2px] text-[12px] font-bold uppercase tracking-wider text-auf-akzent">Vorschlag {l.empfehlung.taktik}</span>
+            {l?.vorschlag && (
+              <span className="rounded-[4px] bg-tint px-2 py-[2px] text-[12px] font-bold uppercase tracking-wider text-auf-akzent">Vorschlag {l.vorschlag.taktik}</span>
             )}
           </Link>
         ) : (

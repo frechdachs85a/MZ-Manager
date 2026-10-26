@@ -1,5 +1,5 @@
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
-import { de } from "./gegner";
+import { de, stilDe } from "./gegner";
 import { gegnerKlasse, spielMuster, stilText, type Bilanz, type Ergebnis } from "./muster";
 
 // Was gegen ein Team funktioniert hat (Auftrag Marcus, 26.10.2026): seine Gegner in den ausgewerteten
@@ -68,7 +68,7 @@ export function gegenIhn(tid: number, spiele: StatsSpiel[]): GegenIhn {
         datum: s.datum,
         name: m.gegner.name,
         tid: m.gegner.tid,
-        stil: stilText(m.gegner),
+        stil: stilDe(stilText(m.gegner)),
         formation: m.gegner.formation.text,
         tactic: m.gegner.tactic,
         playstyle: m.gegner.playstyle,
