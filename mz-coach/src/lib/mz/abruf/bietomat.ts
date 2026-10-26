@@ -51,3 +51,18 @@ export async function spielerLaden(db: Database.Database, pid: number): Promise<
     return { ok: false, meldung };
   }
 }
+
+// Nur lesend, für die Auswertung (Marcus, 26.10.2026: "die Informationen selber holen"): einen Spieler aus der letzten
+// Marktsuche nehmen, dessen Auktion noch mindestens eine Stunde läuft, und ihn wie im Bietomat laden. Dabei wird das
+// Gebotsfenster gespeichert (Rohseite "gebotsformular"). Es wird nicht geboten.
+export async function gebotsformularLesen(db: Database.Database): Promise<{ ok: boolean; meldung: string }> {
+  const { ladeLetzteSuche } = await import("@/lib/db/markt");
+  const bald = Date.now() + 60 * 60_000;
+  const kandidat = ladeLetzteSuche(db)?.spieler.find((s) => {
+    const e = endeUtc(s.markt.ende);
+    return e && new Date(e).getTime() > bald;
+  });
+  if (!kandidat) return { ok: false, meldung: "Gebotsformular: kein Spieler mit laufender Auktion in der letzten Marktsuche." };
+  const r = await spielerLaden(db, kandidat.pid);
+  return r.ok ? { ok: true, meldung: `Gebotsformular von Spieler ${kandidat.pid} gelesen (nicht geboten).` } : { ok: false, meldung: r.meldung };
+}
