@@ -1,6 +1,7 @@
-// Grundbausteine: Abschnitte, Karten, Listenzeilen, Hinweise. Stil "klassisch elegant":
-// Elfenbein, Vereinsgrün, Gold, feine Linien, Serifen-Überschriften.
+// Grundbausteine im Manager-Spiel-Stil (Marcus, 26.10.2026): dunkle Panels mit Kopfzeile, kräftige
+// schmale Überschriften, Akzentgrün, Gold für Bewertungen.
 
+// Panel mit Kopfzeile wie im Manager-Spiel (Titel links, Aktion rechts)
 export function Section({
   title,
   footer,
@@ -13,27 +14,30 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-12">
+    <section className="mt-8">
       {title && (
-        <div className="mb-4 flex items-end justify-between gap-4 border-b border-separator pb-2">
-          <h2 className="text-[22px] font-semibold tracking-tight">{title}</h2>
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <h2 className="flex items-center gap-2.5 text-[19px] font-bold leading-none tracking-wide">
+            <span aria-hidden className="h-4 w-1 rounded-full bg-tint" />
+            {title}
+          </h2>
           {aktion}
         </div>
       )}
       {children}
-      {footer && <p className="mt-3 max-w-[70ch] text-[13px] leading-relaxed text-label-2">{footer}</p>}
+      {footer && <p className="mt-2.5 max-w-[80ch] text-[12.5px] leading-relaxed text-label-3">{footer}</p>}
     </section>
   );
 }
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`karte overflow-hidden rounded-[12px] bg-card ${className}`}>{children}</div>;
+  return <div className={`karte overflow-hidden rounded-[10px] bg-card ${className}`}>{children}</div>;
 }
 
 export function List({ children }: { children: React.ReactNode }) {
   return (
     <Card>
-      <ul className="divide-y divide-separator [&>li]:px-5 [&>li:first-child]:border-t-0">{children}</ul>
+      <ul className="divide-y divide-separator [&>li]:px-4 [&>li:first-child]:border-t-0">{children}</ul>
     </Card>
   );
 }
@@ -50,12 +54,12 @@ export function Row({
   accessory?: React.ReactNode;
 }) {
   return (
-    <li className="flex min-h-12 items-center gap-4 py-3">
+    <li className="flex min-h-11 items-center gap-4 py-2.5">
       <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-medium leading-snug">{title}</div>
-        {detail && <div className="mt-0.5 text-[13px] text-label-2">{detail}</div>}
+        <div className="text-[14.5px] font-medium leading-snug">{title}</div>
+        {detail && <div className="mt-0.5 text-[12.5px] text-label-2">{detail}</div>}
       </div>
-      {value && <div className="shrink-0 text-[15px] text-label-2">{value}</div>}
+      {value && <div className="shrink-0 text-[14.5px] text-label-2">{value}</div>}
       {accessory}
     </li>
   );
@@ -64,10 +68,10 @@ export function Row({
 // "Nicht verfügbar" mit Grund. Grundregel der Webseite: nie Werte erfinden.
 export function Unavailable({ title, reason }: { title: string; reason: string }) {
   return (
-    <div className="rounded-[12px] border border-dashed border-gold-hell bg-card/60 p-5">
-      <div className="kapitaelchen">Nicht verfügbar</div>
-      <div className="display mt-1.5 text-[17px] font-semibold">{title}</div>
-      <div className="mt-1 text-[14px] leading-relaxed text-label-2">{reason}</div>
+    <div className="rounded-[10px] border border-dashed border-white/15 bg-card/50 p-4">
+      <div className="kapitaelchen !text-label-3">Nicht verfügbar</div>
+      <div className="display mt-1 text-[17px] font-semibold uppercase">{title}</div>
+      <div className="mt-1 text-[13.5px] leading-relaxed text-label-2">{reason}</div>
     </div>
   );
 }
@@ -80,48 +84,51 @@ export function Badge({
   tone?: "neutral" | "green" | "red" | "orange" | "tint";
 }) {
   const tones = {
-    neutral: "border-separator text-label-2",
-    green: "border-green/40 text-green",
-    red: "border-red/40 text-red",
-    orange: "border-orange/40 text-orange",
-    tint: "border-tint/40 text-tint",
+    neutral: "bg-white/[0.06] text-label-2",
+    green: "bg-green/15 text-green",
+    red: "bg-red/15 text-red",
+    orange: "bg-orange/15 text-orange",
+    tint: "bg-tint/15 text-tint-hell",
   };
   return (
-    <span className={`inline-flex items-center rounded-full border bg-card px-2 py-[1px] text-[11px] font-medium tracking-wide ${tones[tone]}`}>
+    <span className={`inline-flex items-center rounded-[4px] px-1.5 py-[2px] text-[10.5px] font-bold uppercase tracking-wider ${tones[tone]}`}>
       {children}
     </span>
   );
 }
 
-// Dunkle Kopfkarte für die wichtigste Information einer Seite
+// Kopfkarte für die wichtigste Information einer Seite
 export function Hero({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`hero relative overflow-hidden rounded-[14px] p-7 ${className}`}>{children}</div>;
+  return <div className={`hero relative overflow-hidden rounded-[12px] p-6 ${className}`}>{children}</div>;
 }
 
-// Kennzahl-Karte: goldene Linie oben, große Serifenzahl
+// Kennzahl-Kachel: Titel klein, Zahl groß und schmal, Akzentlinie links
 export function Kachel({
   titel,
   wert,
   unten,
   href,
+  ton = "tint",
 }: {
   titel: string;
   wert: React.ReactNode;
   unten?: React.ReactNode;
   href?: string;
+  ton?: "tint" | "gold" | "red" | "neutral";
 }) {
+  const linie = { tint: "before:bg-tint", gold: "before:bg-gold", red: "before:bg-red", neutral: "before:bg-white/20" }[ton];
   const inhalt = (
     <>
       <div className="kapitaelchen">{titel}</div>
-      <div className="display mt-3 text-[34px] font-semibold leading-none tracking-tight">{wert}</div>
-      {unten && <div className="mt-3 text-[13px] leading-snug text-label-2">{unten}</div>}
+      <div className="display mt-2 text-[38px] font-bold leading-none">{wert}</div>
+      {unten && <div className="mt-2 text-[12.5px] leading-snug text-label-2">{unten}</div>}
     </>
   );
-  const cls = "karte relative flex min-h-[140px] flex-col rounded-[12px] border-t-2 border-t-gold bg-card p-5";
+  const cls = `karte relative flex min-h-[124px] flex-col overflow-hidden rounded-[10px] bg-card p-4 pl-5 before:absolute before:inset-y-0 before:left-0 before:w-1 ${linie}`;
   return href ? (
-    <a href={href} className={`${cls} transition-shadow hover:shadow-[0_12px_32px_-14px_rgba(28,35,33,0.28)]`}>
+    <a href={href} className={`${cls} transition-colors hover:bg-card-2`}>
       {inhalt}
-      <span className="absolute right-5 top-5 text-[13px] text-gold" aria-hidden>
+      <span className="absolute right-4 top-4 text-[13px] text-label-3" aria-hidden>
         →
       </span>
     </a>

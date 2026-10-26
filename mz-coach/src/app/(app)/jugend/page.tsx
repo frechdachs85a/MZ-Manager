@@ -22,7 +22,7 @@ function Tabelle({ liste, rang = false }: { liste: JugendSpieler[]; rang?: boole
     <Card>
       <table className="w-full text-[14px]">
         <thead>
-          <tr className="border-b border-separator text-left text-[12px] text-label-2">
+          <tr className="border-b border-separator bg-card-2 text-left text-[11px] uppercase tracking-wider text-label-3">
             {rang && <th className="py-2.5 pl-5 font-medium">#</th>}
             <th className={`py-2.5 font-medium ${rang ? "" : "pl-5"}`}>Nr</th>
             <th className="py-2.5 font-medium">Name</th>

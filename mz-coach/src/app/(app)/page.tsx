@@ -43,53 +43,76 @@ export default async function Uebersicht() {
 
   return (
     <>
-      <PageHeader
-        title="Übersicht"
-        subtitle={`${TEAM.name} · ${TEAM.liga}`}
-        action={
-          <Link href="/einstellungen" aria-label="Einstellungen" className="pressable -mr-2 flex h-11 w-11 items-center justify-center text-tint">
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
-            </svg>
-          </Link>
-        }
-      />
-      <div className="seite mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
-        <Kachel titel="Nächstes Ligaspiel" wert={kurzDatum} unten="Mittwochs und sonntags. Gegner und Anstoß: noch nicht verfügbar" />
-        <Kachel
-         
-          titel="Fehlen oder unklar"
-          wert={taktikStand ? nichtDabei : "n. v."}
-          unten={taktikStand ? `${zurueck.length} kommen rechtzeitig zurück` : "Taktikseite noch nicht eingelesen"}
-        />
-        <Kachel titel="Kader" wert={kader.length || "n. v."} unten={kader.length ? "Spieler im Kader" : "noch kein Kaderabruf"} href="/kader" />
-        <Kachel
-         
-          titel="Größte Schwachstelle"
-          wert={schwach ? schwach.wert.toFixed(2).replace(".", ",") : "n. v."}
-          unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
-          href="/markt"
-        />
+      <PageHeader title="Zentrale" subtitle={`${TEAM.name} · ${TEAM.liga}`} />
+
+      {/* Nächstes Spiel: das wichtigste Panel, wie die Spielvorschau im Manager-Spiel */}
+      <div className="seite mt-6 grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          {gegner?.analyse ? (
+            <Link href={`/gegner/${gegner.tid}`} className="block h-full">
+              <Hero className="h-full transition-colors hover:border-tint/50">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="kapitaelchen !text-tint-hell">Nächstes Ligaspiel · {datum}</div>
+                    <div className="display mt-2 text-[15px] font-semibold uppercase text-label-2">Zuletzt analysierter Gegner</div>
+                    <div className="display text-[34px] font-bold uppercase leading-none">{gegner.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="kapitaelchen">Empfohlene Taktik</div>
+                    <div className="display mt-1 text-[44px] font-bold uppercase leading-none text-tint-hell">{gegner.analyse.empfehlung.taktik}</div>
+                  </div>
+                </div>
+                <p className="mt-4 max-w-[70ch] text-[14px] leading-relaxed text-label-2">{gegner.analyse.urteilText}</p>
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-label-3">
+                  <span>{gegner.stats.length} von {gegner.liga.length} Ligaspielen ausgewertet</span>
+                  <span>Stand {datumZeit(gegner.stand)}</span>
+                  <span className="font-semibold text-tint-hell">Analyse öffnen →</span>
+                </div>
+              </Hero>
+            </Link>
+          ) : (
+            <Hero className="h-full">
+              <div className="kapitaelchen !text-tint-hell">Nächstes Ligaspiel · {datum}</div>
+              <div className="display mt-2 text-[30px] font-bold uppercase leading-none">Noch kein Gegner analysiert</div>
+              <p className="mt-3 text-[14px] text-label-2">Unter „Gegner“ eine Spielliste einlesen, dann erscheint hier die empfohlene Taktik.</p>
+            </Hero>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
+          <Kachel
+            titel="Fehlen oder unklar"
+            ton={taktikStand && nichtDabei > 0 ? "red" : "tint"}
+            wert={taktikStand ? nichtDabei : "n. v."}
+            unten={taktikStand ? `${zurueck.length} kommen rechtzeitig zurück` : "Taktikseite noch nicht eingelesen"}
+          />
+          <Kachel
+            titel="Größte Schwachstelle"
+            ton="gold"
+            wert={schwach ? schwach.wert.toFixed(2).replace(".", ",") : "n. v."}
+            unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
+            href="/markt"
+          />
+        </div>
       </div>
-      <div className="seite">
-        <Section title="Spieltag-Checkliste" footer="Aus den gespeicherten Daten. Gelb: veraltet oder mit Fehlern, grau: noch offen.">
+
+      <div className="seite grid gap-x-6 lg:grid-cols-2">
+        <Section title="Aufgaben vor dem Spieltag" footer="Aus den gespeicherten Daten. Gelb: veraltet oder mit Fehlern, grau: noch offen.">
           <Card>
-            <ul className="grid divide-y divide-separator lg:grid-cols-2 lg:divide-y-0">
+            <ul className="divide-y divide-separator">
               {check.map((c) => (
-                <li key={c.titel} className="lg:border-b lg:border-separator lg:odd:border-r">
-                  <Link href={c.href ?? "/"} className="zeile-hover flex items-start gap-3 px-5 py-4">
+                <li key={c.titel}>
+                  <Link href={c.href ?? "/"} className="zeile-hover flex items-start gap-3 px-4 py-3">
                     <span
                       aria-label={c.status === "ok" ? "erledigt" : c.status === "warnung" ? "prüfen" : "offen"}
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                        c.status === "ok" ? "bg-tint text-white" : c.status === "warnung" ? "bg-yellow text-ink" : "border border-label-3 text-label-3"
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] text-[11px] font-bold ${
+                        c.status === "ok" ? "bg-tint text-ink" : c.status === "warnung" ? "bg-yellow text-ink" : "border border-label-3 text-label-3"
                       }`}
                     >
                       {c.status === "ok" ? "✓" : c.status === "warnung" ? "!" : ""}
                     </span>
-                    <span>
-                      <span className="block text-[15px] font-medium">{c.titel}</span>
-                      <span className="block text-[13px] leading-relaxed text-label-2">{c.text}</span>
+                    <span className="min-w-0">
+                      <span className="block text-[14px] font-semibold">{c.titel}</span>
+                      <span className="block text-[12.5px] leading-relaxed text-label-2">{c.text}</span>
                     </span>
                   </Link>
                 </li>
@@ -97,35 +120,10 @@ export default async function Uebersicht() {
             </ul>
           </Card>
         </Section>
-      </div>
-      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-10">
 
         <Section
-          title="Empfohlene Taktik"
-          footer={
-            gegner
-              ? `Zuletzt eingelesener Gegner (Stand ${datumZeit(gegner.stand)}). Ob er der nächste Ligagegner ist, prüft die Seite erst mit dem Spielplan-Abruf.`
-              : undefined
-          }
-        >
-          {gegner?.analyse ? (
-            <Link href={`/gegner/${gegner.tid}`} className="block">
-              <Hero className="transition-shadow hover:shadow-[0_16px_40px_-18px_rgba(18,41,31,0.6)]">
-                <div className="kapitaelchen !text-gold-hell">Gegen {gegner.name}</div>
-                <div className="display mt-2 text-[40px] font-semibold leading-none">{gegner.analyse.empfehlung.taktik}</div>
-                <div className="mt-3 max-w-[60ch] text-[14px] leading-relaxed text-[#f5f2ea]/80">{gegner.analyse.urteilText}</div>
-                <div className="mt-4 text-[13px] text-gold-hell">
-                  {gegner.stats.length} von {gegner.liga.length} Ligaspielen ausgewertet · Analyse öffnen →
-                </div>
-              </Hero>
-            </Link>
-          ) : (
-            <Unavailable title="Taktik fürs nächste Spiel" reason="Noch kein Gegner mit ausgewerteten Ligaspielen. Unter „Gegner“ eine Spielliste einlesen." />
-          )}
-        </Section>
-
-        <Section
-          title={`Einsatz am ${datum}`}
+          title={`Verfügbarkeit am ${kurzDatum}`}
+          aktion={<Link href="/kader" className="text-[12.5px] font-semibold uppercase tracking-wider text-tint hover:text-tint-hell">Kader ({kader.length}) →</Link>}
           footer={
             taktikStand
               ? `Kegel laut Taktikseite (Stand ${datumZeit(taktikStand)}) plus Enddatum aus dem Trainingslager. Ob ein Spieler am Enddatum selbst schon frei ist, ist nicht belegt. Sperren stehen auf ManagerZone je Wettbewerb.`
@@ -133,7 +131,7 @@ export default async function Uebersicht() {
           }
         >
           {!taktikStand ? (
-            <Unavailable title="Wer ist aufstellbar?" reason="Taktikseite noch nicht eingelesen (Einstellungen, Seiten hochladen)." />
+            <Unavailable title="Wer ist aufstellbar?" reason="Taktikseite noch nicht eingelesen (Einstellungen, Kader jetzt abrufen)." />
           ) : (
             <List>
               {fehlen.length === 0 && zurueck.length === 0 && gesperrt.length === 0 && (
@@ -143,7 +141,7 @@ export default async function Uebersicht() {
                 <Row key={s.pid} title={<span className="flex flex-wrap items-center gap-1.5">{s.name} <StatusBadges s={s} /></span>} detail={e.text} />
               ))}
               {zurueck.map(({ s, e }) => (
-                <Row key={s.pid} title={<span className="flex flex-wrap items-center gap-1.5">{s.name} <span className="text-[13px] text-green">wieder dabei</span></span>} detail={e.text} />
+                <Row key={s.pid} title={<span className="flex flex-wrap items-center gap-1.5">{s.name} <span className="text-[12px] font-semibold uppercase tracking-wider text-green">wieder dabei</span></span>} detail={e.text} />
               ))}
               {gesperrt.map((s) => (
                 <Row
@@ -161,21 +159,21 @@ export default async function Uebersicht() {
         <Section title="Tabelle" footer={tabRoh ? `Stand ${datumZeit(tabRoh.abgerufen)}, so wie ManagerZone sie zeigt.` : undefined}>
           {tabelle ? (
             <Card>
-              <table className="w-full text-[14px]">
+              <table className="w-full text-[13.5px]">
                 {tabelle.kopf.length > 0 && (
                   <thead>
-                    <tr className="border-b border-separator text-left text-[12px] text-label-2">
+                    <tr className="border-b border-separator bg-card-2 text-left text-[11px] uppercase tracking-wider text-label-3">
                       {tabelle.kopf.map((k, i) => (
-                        <th key={i} className="px-3 py-2 font-medium first:pl-5 last:pr-5">{k}</th>
+                        <th key={i} className="px-3 py-2 font-semibold first:pl-4 last:pr-4">{k}</th>
                       ))}
                     </tr>
                   </thead>
                 )}
                 <tbody className="divide-y divide-separator">
                   {tabelle.zeilen.map((z, i) => (
-                    <tr key={i} className={z.eigen ? "bg-gold-hell/30 font-semibold" : ""}>
+                    <tr key={i} className={z.eigen ? "bg-tint/[0.12] font-semibold text-label" : "text-label-2"}>
                       {z.zellen.map((c, j) => (
-                        <td key={j} className="px-3 py-2 tabular-nums first:pl-5 last:pr-5">{c}</td>
+                        <td key={j} className="px-3 py-1.5 tabular-nums first:pl-4 last:pr-4">{c}</td>
                       ))}
                     </tr>
                   ))}
@@ -198,7 +196,7 @@ export default async function Uebersicht() {
                   key={i}
                   title={`${a.name}: ${a.feld}`}
                   detail={datumZeit(a.datum)}
-                  value={<span className="tabular-nums">{a.alt ?? "?"} → {a.neu ?? "?"}</span>}
+                  value={<span className="display text-[17px] font-bold tabular-nums text-label">{a.alt ?? "?"} → {a.neu ?? "?"}</span>}
                 />
               ))}
             </List>

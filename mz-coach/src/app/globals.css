@@ -3,37 +3,39 @@
 /* Farben und Flächen (hell / dunkel). Akzent und Skill-Farben aus der geprüften Datenpalette
    (dataviz-Referenz: Blau #2a78d6/#3987e5, Rot #e34948/#e66767; CVD-Abstand ≥ 19 in beiden Modi). */
 :root {
-  /* Klassisch elegant (Marcus, 25.10.2026): Elfenbein, Vereinsgrün, Gold, feine Linien */
-  --bg: #f5f2ea;
-  --card: #fffdf8;
-  --card-2: #f0ebdf;
-  --label: #1c2321;
-  --label-2: #5d635f;
-  --label-3: #9a978d;
-  --separator: rgba(28, 35, 33, 0.1);
-  --fill: rgba(28, 35, 33, 0.05);
-  --bar: rgba(255, 253, 248, 0.88);
-  --ink: #1c2321;
-  --tint: #1f4d3a;
-  --gold: #a8844e;
-  --gold-hell: #d9c39a;
-  --nacht: #12291f;
-  --green: #2f7d4f;
-  --red: #b23a3a;
-  --orange: #b56a1f;
-  --yellow: #c9a227;
-  --purple: #5b4b8a;
-  --lime: #8aa64a;
-  --pink: #b0517a;
-  --pitch: #2f7d50;
-  --pitch-2: #276b44;
-  /* Skill-Farben aus der geprüften Datenpalette (dataviz): CVD-Abstand ≥ 19 */
-  --skill-max: #e34948;
-  --skill-train: #2a78d6;
-  --skill-fix: #a7a49b;
-  --shadow: 0 1px 2px rgba(28, 35, 33, 0.04), 0 8px 24px -12px rgba(28, 35, 33, 0.12);
-  --shadow-sm: 0 1px 2px rgba(28, 35, 33, 0.06);
-  color-scheme: light;
+  /* Manager-Spiel-Stil (Marcus, 26.10.2026: angelehnt an aktuelle Fußballmanager wie Football Manager / EA FC):
+     dunkles Nachtblau, Flächen leicht abgesetzt, Rasengrün als Akzent, Gold für Bewertungen */
+  --bg: #0b1118;
+  --card: #131b25;
+  --card-2: #1a2430;
+  --label: #e9eef3;
+  --label-2: #9eabb8;
+  --label-3: #697686;
+  --separator: rgba(255, 255, 255, 0.08);
+  --fill: rgba(255, 255, 255, 0.045);
+  --bar: rgba(11, 17, 24, 0.86);
+  --ink: #0b1118;
+  --tint: #22c98f;
+  --tint-hell: #5ee8b5;
+  --gold: #e6b44a;
+  --gold-hell: #f3d48c;
+  --nacht: #0e151e;
+  --green: #34d399;
+  --red: #f87171;
+  --orange: #fb923c;
+  --yellow: #facc15;
+  --purple: #a78bfa;
+  --lime: #a3e635;
+  --pink: #f472b6;
+  --pitch: #1f6b45;
+  --pitch-2: #1a5c3b;
+  /* Skill-Farben: Dunkel-Stufen der geprüften Datenpalette (dataviz: Rot #e66767, Blau #3987e5) */
+  --skill-max: #e66767;
+  --skill-train: #3987e5;
+  --skill-fix: #5f6b79;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 30px -18px rgba(0, 0, 0, 0.8);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -47,6 +49,7 @@
   --color-fill: var(--fill);
   --color-bar: var(--bar);
   --color-tint: var(--tint);
+  --color-tint-hell: var(--tint-hell);
   --color-green: var(--green);
   --color-red: var(--red);
   --color-orange: var(--orange);
@@ -63,7 +66,7 @@
   --color-skill-train: var(--skill-train);
   --color-skill-fix: var(--skill-fix);
   --font-sans: var(--font-inter), system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-barlow), "Arial Narrow", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -146,7 +149,7 @@ body {
   }
 }
 
-/* Karten: feine Linie, weicher Schatten */
+/* Panels wie im Manager-Spiel: dunkle Fläche, feine Kante */
 .karte {
   border: 1px solid var(--separator);
   box-shadow: var(--shadow);
@@ -157,41 +160,47 @@ body {
   }
 }
 
-/* Hauptknopf: Vereinsgrün */
+/* Hauptknopf: Akzentgrün mit dunkler Schrift */
 .knopf {
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--tint);
-  color: #fffdf8;
-  letter-spacing: 0.01em;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: 0.02em;
   box-shadow: var(--shadow-sm);
   transition: background-color 0.15s ease;
 }
 .knopf:not(:disabled):hover {
-  background: #183e2f;
+  background: var(--tint-hell);
 }
 .knopf.pressable:hover,
 .knopf.pressable:active {
   opacity: 1;
 }
 
-/* Dunkle Kopfkarte (Ergebnis, Empfehlung) */
+/* Kopfkarte für die wichtigste Information einer Seite (wie das Spielvorschau-Panel im Manager) */
 .hero {
   background:
-    radial-gradient(120% 120% at 100% 0%, rgba(168, 132, 78, 0.22), transparent 55%),
-    var(--nacht);
-  color: #f5f2ea;
+    radial-gradient(90% 140% at 100% 0%, rgba(34, 201, 143, 0.22), transparent 60%),
+    linear-gradient(135deg, #15212e 0%, #0f1822 100%);
+  color: var(--label);
+  border: 1px solid rgba(34, 201, 143, 0.25);
   box-shadow: var(--shadow);
 }
 
-/* Kleine Kapitälchen-Beschriftung in Gold */
+/* Kleine Großbuchstaben-Beschriftung (Abschnittsköpfe, Kennzahl-Titel) */
 .kapitaelchen {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--label-2);
 }
 
 h1, h2, .display {
   font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+h1, h2 {
+  text-transform: uppercase;
 }

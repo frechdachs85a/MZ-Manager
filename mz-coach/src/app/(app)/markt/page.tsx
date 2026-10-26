@@ -42,7 +42,7 @@ export default async function Markt() {
   return (
     <>
       <PageHeader
-        title="Markt"
+        title="Transfermarkt"
         subtitle={suche ? `Suche vom ${datumZeit(suche.zeit)} · ${suche.spieler.length} Spieler geprüft` : "Transfermarkt-Scout"}
       />
       <div className="seite lg:grid lg:grid-cols-[1.15fr_1fr] lg:gap-x-8">

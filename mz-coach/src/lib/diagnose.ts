@@ -11,8 +11,12 @@ export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-ei
 
 export function diagnose(db: Database.Database) {
   const abrufe = db.prepare("SELECT art, gestartet, beendet, ok, meldung FROM abruf_log ORDER BY id DESC LIMIT 40").all();
-  const rohseiten = ARTEN.map((art) => {
-    const r = db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE art = ? ORDER BY id DESC LIMIT 1").get(art) as
+  // Unbekannte Seiten: die letzten drei (verschiedene Seiten), sonst je Art die neueste
+  const unbekannte = db.prepare("SELECT id FROM rohseite WHERE art = 'unbekannt' ORDER BY id DESC LIMIT 3").all() as { id: number }[];
+  const rohseiten = ARTEN.flatMap((art): { art: string; id?: number }[] => (art === "unbekannt" && unbekannte.length > 1 ? unbekannte.map((u) => ({ art, id: u.id })) : [{ art, id: undefined }])).map(({ art, id }) => {
+    const r = (id !== undefined
+      ? db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE id = ?").get(id)
+      : db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE art = ? ORDER BY id DESC LIMIT 1").get(art)) as
       | { art: string; url: string; abgerufen: string; status: number | null; inhalt: string | null }
       | undefined;
     if (!r) return { art, fehlt: "noch nicht gespeichert" };
