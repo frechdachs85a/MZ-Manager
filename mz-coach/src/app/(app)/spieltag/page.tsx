@@ -24,7 +24,7 @@ const FARBE = { S: "text-green", U: "text-label-2", N: "text-red" } as const;
 export default async function Spieltag() {
   await connection();
   const l = spieltagLage(getDb());
-  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, verlauf } = l;
+  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, verlauf, erwartet } = l;
   const gName = gegner?.name ?? lauf?.gegnerName ?? "Gegner";
 
   return (
@@ -52,6 +52,7 @@ export default async function Spieltag() {
 
         {kurzfassung.length > 0 && (
           <Section title={`Das Wichtigste über ${gName}`} footer="Aus den Stats-XML seiner ausgewerteten Ligaspiele und seiner Kaderseite.">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:items-start">
             <Card>
               <dl className="divide-y divide-separator">
                 {kurzfassung.map((k) => (
@@ -62,6 +63,27 @@ export default async function Spieltag() {
                 ))}
               </dl>
             </Card>
+            {erwartet && (
+              <Card className="p-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-[14px] font-bold">Wahrscheinliche Aufstellung gegen dich</span>
+                  <span className="display text-[22px] font-bold">{erwartet.formation}</span>
+                </div>
+                <div className="mt-1 text-[12.5px] text-label-2">
+                  So in {erwartet.positionen} von {erwartet.von} Ligaspielen ·{" "}
+                  {erwartet.ohneWert.length === erwartet.feld.length
+                    ? "Marktwerte n. v. (Kaderseite des Gegners noch nicht gelesen)"
+                    : `Startelf-Wert ${euro(erwartet.summe)}${erwartet.ohneWert.length ? ` (ohne Wert: ${erwartet.ohneWert.join(", ")})` : ""}`}
+                </div>
+                <div className="mx-auto mt-3 max-w-[360px]">
+                  <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} />
+                </div>
+                <p className="mt-2 text-[12px] leading-relaxed text-label-3">
+                  Aus seiner Sicht (sein Tor unten), Marktwert je Spieler laut seiner Kaderseite. In deine Editor-Sicht gespiegelt: x = 208 − x.
+                </p>
+              </Card>
+            )}
+            </div>
           </Section>
         )}
 

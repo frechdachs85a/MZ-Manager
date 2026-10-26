@@ -5,7 +5,7 @@ import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { spielBericht } from "@/lib/mz/analyse/bericht";
 import { gegenIhn } from "@/lib/mz/analyse/gegen-ihn";
 import { steckbrief } from "@/lib/mz/analyse/steckbrief";
-import { de, stilDe } from "@/lib/mz/analyse/gegner";
+import { de, formation, stilDe } from "@/lib/mz/analyse/gegner";
 import { gegnerKlasse, spielMuster, stilText } from "@/lib/mz/analyse/muster";
 import { faelligAb } from "@/lib/spieltag-zeit";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
@@ -180,11 +180,14 @@ export function spieltagLage(db: Database.Database) {
   if (vorschlag) {
     const a = archiv.find((x) => x.reiter === vorschlag.taktik);
     if (a?.taktik) {
-      const namen = new Map(ladeKader(db).map((k) => [k.pid, k.name]));
+      const kaderL = ladeKader(db);
+      const namen = new Map(kaderL.map((k) => [k.pid, k.name]));
+      const mw = new Map(kaderL.map((k) => [k.pid, k.marktwert]));
       const kurz = (n?: string) => (n ? n.split(" ").at(-1)! : "?");
+      const wertText = (v?: number) => (v === undefined ? undefined : `${(v / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
       aufstellung = {
         quelle: `Taktik-Archiv, Reiter ${a.reiter} (gespeichert ${a.gespeichert.slice(0, 10).split("-").reverse().join(".")})`,
-        feld: a.taktik.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: kurz(namen.get(p.pid)), torwart: p.pos === "goalie" })),
+        feld: a.taktik.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: kurz(namen.get(p.pid)), zusatz: wertText(mw.get(p.pid)), torwart: p.pos === "goalie" })),
         einstellung: [a.taktik.team.tactics, a.taktik.team.playstyle, a.taktik.team.aggression].filter(Boolean).map((v) => de(v!)).join(" / ") || undefined,
         fehler: a.pruefung?.fehler ?? [],
         hinweise: a.pruefung?.hinweise ?? [],
@@ -351,7 +354,27 @@ export function spieltagLage(db: Database.Database) {
     if (kf) kf.text += zusatz;
   }
 
+  // Seine wahrscheinliche Aufstellung gegen dich: die häufigste Aufstellung seiner Ligaspiele, mit Marktwert je Platz
+  const mio = (n?: number) => (n === undefined ? "Wert n. v." : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
+  const erwartet =
+    brief?.stammElf && gegner
+      ? (() => {
+          const werte = new Map(ladeGegnerKader(db, gegner.tid).map((k) => [k.pid, k.wert ?? undefined]));
+          const elf = brief.stammElf!.elf;
+          const summe = elf.reduce((n, p) => n + (werte.get(p.pid) ?? 0), 0);
+          return {
+            feld: elf.map((p) => ({ x: p.x, y: p.y, label: p.name.split(" ").at(-1)!, zusatz: mio(werte.get(p.pid)), torwart: p.torwart })),
+            formation: formation(elf.filter((p) => !p.torwart)).text,
+            positionen: brief.stammElf!.positionen,
+            von: brief.stammElf!.von,
+            summe,
+            ohneWert: elf.filter((p) => werte.get(p.pid) === undefined).map((p) => p.name),
+          };
+        })()
+      : null;
+
   return {
+    erwartet,
     verlauf,
     elfWerte,
     kurzfassung,
