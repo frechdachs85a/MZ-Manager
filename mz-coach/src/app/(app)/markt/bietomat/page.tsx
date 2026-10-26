@@ -7,8 +7,13 @@ import { ladeMarktRahmen } from "@/lib/db/markt";
 import { datumZeit, euro } from "@/lib/format";
 import { auftragLoeschen } from "./actions";
 import { Bietomat } from "./formulare";
+import { SpielerProfil } from "@/components/spieler-profil";
 
-const STATUS_TON = { aktiv: "green", beendet: undefined, abgebrochen: "red" } as const;
+const STATUS_TON = {
+  aktiv: "green",
+  beendet: undefined,
+  abgebrochen: "red",
+} as const;
 
 export default async function BietomatSeite() {
   await connection();
@@ -30,7 +35,10 @@ export default async function BietomatSeite() {
           </Section>
           <Section title="Automatisches Bieten">
             <List>
-              <Row title={<Badge tone="green">aktiv</Badge>} detail="Ab 3 Minuten vor Ende: nur wenn ein anderer vorne liegt, immer nur die kleinste zulässige Stufe (Vorschlag von ManagerZone), nie über deinem Endpreis (in Euro umgerechnet, aufgerundet). Verlängerungen werden verfolgt, bis die Auktion vorbei ist." />
+              <Row
+                title={<Badge tone="green">aktiv</Badge>}
+                detail="Ab 3 Minuten vor Ende: nur wenn ein anderer vorne liegt, immer nur die kleinste zulässige Stufe (Vorschlag von ManagerZone), nie über deinem Endpreis (in Euro umgerechnet, aufgerundet). Verlängerungen werden verfolgt, bis die Auktion vorbei ist."
+              />
               <Row title="Vorrang" detail="45 Minuten vor bis 60 Minuten nach einem Auktionsende starten keine anderen Abrufe." />
             </List>
           </Section>
@@ -44,15 +52,24 @@ export default async function BietomatSeite() {
                     key={a.pid}
                     title={`${a.name ?? "?"} (${a.pid})`}
                     detail={
-                      a.auktionEnde
-                        ? `Endpreis ${euro(a.maximum)} · Auktionsende ${datumZeit(a.auktionEnde)}${a.bietenBis ? ` · bieten bis ${datumZeit(a.bietenBis)}` : ""}`
-                        : `Endpreis ${euro(a.maximum)} · Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten`
+                      <>
+                        {a.auktionEnde
+                          ? `Endpreis ${euro(a.maximum)} · Auktionsende ${datumZeit(a.auktionEnde)}${a.bietenBis ? ` · bieten bis ${datumZeit(a.bietenBis)}` : ""}`
+                          : `Endpreis ${euro(a.maximum)} · Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten`}
+                        {a.spieler && (
+                          <div className="mt-2">
+                            <SpielerProfil skills={a.spieler.skills} />
+                          </div>
+                        )}
+                      </>
                     }
                     value={<Badge tone={STATUS_TON[a.status]}>{a.status}</Badge>}
                     accessory={
                       <form action={auftragLoeschen}>
                         <input type="hidden" name="pid" value={a.pid} />
-                        <button type="submit" className="text-[13px] font-semibold text-red">Löschen</button>
+                        <button type="submit" className="text-[13px] font-semibold text-red">
+                          Löschen
+                        </button>
                       </form>
                     }
                   />
