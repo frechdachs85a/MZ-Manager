@@ -119,7 +119,7 @@ export default async function Kader(props: PageProps<"/kader">) {
         </div>
         {/* Desktop: Tabelle mit dem MZ-Wert jeder Position, bester Wert hervorgehoben */}
         <div className="hidden lg:block">
-          <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Unterstrichen = bester Wert des Spielers. Farbe = feste Stufe (Legende über der Tabelle), eine Lesehilfe dieser Seite, keine Einstufung von ManagerZone. ${statusHinweis(kader)}`}>
+          <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Umrandet = bester Wert des Spielers. Farbe = feste Stufe (Legende über der Tabelle), eine Lesehilfe dieser Seite, keine Einstufung von ManagerZone. ${statusHinweis(kader)}`}>
             <WertLegende />
             <div className="mt-3">
               <KaderTabelle kader={sortiere(kader, sort)} sort={sort} />
@@ -191,21 +191,24 @@ function SpaltenKopf({ label, wert, sort, rechts = true }: { label: string; wert
   );
 }
 
+// Kompakt (Marcus, 26.10.2026): passt ohne Querscrollen ab etwa 1200 px Fensterbreite (auch mit Browser-Zoom);
+// darunter scrollt die Tabelle quer. Kein fester Tabellenkopf: der verträgt sich nicht mit dem Querscrollen.
+const KURZ: Record<string, string> = { Anchorman: "Anch." };
+
 function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
   return (
-    // Unter 1400 px Breite quer scrollbar statt abgeschnitten; ab 1400 px passt alles und der Kopf bleibt oben stehen
-    <Card className="!overflow-x-auto min-[1400px]:!overflow-clip">
-      <table className="w-full min-w-[1080px] text-left text-[15px]">
-        <thead className="sticky top-0 z-10 lg:top-12">
-          <tr className="border-b border-separator bg-card-2 text-[11px] uppercase tracking-wider text-label-3">
-            <th className="w-12 py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Nr" wert="nr" sort={sort} /></th>
-            <th className="py-2.5 pl-4 font-normal">Name</th>
-            <th className="py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Alter" wert="alter" sort={sort} /></th>
-            <th className="py-2.5 pl-4 font-normal"><SpaltenKopf label="Scout" wert="scout" sort={sort} rechts={false} /></th>
+    <Card className="!overflow-x-auto">
+      <table className="w-full min-w-[860px] text-left text-[13.5px]">
+        <thead>
+          <tr className="border-b border-separator bg-card-2 text-[10.5px] uppercase tracking-wider text-label-3">
+            <th className="w-8 py-2 pl-3 text-right font-semibold"><SpaltenKopf label="Nr" wert="nr" sort={sort} /></th>
+            <th className="py-2 pl-3 font-semibold">Name</th>
+            <th className="py-2 pl-2 text-right font-semibold"><SpaltenKopf label="Alter" wert="alter" sort={sort} /></th>
+            <th className="py-2 pl-3 font-semibold"><SpaltenKopf label="Scout" wert="scout" sort={sort} rechts={false} /></th>
             {POSITIONEN.map((p) => (
-              <th key={p} className="py-2.5 pr-2 pl-2 text-right font-semibold"><SpaltenKopf label={p} wert={p} sort={sort} /></th>
+              <th key={p} className="py-2 pl-1.5 text-center font-semibold" title={p}><SpaltenKopf label={KURZ[p] ?? p} wert={p} sort={sort} /></th>
             ))}
-            <th className="py-2.5 pr-4 pl-4 font-normal">Status</th>
+            <th className="py-2 pr-3 pl-3 font-semibold">Status</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-separator">
@@ -214,19 +217,19 @@ function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
             const max = Math.max(...POSITIONEN.map((p) => { const w = werte[p]; return w.ok ? w.wert : -1; }));
             return (
               <tr key={s.pid} className="zeile-hover transition-colors">
-                <td className="py-1.5 pl-4 text-right tabular-nums text-label-3">{s.nr ?? ""}</td>
-                <td className="whitespace-nowrap py-1.5 pl-4 font-semibold">
+                <td className="py-1 pl-3 text-right tabular-nums text-label-3">{s.nr ?? ""}</td>
+                <td className="whitespace-nowrap py-1 pl-3 font-semibold">
                   <Link href={`/kader/${s.pid}`} className="hover:text-tint">{s.name}</Link>
                 </td>
-                <td className="py-1.5 pl-4 text-right tabular-nums text-label-2">{s.alter ?? "n. v."}</td>
-                <td className="py-1.5 pl-4 whitespace-nowrap"><ScoutAbzeichen e={s.scout} mitSternen /></td>
+                <td className="py-1 pl-2 text-right tabular-nums text-label-2">{s.alter ?? "n. v."}</td>
+                <td className="whitespace-nowrap py-1 pl-3 [&_span]:!text-[9.5px]"><ScoutAbzeichen e={s.scout} mitSternen /></td>
                 {POSITIONEN.map((p) => {
                   const w = werte[p];
                   return (
-                    <td key={p} className="py-1 pl-2 text-right">
+                    <td key={p} className="py-[3px] pl-1.5 text-center">
                       <span
-                        className={`inline-block min-w-[3.6rem] rounded-[8px] px-2 py-1 tabular-nums ${w.ok ? stufe(w.wert).cls : "text-label-3"} ${
-                          w.ok && w.wert === max ? "font-bold underline decoration-2 underline-offset-[3px]" : ""
+                        className={`inline-block w-[3.1rem] rounded-[6px] py-[3px] text-[13px] tabular-nums ${w.ok ? stufe(w.wert).cls : "text-label-3"} ${
+                          w.ok && w.wert === max ? "font-bold ring-2 ring-label/70 ring-inset" : ""
                         }`}
                         title={w.ok ? `${p}: ${stufe(w.wert).name}${w.wert === max ? ", bester Wert dieses Spielers" : ""}` : undefined}
                       >
@@ -235,8 +238,8 @@ function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
                     </td>
                   );
                 })}
-                <td className="min-w-[170px] py-1.5 pr-4 pl-4">
-                  <span className="flex flex-wrap gap-1">
+                <td className="py-1 pr-3 pl-3">
+                  <span className="flex flex-wrap gap-1 [&_span]:!text-[9.5px]">
                     <StatusBadges s={s} />
                   </span>
                 </td>
