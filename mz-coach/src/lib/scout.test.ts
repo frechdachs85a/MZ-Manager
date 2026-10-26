@@ -22,6 +22,8 @@ describe("Scout-Einstufung", () => {
   it("„vielseitig, aber keine wirklichen Hauptstärken“ ist Rang 5, nicht Rang 3", () => {
     expect(scoutEinstufung(sp(2, 2, "Er ist vielseitig, aber keine wirklichen Hauptstärken."))).toMatchObject({ status: "ok", rang: 5 });
     expect(scoutEinstufung(sp(3, 2, "Er ist vielseitig, aber keine wirklichen Hauptstärken.")).status).toBe("unbekannt");
+    // Echter Wortlaut von ManagerZone (26.10.2026)
+    expect(scoutEinstufung(sp(2, 2, "Arthur Brandt ist vielseitig, scheint aber keine wirklichen Hauptstärken zu haben."))).toMatchObject({ status: "ok", rang: 5 });
   });
 
   it("nicht passend, unbekannter Begriff oder unbekannte Sterne: unbekannt, nicht raten", () => {

@@ -5,14 +5,17 @@ import { ALLE_SKILLS, SKILL_LABEL, type Skill } from "@/lib/mz/skills";
 // Scoutbericht-Einstufung (Vorgabe Marcus, 25.10.2026). Rang 1 = beste. Hoch-Sterne zählen mehr als Niedrig-Sterne.
 // Ein Rang gilt nur, wenn Sterne und Schlüsselwort im Text zusammenpassen; sonst "Scoutbericht unbekannt",
 // nicht raten. Neue Kombinationen kommen erst nach Bestätigung durch Marcus dazu (Tabelle scout_kombi).
-export type Kombi = { rang: number; hoch: number; niedrig: number; schluessel: string[]; abzeichen: string; bestaetigt?: string };
+// verdraengt: Schlüsselwörter anderer Ränge, die nicht zählen, wenn dieses Schlüsselwort im Text steht
+export type Kombi = { rang: number; hoch: number; niedrig: number; schluessel: string[]; abzeichen: string; bestaetigt?: string; verdraengt?: string[] };
 
 export const KOMBIS: Kombi[] = [
   { rang: 1, hoch: 4, niedrig: 2, schluessel: ["erstaunliches Potenzial", "Spieler der Spitzenklasse"], abzeichen: "Spitzenklasse" },
   { rang: 2, hoch: 4, niedrig: 1, schluessel: ["großartiges Talent", "Elitespieler"], abzeichen: "Elite" },
   { rang: 3, hoch: 3, niedrig: 2, schluessel: ["vielseitig", "Spitzenspieler"], abzeichen: "Spitzenspieler" },
   { rang: 4, hoch: 3, niedrig: 1, schluessel: ["vielversprechend", "Schlüsselfähigkeiten"], abzeichen: "Schlüsselfähigkeiten" },
-  { rang: 5, hoch: 2, niedrig: 2, schluessel: ["vielseitig, aber keine wirklichen Hauptstärken"], abzeichen: "Keine Hauptstärken" },
+  // Vorgabe "vielseitig, aber keine wirklichen Hauptstärken"; der echte Satz lautet "… ist vielseitig, scheint aber keine
+  // wirklichen Hauptstärken zu haben" (Arthur Brandt, 26.10.2026). Geprüft wird der Kern, "vielseitig" zählt dann nicht.
+  { rang: 5, hoch: 2, niedrig: 2, schluessel: ["keine wirklichen Hauptstärken"], abzeichen: "Keine Hauptstärken", verdraengt: ["vielseitig"] },
   { rang: 6, hoch: 2, niedrig: 1, schluessel: ["etwas weniger Talent", "keinen Platz im Kader"], abzeichen: "Kein Platz im Kader" },
 ];
 
@@ -49,7 +52,8 @@ const klein = (t: string) => t.toLocaleLowerCase("de-DE");
 function treffer(text: string, kombis: Kombi[]) {
   const t = klein(text);
   const alle = kombis.flatMap((k) => k.schluessel.filter((s) => t.includes(klein(s))).map((s) => ({ s, k })));
-  return alle.filter((a) => !alle.some((b) => b.s.length > a.s.length && klein(b.s).includes(klein(a.s))));
+  const weg = new Set(alle.flatMap((a) => (a.k.verdraengt ?? []).map(klein)));
+  return alle.filter((a) => !weg.has(klein(a.s)) && !alle.some((b) => b.s.length > a.s.length && klein(b.s).includes(klein(a.s))));
 }
 
 export function scoutEinstufung(sp: SpielerDaten, kombis: Kombi[] = KOMBIS): ScoutEinstufung {

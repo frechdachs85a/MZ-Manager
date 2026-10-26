@@ -7,7 +7,7 @@ import { ladeKombis, scoutEinstufung } from "@/lib/scout";
 // (Login-Ergebnis mit Bildschirmfoto und Antwortverlauf, Scoutbericht, transfer.js, challenges.js, Marktsuche), und
 // je Spieler Scout-Sterne, wörtlicher Text und Einstufung. Enthält KEINE Zugangsdaten, Cookies oder Schlüssel
 // (Tabelle einstellung und geheimnisse.json werden nicht gelesen).
-export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche"];
+export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "unbekannt", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche"];
 
 export function diagnose(db: Database.Database) {
   const abrufe = db.prepare("SELECT art, gestartet, beendet, ok, meldung FROM abruf_log ORDER BY id DESC LIMIT 40").all();

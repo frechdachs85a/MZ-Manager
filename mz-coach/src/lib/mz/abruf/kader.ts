@@ -95,6 +95,8 @@ export function seiteEinlesen(db: Database.Database, html: string, herkunft: { u
     const unbekannt = r.unbekannt.length ? ` Zustand unbekannt (nicht gewertet): ${r.unbekannt.join(", ")}.` : "";
     return statusText("Taktik (aufstellbar)", r) + unbekannt;
   }
+  // Für die Diagnose aufheben, was stattdessen kam
+  speichereRohseite(db, { art: "unbekannt", url: herkunft.url, status: null, htmlRoh: html, htmlDom: null });
   throw new KaderSeiteUnbekannt(
     "Unbekannte Seite. Erwartet: Kaderübersicht (?p=players&sub=alt), Spieleransicht (?p=players), Verletzt / Gesperrt (?p=players&sub=unavailable), Trainingslager (?p=training_camp), Taktik (?p=tactics), Spielliste (?p=match&sub=played&tid=…) oder Stats-XML eines Spiels.",
   );
