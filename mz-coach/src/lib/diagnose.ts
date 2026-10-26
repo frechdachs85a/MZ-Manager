@@ -55,6 +55,9 @@ export function diagnose(db: Database.Database) {
     topSpiele: zahl("SELECT COUNT(*) AS n FROM top_spiel"),
     marktSuchen: zahl("SELECT COUNT(*) AS n FROM markt_suche"),
     wertSpiele: zahl("SELECT COUNT(*) AS n FROM wert_spiel"),
+    verkaeufe: zahl("SELECT COUNT(*) AS n FROM spieler_verkauf"),
+    marktRahmen: zahl("SELECT COUNT(*) AS n FROM einstellung WHERE schluessel = 'markt_rahmen'"),
+    auftraege: zahl("SELECT COUNT(*) AS n FROM gebot_auftrag"),
   };
   // Spieltag-Automatik: die letzten Läufe ohne Spielplan-JSON
   const spieltag = db
