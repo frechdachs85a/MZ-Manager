@@ -3,6 +3,7 @@ import { ladeKader } from "@/lib/db/kader";
 import { datumZeit } from "@/lib/format";
 import { letzterGegner } from "@/lib/gegner-analyse";
 import { archivLaden } from "@/lib/taktik-archiv";
+import { spieltagLage } from "@/lib/spieltag";
 
 // Spieltag-Checkliste: was vor dem nächsten Ligaspiel erledigt sein sollte. Jeder Punkt aus gespeicherten
 // Daten; was die Seite nicht wissen kann, steht als "offen" mit Grund da.
@@ -30,7 +31,10 @@ export function spieltagCheckliste(db: Database.Database, jetzt = new Date()): P
       : { titel: "Kegel geprüft", status: alt(kegel, jetzt) ? "warnung" : "ok", text: `Taktikseite Stand ${datumZeit(kegel)}.` },
   );
 
-  const g = letzterGegner(db);
+  // Nächster Gegner aus dem Spielplan (Spieltag-Automatik); nur ohne Spielplan der zuletzt eingelesene Gegner
+  const lage = spieltagLage(db);
+  const ausPlan = !!lage.gegner;
+  const g = lage.gegner ?? letzterGegner(db);
   if (!g?.analyse) {
     punkte.push({ titel: "Gegner analysiert", status: "offen", text: "Noch kein Gegner mit ausgewerteten Ligaspielen.", href: "/gegner" });
     return punkte;
@@ -39,11 +43,22 @@ export function spieltagCheckliste(db: Database.Database, jetzt = new Date()): P
   punkte.push({
     titel: "Gegner analysiert",
     status: fehlen > 0 ? "warnung" : "ok",
-    text: `${g.name}: ${g.stats.length} von ${g.liga.length} Ligaspielen ausgewertet (zuletzt eingelesener Gegner; ob er der nächste ist, zeigt erst der Spielplan-Abruf).`,
-    href: `/gegner/${g.tid}`,
+    text: `${g.name}: ${g.stats.length} von ${g.liga.length} Ligaspielen ausgewertet${ausPlan ? " (nächster Gegner laut Spielplan)" : " (zuletzt eingelesener Gegner; ob er der nächste ist, zeigt erst der Spielplan-Abruf)"}.`,
+    href: ausPlan ? "/spieltag" : `/gegner/${g.tid}`,
   });
 
-  const name = g.analyse.empfehlung.taktik;
+  // Formation Liga in ManagerZone (gespeichert nach der Spieltag-Analyse, siehe abruf/liga.ts)
+  if (lage.liga) {
+    const st = lage.ligaStatus;
+    punkte.push(
+      !st
+        ? { titel: "Formation Liga in ManagerZone", status: "offen", text: "Noch nicht gespeichert; passiert automatisch nach der Spieltag-Analyse.", href: "/spieltag" }
+        : { titel: "Formation Liga in ManagerZone", status: st.ok ? "ok" : "warnung", text: `${st.ok ? "" : "Fehler: "}${st.meldung ?? "läuft"} (${datumZeit(st.gestartet)})`, href: "/spieltag" },
+    );
+  }
+
+  // Vorgeschlagene Taktik: Vorschlag der Spieltag-Seite (Scoutspiele haben Vorrang), sonst die Faustregel
+  const name = lage.vorschlag?.taktik ?? g.analyse.empfehlung.taktik;
   const eintrag = archivLaden(db).find((a) => a.reiter === name);
   if (!eintrag) {
     punkte.push({ titel: `Taktik ${name} im Archiv`, status: "offen", text: "Noch nicht im Archiv. XML aus dem Editor unter „Taktik“ speichern, dann wird sie geprüft.", href: "/taktik" });
