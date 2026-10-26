@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
 import { parse } from "node-html-parser";
 import { spieltagLage } from "@/lib/spieltag";
 import { quotenJeBereich } from "@/lib/db/wertspiel";
@@ -84,5 +85,10 @@ export function diagnose(db: Database.Database) {
   } catch (e) {
     analyse = { fehler: e instanceof Error ? e.message : String(e) };
   }
-  return { analyse, erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, suchformular, rohseiten, scout };
+  // Bietomat: Aufträge (ohne Spielerdaten) und die letzten Protokolleinträge, um Läufe aus der Ferne zu prüfen
+  const bietomat = {
+    auftraege: ladeAuftraege(db).map((x) => ({ pid: x.pid, name: x.name, maximum: x.maximum, auktionEnde: x.auktionEnde, status: x.status, geaendert: x.geaendert })),
+    protokoll: ladeProtokoll(db, undefined, 40),
+  };
+  return { bietomat, analyse, erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, suchformular, rohseiten, scout };
 }
