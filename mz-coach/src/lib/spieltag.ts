@@ -11,6 +11,9 @@ import { faelligAb } from "@/lib/spieltag-zeit";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
 import { kaderwertVergleich, startelfWerte } from "@/lib/kaderwert";
+import { ladeGegnerKader } from "@/lib/db/gegner-kader";
+import { startelfAusLetztemSpiel } from "@/lib/db/markt";
+import { wertbereich, wertverlauf, type Wertverlauf } from "@/lib/mz/analyse/wertverlauf";
 import { topGegenKlasse } from "@/lib/portfolio";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
 import { ladeKader } from "@/lib/db/kader";
@@ -283,7 +286,66 @@ export function spieltagLage(db: Database.Database) {
     }
   }
 
+  // Kaderwert über die Spielzeit (mz-wissen.md, Abschnitt 14): deine Elf und Zeitwechsel aus dem Archiv-Reiter des
+  // Vorschlags (sonst Startelf des letzten Spiels und die von Marcus genannten Wechsel), seine Elf aus dem neuesten
+  // Ligaspiel und die Wechsel, die er in mindestens der Hälfte seiner Ligaspiele so gemacht hat.
+  let verlauf: (Wertverlauf & { quelleEigen: string; quelleGegner: string }) | null = null;
+  if (gegner && neuestes && vorschlag) {
+    const kaderListe = ladeKader(db);
+    const eigenWert = new Map(kaderListe.map((k) => [k.pid, k.marktwert]));
+    const gk = new Map(ladeGegnerKader(db, gegner.tid).map((k) => [k.pid, k.wert ?? undefined]));
+    const namen = new Map<number, string>([...kaderListe.map((k) => [k.pid, k.name] as [number, string]), ...neuestes.spieler.map((p) => [p.id, p.name] as [number, string])]);
+    for (const st of gegner.stats) for (const p of st.spieler) if (!namen.has(p.id)) namen.set(p.id, p.name);
+    const arch = archiv.find((a) => a.reiter === vorschlag.taktik)?.taktik;
+    const startElf = startelfAusLetztemSpiel(db);
+    const eigeneElf = arch ? arch.pos.map((p) => p.pid) : (startElf?.elf.map((p) => p.pid) ?? []);
+    const zeitregel = (r: Record<string, string>) =>
+      r.check_time === "true" && r.check_goal_condition !== "true" && r.check_player_event !== "true" && /^\d+$/.test(r.out_player ?? "") && /^\d+$/.test(r.in_player_id ?? "");
+    const eigeneWechsel = arch
+      ? arch.regeln.filter(zeitregel).map((r) => ({ minute: Number(r.time), raus: Number(r.out_player), rein: Number(r.in_player_id) }))
+      : (TAKTIKEN.find((t) => t.name === vorschlag.taktik)?.wechsel ?? []);
+    const muster = new Map<string, { w: { minute: number; raus: number; rein: number }; n: number }>();
+    for (const st of gegner.stats)
+      for (const w of st.wechsel.filter((x) => x.teamId === gegner.tid && x.grund === "preset")) {
+        const m = w.regelMinute ?? w.minute;
+        const k = `${m}|${w.raus}|${w.rein}`;
+        muster.set(k, { w: { minute: m, raus: w.raus, rein: w.rein }, n: (muster.get(k)?.n ?? 0) + 1 });
+      }
+    const gegnerWechsel = [...muster.values()].filter((x) => x.n * 2 >= gegner.stats.length).map((x) => x.w);
+    if (eigeneElf.length === 11) {
+      verlauf = {
+        ...wertverlauf({
+          eigeneElf,
+          gegnerElf: neuestes.spieler.filter((p) => p.teamId === gegner.tid && p.origin).map((p) => p.id),
+          eigeneWechsel,
+          gegnerWechsel,
+          wert: (pid) => (eigenWert.has(pid) ? eigenWert.get(pid) : gk.get(pid)),
+          name: (pid) => (namen.get(pid) ?? `pid ${pid}`).split(" ").at(-1)!,
+        }),
+        quelleEigen: arch
+          ? `Aufstellung und Zeitwechsel aus deinem Archiv-Reiter ${vorschlag.taktik}`
+          : `Startelf deines letzten Ligaspiels, Wechsel ${eigeneWechsel.length ? `von ${vorschlag.taktik} laut Marcus (26.10.2026)` : "unbekannt (Reiter nicht im Archiv)"}`,
+        quelleGegner: `Startelf aus seinem neuesten Ligaspiel; Wechsel, die er in mindestens der Hälfte seiner ${gegner.stats.length} Ligaspiele genau so gemacht hat`,
+      };
+    }
+  }
+
+  if (verlauf) {
+    const v = verlauf.gewichtet.verhaeltnis;
+    const f = (n: number) => n.toFixed(2).replace(".", ",");
+    belege.push({
+      quelle: "Kaderwert über 90 Minuten",
+      text:
+        `Verhältnis je Zeitfenster ${verlauf.fenster.map((x) => `${x.von}.–${x.bis}. ${f(x.verhaeltnis)}`).join(", ")}; nach Minuten gewichtet ${f(v)}. Wertbereich ${wertbereich(v)}.` +
+        (scout ? " Deine Scoutspiele gegen ihn haben Vorrang vor dieser allgemeinen Statistik (Abschnitt 14)." : ""),
+    });
+    const kf = kurzfassung.find((k) => k.titel === "Kaderwert der Startelf");
+    const zusatz = ` Über 90 Minuten gewichtet (mit den üblichen Wechseln beider Teams) ${f(v)}, Wertbereich ${wertbereich(v)}.`;
+    if (kf) kf.text += zusatz;
+  }
+
   return {
+    verlauf,
     elfWerte,
     kurzfassung,
     vorschlag,

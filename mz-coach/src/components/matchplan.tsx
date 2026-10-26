@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Spielfeld } from "@/components/spielfeld";
 import { DateiKnopf } from "@/components/datei-knopf";
+import { WertDiff } from "@/components/elf-wert";
 import { Hero } from "@/components/ui";
 import type { spieltagLage } from "@/lib/spieltag";
 
@@ -45,6 +46,7 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
                 <span className="text-label-3">deine Startelf </span>
                 <span className="font-bold text-label">{eur(l.kaderwert.eigen.summe)}</span>
               </span>
+              <WertDiff eigen={l.kaderwert.eigen.summe} gegner={l.kaderwert.gegner.summe} klein />
             </div>
           ) : (
             <div className="mt-2 text-[12.5px] text-label-3">Startelf-Wert n. v. (Kaderseite des Gegners noch nicht gelesen)</div>

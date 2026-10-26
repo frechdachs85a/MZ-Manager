@@ -65,6 +65,8 @@ export function diagnose(db: Database.Database) {
       anpassungen: l.anpassungen,
       taktikCode: l.taktikCode ? { art: l.taktikCode.art, geaendert: l.taktikCode.geaendert } : null,
       kurzfassung: l.kurzfassung,
+      verlauf: l.verlauf ? { fenster: l.verlauf.fenster, gewichtet: l.verlauf.gewichtet, fehlend: l.verlauf.fehlend, quelleEigen: l.verlauf.quelleEigen } : null,
+      elfWerte: l.elfWerte,
       formationen: l.gegner?.analyse?.spiele.map((x) => ({ mid: x.mid, datum: x.datum, formation: x.formation.text })),
       kaderwert: l.kaderwert ? { eigen: l.kaderwert.eigen?.summe, gegner: l.kaderwert.gegner?.summe } : null,
       belege: l.belege,

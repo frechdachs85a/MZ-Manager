@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { ElfWertZeile } from "@/components/elf-wert";
+import { ElfWertZeile, WertDiff } from "@/components/elf-wert";
 import { SpielberichtTeile } from "@/components/spielbericht";
 import { startelfWerte } from "@/lib/kaderwert";
 import { Spielfeld } from "@/components/spielfeld";
@@ -93,10 +93,16 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
               {heim.id !== TEAM.tid && <span className="block text-[12px] font-medium text-white/70">Heim</span>}
               <ElfWertZeile w={elfWerte[heim.id]} />
             </div>
-            <div className="display text-[56px] font-semibold leading-none tracking-tight tabular-nums lg:text-[76px]">
-              {heim.statistik.goals ?? "?"}
-              <span className="px-1 text-white/50">:</span>
-              {gast.statistik.goals ?? "?"}
+            <div className="flex flex-col items-center gap-2">
+              <div className="display text-[56px] font-semibold leading-none tracking-tight tabular-nums lg:text-[76px]">
+                {heim.statistik.goals ?? "?"}
+                <span className="px-1 text-white/50">:</span>
+                {gast.statistik.goals ?? "?"}
+              </div>
+              {eigen && (() => {
+                const geg = s.teams.find((t) => t.id !== eigen.id)!;
+                return <WertDiff eigen={elfWerte[eigen.id]?.summe} gegner={elfWerte[geg.id]?.summe} />;
+              })()}
             </div>
             <div className="display min-w-0 text-right text-[18px] font-semibold leading-tight lg:text-[26px]">
               {gast.name}
