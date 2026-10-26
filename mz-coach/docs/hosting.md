@@ -113,6 +113,17 @@ Kreditkarte nur zur Prüfung bei der Anmeldung.
 
 Update und Protokoll wie bei Hetzner (mit `sudo` vor `docker`).
 
+## Automatische Updates und Fernzugang für Claude (ab 26.10.2026, von Marcus ausdrücklich erlaubt)
+
+- `einrichten.sh` richtet einen systemd-Timer ein: alle 5 Minuten prüft `deploy/server/aktualisieren.sh`, ob es auf
+  `main` einen neuen Stand gibt, und baut nur dann neu. Protokoll: `journalctl -u mz-coach-update`.
+  Abschalten: `systemctl disable --now mz-coach-update.timer`.
+- Fernzugang: Mit einem Schlüssel, dessen SHA-256-Hash in `src/lib/fern.ts` steht, kann Claude über
+  `/api/fern/diagnose` die Diagnose lesen und über `/api/fern/abruf?art=kader|markt|top` einen Abruf starten
+  (je Art höchstens alle 15 Minuten). Kein Zugriff auf App-Passwort, MZ-Zugang oder Einstellungen.
+  Läuft am 30.11.2026 ab. Sofort abschalten: `FERN_AUS=1` in `deploy/server/.env` eintragen und im Ordner
+  `deploy/server` `docker compose up -d` ausführen.
+
 ## Zeitplan, Aufräumen, Sicherung
 
 - 4 Uhr: Top 10 (Spiellisten einmal pro Woche, montags; fehlende Spiele täglich nachgeholt), eigene Ligaspiele, Ligatabelle.

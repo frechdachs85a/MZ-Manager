@@ -27,6 +27,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!login|einrichtung|api/gesund|_next/static|_next/image|icons/|apple-touch-icon.png|favicon.png).*)",
+    "/((?!login|einrichtung|api/gesund|api/fern|_next/static|_next/image|icons/|apple-touch-icon.png|favicon.png).*)",
   ],
 };

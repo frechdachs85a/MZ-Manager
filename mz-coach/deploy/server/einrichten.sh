@@ -70,6 +70,28 @@ echo "== Bauen und starten (beim ersten Mal einige Minuten) =="
 export GIT_COMMIT="$(git -C "$ZIEL" rev-parse --short HEAD)"
 $SUDO env GIT_COMMIT="$GIT_COMMIT" docker compose up -d --build
 
+echo "== Automatische Updates (alle 5 Minuten neuester Stand von main) =="
+chmod +x "$ZIEL/mz-coach/deploy/server/aktualisieren.sh"
+$SUDO tee /etc/systemd/system/mz-coach-update.service >/dev/null <<EOT
+[Unit]
+Description=MZ Coach: neuesten Stand holen und neu bauen
+After=network-online.target docker.service
+[Service]
+Type=oneshot
+ExecStart=$ZIEL/mz-coach/deploy/server/aktualisieren.sh
+EOT
+$SUDO tee /etc/systemd/system/mz-coach-update.timer >/dev/null <<EOT
+[Unit]
+Description=MZ Coach: Update alle 5 Minuten prüfen
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+[Install]
+WantedBy=timers.target
+EOT
+$SUDO systemctl daemon-reload
+$SUDO systemctl enable --now mz-coach-update.timer
+
 echo
 echo "Fertig. Seite: https://$(sed -n 's/^DOMAIN=//p' .env)"
 echo "Einrichtungscode (nur beim ersten Start):"
