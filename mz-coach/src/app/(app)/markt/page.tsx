@@ -15,6 +15,7 @@ import { ablehnen, zuruecknehmen } from "./actions";
 import { RahmenForm, SuchKnopf } from "./formulare";
 import { InBietomat } from "./bietomat/formulare";
 import { SpielerProfil } from "@/components/spieler-profil";
+import { MarktInfo } from "@/components/markt-info";
 import { ladeAuftraege } from "@/lib/db/gebot";
 
 const MZ = "https://www.managerzone.com";
@@ -63,7 +64,7 @@ export default async function Markt() {
             ) : !suche ? (
               <Unavailable title="Empfehlung" reason="Noch keine Marktsuche. Sie läuft täglich ab 6 Uhr automatisch, oder unten jetzt suchen." />
             ) : ergebnis?.empfehlung ? (
-              <EmpfehlungKarte b={ergebnis.empfehlung} imBietomat={imBietomat.get(ergebnis.empfehlung.kandidat.pid)} />
+              <EmpfehlungKarte b={ergebnis.empfehlung} imBietomat={imBietomat.get(ergebnis.empfehlung.kandidat.pid)} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
             ) : (
               <Card className="p-4">
                 <div className="text-[17px] font-semibold">Heute kein passender Spieler auf dem Markt</div>
@@ -92,6 +93,7 @@ export default async function Markt() {
                         <span className="text-[12px] text-tint">Details</span>
                       </summary>
                       <div className="mt-3 space-y-3">
+                        <MarktInfo s={b.kandidat} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
                         <SpielerProfil skills={b.kandidat.skills} scout={b.kandidat.scout} />
                         <InBietomat pid={b.kandidat.pid} imBietomat={imBietomat.get(b.kandidat.pid)} />
                       </div>
@@ -197,7 +199,7 @@ export default async function Markt() {
   );
 }
 
-function EmpfehlungKarte({ b, imBietomat }: { b: Bewertung; imBietomat?: number }) {
+function EmpfehlungKarte({ b, imBietomat, stand }: { b: Bewertung; imBietomat?: number; stand?: string }) {
   const k = b.kandidat;
   return (
     <div className="space-y-3">
@@ -251,7 +253,10 @@ function EmpfehlungKarte({ b, imBietomat }: { b: Bewertung; imBietomat?: number 
       </Card>
       <Card className="p-4">
         <div className="mb-2 text-[15px] font-semibold">Spieler</div>
-        <SpielerProfil skills={k.skills} scout={k.scout} />
+        <MarktInfo s={k} stand={stand} />
+        <div className="mt-3">
+          <SpielerProfil skills={k.skills} scout={k.scout} />
+        </div>
       </Card>
       <Card className="p-4">
         <div className="mb-2 text-[15px] font-semibold">Bieten {imBietomat ? "· im Bietomat" : ""}</div>

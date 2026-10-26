@@ -10,6 +10,7 @@ import { datumZeit } from "@/lib/format";
 import { auftragLoeschen } from "./actions";
 import { Bietomat, GebotKarte } from "./formulare";
 import { SpielerProfil } from "@/components/spieler-profil";
+import { MarktInfo } from "@/components/markt-info";
 
 const STATUS_TON = {
   aktiv: "green",
@@ -72,10 +73,13 @@ export default async function BietomatSeite() {
                       maximum={a.maximum}
                       bietenBis={a.bietenBis}
                       auktionEnde={a.auktionEnde}
-                      startgebot={a.spieler?.markt.gefordert}
-                      letztesGebot={a.spieler?.markt.hoechstgebot}
                       eigenesGebot={ladeProtokoll(db, a.pid, 50).find((l) => l.text.startsWith("Geboten:"))?.betrag ?? undefined}
                     />
+                    {a.spieler && (
+                      <div className="mt-3">
+                        <MarktInfo s={a.spieler} stand={`Stand beim Laden (${datumZeit(a.erstellt)}); Gebot und Ende verfolgt der Bietomat in der heißen Phase live.`} />
+                      </div>
+                    )}
                     {a.spieler && (
                       <div className="mt-3">
                         <SpielerProfil skills={a.spieler.skills} scout={a.spieler.scout} />
