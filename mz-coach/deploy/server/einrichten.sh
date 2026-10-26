@@ -67,7 +67,8 @@ grep '^DOMAIN=' .env
 mkdir -p daten
 
 echo "== Bauen und starten (beim ersten Mal einige Minuten) =="
-$SUDO docker compose up -d --build
+export GIT_COMMIT="$(git -C "$ZIEL" rev-parse --short HEAD)"
+$SUDO env GIT_COMMIT="$GIT_COMMIT" docker compose up -d --build
 
 echo
 echo "Fertig. Seite: https://$(sed -n 's/^DOMAIN=//p' .env)"
