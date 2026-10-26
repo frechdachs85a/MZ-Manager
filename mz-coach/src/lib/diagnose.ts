@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { ladeKader } from "@/lib/db/kader";
+import { schwaerzen } from "@/lib/schwaerzen";
 import { ladeKombis, scoutEinstufung } from "@/lib/scout";
 
 // Diagnose: Abrufprotokoll, die neuesten Rohantworten, die nach dem Hosting erstmals echt geprüft werden müssen
@@ -11,8 +12,12 @@ export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-ei
 export function diagnose(db: Database.Database) {
   const abrufe = db.prepare("SELECT art, gestartet, beendet, ok, meldung FROM abruf_log ORDER BY id DESC LIMIT 40").all();
   const rohseiten = ARTEN.map((art) => {
-    const r = db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE art = ? ORDER BY id DESC LIMIT 1").get(art);
-    return r ?? { art, fehlt: "noch nicht gespeichert" };
+    const r = db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE art = ? ORDER BY id DESC LIMIT 1").get(art) as
+      | { art: string; url: string; abgerufen: string; status: number | null; inhalt: string | null }
+      | undefined;
+    if (!r) return { art, fehlt: "noch nicht gespeichert" };
+    // Zusätzlich schwärzen (auch für Einträge, die vor dem Schwärzen gespeichert wurden); das Bild bleibt unverändert
+    return { ...r, url: schwaerzen(r.url), inhalt: art === "login-bild" || !r.inhalt ? r.inhalt : schwaerzen(r.inhalt) };
   });
   const kombis = ladeKombis(db);
   const scout = ladeKader(db).map((s) => ({
