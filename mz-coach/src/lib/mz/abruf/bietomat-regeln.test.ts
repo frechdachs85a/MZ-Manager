@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gebotErlaubt, inEuro, naechsterSchritt } from "./bietomat-regeln";
+import { endpreisFehler, gebotErlaubt, inEuro, naechsterSchritt } from "./bietomat-regeln";
 
 const ICH = 1;
 const t0 = Date.UTC(2026, 9, 26, 16, 0);
@@ -45,5 +45,12 @@ describe("Bietomat-Regeln", () => {
   it("bietet auch nach mehreren Verlängerungen weiter, solange der Endpreis reicht (keine Zeitgrenze)", () => {
     // Ursprüngliches Ende t0, durch Gebote dreimal um 3 Minuten verlängert
     expect(naechsterSchritt({ gefunden: true, endeMs: t0 + 9 * min + 2 * min, bieterTid: 2 }, { eigeneTid: ICH, letztesEndeMs: t0 }, t0 + 9 * min)).toEqual({ art: "bieten" });
+  });
+
+  it("Endpreis nicht unter Startgebot und über dem aktuellen Gebot", () => {
+    expect(endpreisFehler(99_999, { gefordert: 100_000, hoechstgebot: 0 })).toMatch(/unter dem Startgebot/);
+    expect(endpreisFehler(100_000, { gefordert: 100_000, hoechstgebot: 0 })).toBeNull();
+    expect(endpreisFehler(150_000, { gefordert: 100_000, hoechstgebot: 150_000 })).toMatch(/nicht über dem aktuellen Gebot/);
+    expect(endpreisFehler(150_001, { gefordert: 100_000, hoechstgebot: 150_000 })).toBeNull();
   });
 });
