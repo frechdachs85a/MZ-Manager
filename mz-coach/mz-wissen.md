@@ -273,5 +273,7 @@ Weitere Beobachtungen von Marcus zu Sydney (Ligaspiele): Gegentore bekam Sydney 
 - Eigene Spieler per Spielernummer aufnehmen, nicht nur Vorschläge der Seite; Endpreis (Maximalgebot) legt Marcus fest, nie darüber bieten.
 - Kurz vor Schluss bieten (Wunsch: 3 bis 2 Minuten vor Ende), aber nur, wenn man nicht selbst Höchstbietender ist.
 - Laut Marcus verlängert ein Gebot kurz vor Schluss die Auktion. Ziel ist also nicht ein Gebot, sondern am Ende allein Höchstbietender zu sein: nach jedem Gebot und bis zum tatsächlichen Ende das Auktionsende und das Höchstgebot neu lesen; wird man überboten (auch in der Verlängerung), erneut bieten, solange der Endpreis reicht.
+- Immer nur eine Stufe höher bieten (das kleinste zulässige Gebot über dem aktuellen Höchstgebot), nie direkt den Endpreis. Beispiel Marcus: Endpreis 3 Mio, Spieler für 1 Mio zu haben -> nicht höher als nötig bieten. Der Endpreis ist nur die Obergrenze.
+- Wie groß eine Stufe ist, liest die Seite aus dem Gebotsfenster von ManagerZone (noch nicht geprüft), statt sie anzunehmen.
 - Wie lange MZ verlängert, ist hier noch nicht geprüft: die Seite liest das Ende jedes Mal neu von ManagerZone, statt eine Dauer anzunehmen.
 - Zeitpunkt fest (kein bewusst zufälliger Zeitpunkt). Erst scharf nach Prüfung des Gebotsfensters und einem Testgebot mit Zustimmung von Marcus.
