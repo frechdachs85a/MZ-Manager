@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { parse } from "node-html-parser";
 import { ladeKader } from "@/lib/db/kader";
 import { schwaerzen } from "@/lib/schwaerzen";
 import { ladeKombis, scoutEinstufung } from "@/lib/scout";
@@ -23,6 +24,12 @@ export function diagnose(db: Database.Database) {
     // Zusätzlich schwärzen (auch für Einträge, die vor dem Schwärzen gespeichert wurden); das Bild bleibt unverändert
     return { ...r, url: schwaerzen(r.url), inhalt: art === "login-bild" || !r.inhalt ? r.inhalt : schwaerzen(r.inhalt) };
   });
+  // Suchformular der Marktseite (nur #searchform, ohne den Rest der Seite): Belegung der Filterfelder s0..s12 usw.
+  const markt = db.prepare("SELECT abgerufen, coalesce(html_dom, html_roh) AS html FROM rohseite WHERE art = 'markt' ORDER BY id DESC LIMIT 1").get() as
+    | { abgerufen: string; html: string | null }
+    | undefined;
+  const formular = markt?.html ? parse(markt.html).querySelector("#searchform")?.outerHTML : undefined;
+  const suchformular = markt ? { abgerufen: markt.abgerufen, inhalt: formular ? schwaerzen(formular) : null } : { fehlt: "noch nicht gespeichert" };
   const kombis = ladeKombis(db);
   const scout = ladeKader(db).map((s) => ({
     pid: s.pid,
@@ -48,5 +55,5 @@ export function diagnose(db: Database.Database) {
   const spieltag = db
     .prepare("SELECT id, gestartet, beendet, ok, letztes_mid, naechstes_mid, gegner_tid, gegner_name, anstoss, heim, meldung FROM spieltag_lauf ORDER BY id DESC LIMIT 10")
     .all();
-  return { erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, rohseiten, scout };
+  return { erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, suchformular, rohseiten, scout };
 }
