@@ -121,8 +121,8 @@ export async function kaderAbrufen(db: Database.Database, opt = { manuell: false
         for (const pfad of [KADER_PFAD, SPIELER_PFAD, UNAVAILABLE_PFAD, TRAININGSLAGER_PFAD, TAKTIK_PFAD]) {
           // Spieleransicht: zusätzlich die Scoutberichte anklicken (nur fehlende oder mit geänderten Sternen)
           const aufSeite = pfad === SPIELER_PFAD ? scoutKlicker(new Map(ladeKader(db).map((k) => [k.pid, k]))) : undefined;
-          const seite = await s.holeSeite(pfad, aufSeite ? { aufSeite } : undefined);
           try {
+            const seite = await s.holeSeite(pfad, aufSeite ? { aufSeite } : undefined);
             const html = seite.htmlDom ?? seite.htmlRoh ?? "";
             teile.push(seiteEinlesen(db, html, { url: seite.url, quelle: `${MZ_BASIS}${pfad}`, htmlDom: seite.htmlDom }));
             if (aufSeite && seite.extra) {

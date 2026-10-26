@@ -32,11 +32,24 @@ export function scoutKlicker(gespeichert: Map<number, SpielerDaten>) {
       try {
         const link = page.locator(`#${sp.block} .scout_report a`).first();
         // Erste Anfrage, die das Seiten-Skript nach dem Klick stellt
-        const warte = page.waitForResponse((r) => ["xhr", "fetch"].includes(r.request().resourceType()), { timeout: WARTEN_MS });
+        // Antworten nach dem Klick sammeln; die Seite fragt nebenbei regelmäßig p=events ab (beobachtet 25.10.2026),
+        // genommen wird nur eine Antwort, deren Text "Scoutbericht" enthält
+        const kandidaten: Promise<{ url: string; roh: string } | null>[] = [];
+        const mit = (r: import("playwright").Response) => {
+          if (!["xhr", "fetch"].includes(r.request().resourceType()) || /[?&]p=events\b/.test(r.url())) return;
+          kandidaten.push(r.text().then((roh) => ({ url: r.url(), roh })).catch(() => null));
+        };
+        page.on("response", mit);
         await link.click();
-        const r = await warte;
-        const roh = await r.text();
-        antworten.push({ pid: sp.pid, url: r.url(), roh, text: scoutTextAus(roh) });
+        let treffer: { url: string; roh: string } | null = null;
+        const bis = Date.now() + WARTEN_MS;
+        while (!treffer && Date.now() < bis) {
+          await page.waitForTimeout(500);
+          for (const k of await Promise.all(kandidaten)) if (k && scoutTextAus(k.roh).includes("Scoutbericht")) treffer = k;
+        }
+        page.off("response", mit);
+        if (!treffer) throw new Error("keine Antwort mit Scoutbericht");
+        antworten.push({ pid: sp.pid, url: treffer.url, roh: treffer.roh, text: scoutTextAus(treffer.roh) });
         await page.keyboard.press("Escape").catch(() => {});
       } catch (e) {
         fehler.push(`${sp.name}: ${(e instanceof Error ? e.message : String(e)).split("\n")[0]}`);
