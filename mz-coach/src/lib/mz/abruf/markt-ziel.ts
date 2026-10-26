@@ -72,9 +72,15 @@ export function suchZiele(schwach: Schwachstelle[], anzahl = 3): SuchZiel[] {
       hauptskill,
       untergrenze,
       stufen,
-      // 99-Regel als Filter (Sprint und Ausdauer mindestens 9), Hauptskill der Rolle ab der jeweiligen Stufe
-      filter: (stufe) => ({ [`${SKILL_FELD.sprint}a`]: MIN_SPRINT, [`${SKILL_FELD.ausdauer}a`]: MIN_AUSDAUER, [`${SKILL_FELD[hauptskill]}a`]: Math.max(stufe, hauptskill === "sprint" ? MIN_SPRINT : hauptskill === "ausdauer" ? MIN_AUSDAUER : 0) }),
-      text: `${s.rolle} (jetzt ${s.spieler.name}, ${s.wert.toFixed(2).replace(".", ",")}): ${SKILL_LABEL[hauptskill]} ab ${stufen[0] ?? untergrenze}, abwärts bis ${untergrenze}; Sprint und Ausdauer ab ${MIN_SPRINT}`,
+      // 99-Regel als Filter (Sprint und Ausdauer mindestens 9), Hauptskill der Rolle genau auf der jeweiligen Stufe
+      // (von 10 abwärts, so kommt kein Spieler doppelt und die besten zuerst)
+      filter: (stufe) => ({
+        [`${SKILL_FELD.sprint}a`]: MIN_SPRINT,
+        [`${SKILL_FELD.ausdauer}a`]: MIN_AUSDAUER,
+        [`${SKILL_FELD[hauptskill]}a`]: stufe,
+        [`${SKILL_FELD[hauptskill]}b`]: stufe,
+      }),
+      text: `${s.rolle} (jetzt ${s.spieler.name}, ${s.wert.toFixed(2).replace(".", ",")}): ${SKILL_LABEL[hauptskill]} Stufe für Stufe von ${stufen[0] ?? untergrenze} bis ${untergrenze}; Sprint und Ausdauer ab ${MIN_SPRINT}`,
     });
   }
   return ziele;
