@@ -15,7 +15,7 @@ const anstossText = (iso: string) =>
   new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
-  const { lauf, vorschlag, aufstellung, gegner, anpassungen, taktikCode, liga } = l;
+  const { lauf, vorschlag, aufstellung, gegner, anpassungen, taktikCode, liga, ligaStatus } = l;
   if (!lauf?.anstoss || !lauf.gegnerTid) {
     return (
       <Hero>
@@ -159,6 +159,11 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
                   <span>Bank: {liga.bank.join(", ")}</span>
                 </li>
               </ul>
+              <p className={`mt-3 text-[12.5px] font-semibold ${ligaStatus?.ok ? "text-green" : ligaStatus ? "text-red" : "text-label-2"}`}>
+                {ligaStatus
+                  ? `${ligaStatus.ok ? "✓ In ManagerZone" : "✗ ManagerZone"} · ${new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", dateStyle: "short", timeStyle: "short" }).format(new Date(ligaStatus.gestartet))}: ${ligaStatus.meldung ?? "läuft"}`
+                  : "Noch nicht in ManagerZone gespeichert: passiert automatisch nach der nächsten Spieltag-Analyse."}
+              </p>
               <div className="mt-3">
                 <DateiKnopf text={liga.xml} dateiname={`Liga-${lauf.gegnerName ?? "gegner"}.xml`.replace(/[^\w.-]+/g, "_")} label="Formation Liga als XML" />
               </div>

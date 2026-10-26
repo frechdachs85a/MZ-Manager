@@ -1,6 +1,5 @@
 import "server-only";
 import type Database from "better-sqlite3";
-import type { Page } from "playwright";
 import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
 import { ladeKader, speichereKader } from "@/lib/db/kader";
 import { scoutKlicker, speichereScoutTexte, type ScoutAntwort } from "./scout";
@@ -117,29 +116,6 @@ export function meldungAus(e: unknown): string {
   return `Technischer Fehler: ${(e instanceof Error ? e.message : String(e)).split("\n")[0]}`;
 }
 
-// Klickt "Importieren" im Taktik-Editor und gibt das geöffnete Fenster zurück. Gespeichert wird dabei nichts:
-// die Seite wird danach ohne Speichern geschlossen.
-async function importFensterAnsehen(page: Page): Promise<string | undefined> {
-  // Fehler hier dürfen das Einlesen der Taktikseite nie stören (26.10.2026: Playwright-Klick lief ins Zeitlimit,
-  // der Knopf war für Playwright nicht klickbar). Deshalb per DOM-Klick, der denselben onclick auslöst.
-  try {
-    const da = await page.evaluate(() => {
-      const k = document.querySelector("#import_button") as HTMLElement | null;
-      k?.click();
-      return !!k;
-    });
-    if (!da) return "Kein #import_button auf der Seite.";
-    await page.waitForTimeout(3000);
-    return await page.evaluate(() => {
-      const kandidaten = [...document.querySelectorAll('[id*="powerbox"], .powerbox, [class*="powerbox"], textarea')] as HTMLElement[];
-      const sichtbar = kandidaten.filter((e) => e.offsetParent !== null);
-      return (sichtbar.length ? sichtbar : kandidaten).map((e) => e.outerHTML).join("\n<!-- naechstes -->\n").slice(0, 200_000) || "Nach dem Klick kein Fenster gefunden.";
-    });
-  } catch (e) {
-    return `Import-Fenster nicht lesbar: ${(e instanceof Error ? e.message : String(e)).split("\n")[0]}`;
-  }
-}
-
 // Automatischer Abruf: Kaderübersicht zuerst, dann Status-Seiten. Ein Fehler bei einer Seite
 // hält die anderen nicht auf, die Meldung nennt jede Seite einzeln.
 export async function kaderAbrufen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
@@ -152,20 +128,18 @@ export async function kaderAbrufen(db: Database.Database, opt = { manuell: false
       async (s) => {
         for (const pfad of [KADER_PFAD, SPIELER_PFAD, UNAVAILABLE_PFAD, TRAININGSLAGER_PFAD, TAKTIK_PFAD]) {
           // Spieleransicht: zusätzlich die Scoutberichte anklicken (nur fehlende oder mit geänderten Sternen)
-          // Taktikseite: Editor-Skripte mitlesen und das Import-Fenster einmal öffnen (nur ansehen, nichts speichern),
-          // damit das Hinterlegen der Formation "Liga" auf dem Weg des Editors selbst gebaut werden kann
-          const aufSeite = pfad === SPIELER_PFAD ? scoutKlicker(new Map(ladeKader(db).map((k) => [k.pid, k]))) : pfad === TAKTIK_PFAD ? importFensterAnsehen : undefined;
+          // Taktikseite: Editor-Skripte mitlesen (Grundlage für liga.ts, bei Änderungen von ManagerZone nachsehen)
+          const aufSeite = pfad === SPIELER_PFAD ? scoutKlicker(new Map(ladeKader(db).map((k) => [k.pid, k]))) : undefined;
           try {
             const seite = await s.holeSeite(pfad, { aufSeite, warteAuf: WARTE_AUF[pfad], ...(pfad === TAKTIK_PFAD ? { skripte: /tactic/i } : {}) });
             if (pfad === TAKTIK_PFAD) {
               // Alle Editor-Skripte in einem Eintrag (die Diagnose zeigt je Art nur den neuesten)
               const sk = seite.skripte ?? [];
               if (sk.length) speichereRohseite(db, { art: "skript-taktik", url: sk.map((x) => x.url).join(" "), status: null, htmlRoh: sk.map((x) => `/* ==== ${x.url} ==== */\n${x.text}`).join("\n"), htmlDom: null });
-              if (typeof seite.extra === "string") speichereRohseite(db, { art: "taktik-import", url: seite.url, status: null, htmlRoh: seite.extra, htmlDom: null });
             }
             const html = seite.htmlDom ?? seite.htmlRoh ?? "";
             teile.push(seiteEinlesen(db, html, { url: seite.url, quelle: `${MZ_BASIS}${pfad}`, htmlDom: seite.htmlDom }));
-            if (aufSeite && seite.extra) {
+            if (pfad === SPIELER_PFAD && aufSeite && seite.extra) {
               const { antworten, fehler } = seite.extra as { antworten: ScoutAntwort[]; fehler: string[] };
               const n = speichereScoutTexte(db, antworten, new Date().toISOString(), `${MZ_BASIS}${pfad} (Scoutbericht)`);
               teile.push(`Scoutberichte: ${n} Texte gelesen${fehler.length ? `, nicht lesbar: ${fehler.join("; ")}` : ""}.`);

@@ -2,6 +2,7 @@ import { getDb } from "@/lib/db";
 import { abrufBeenden, abrufBeginnen } from "@/lib/db/abruf";
 import { aufraeumen, sichereDatenbank } from "@/lib/archiv";
 import { marktAbrufen, marktFaellig } from "@/lib/mz/abruf/markt";
+import { ligaHinterlegen } from "@/lib/mz/abruf/liga";
 import { spieltagAbrufen, spieltagFaellig } from "@/lib/mz/abruf/spieltag";
 import { topAbrufen, topFaellig } from "@/lib/mz/abruf/top";
 import { wertScanAbrufen, wertScanFaellig } from "@/lib/mz/abruf/wertscan";
@@ -53,6 +54,11 @@ async function takt() {
     if (spieltag) {
       const r = await spieltagAbrufen(db, { manuell: false, ziel: spieltag.ziel });
       console.log(`[zeitplan] ${r.meldung.slice(0, 300)}`);
+      // Direkt danach die Formation Liga gegen den nächsten Gegner in ManagerZone hinterlegen (Marcus, 26.10.2026)
+      if (r.ok) {
+        const l = await ligaHinterlegen(db);
+        console.log(`[zeitplan] ${l.meldung.slice(0, 300)}`);
+      }
     }
     if (topFaellig(db)) {
       const r = await topAbrufen(db);
