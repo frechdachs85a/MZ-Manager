@@ -19,7 +19,7 @@ export const ALTER_ABBAU = 30; // ab 30: erst Sprint, dann Ausdauer weg
 export type Slot = { pid: number; x: number; y: number; torwart: boolean };
 
 // Arbeitsdefinition für die Rolle eines Startplatzes aus den Editor-Koordinaten: Torwart; Abwehr
-// y >= 222 (VT); Sturm y <= 110; außen x <= 40 oder >= 170 (Flügel); sonst Mittelfeld (MF).
+// y >= 215 (VT, siehe ABWEHR_Y); Sturm y <= 110; außen x <= 40 oder >= 170 (Flügel); sonst Mittelfeld (MF).
 // Anchorman wird nicht zugeordnet, weil seine Lage im Editor nicht festgelegt ist.
 export function rolle(s: Slot): Position {
   if (s.torwart) return "TW";

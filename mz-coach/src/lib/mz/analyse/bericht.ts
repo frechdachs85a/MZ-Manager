@@ -55,6 +55,7 @@ export type Halbzeit = { eigen: TeamWerte; gegner: TeamWerte };
 
 export type SpielBericht = {
   mid: number;
+  datum?: string;
   eigen: StatsTeam;
   gegner: StatsTeam;
   ergebnis: "S" | "U" | "N";
@@ -216,7 +217,7 @@ export function spielBericht(s: StatsSpiel, tid: number): SpielBericht {
   const karten = s.karten.filter((k) => k.teamId === eigen.id);
   if (karten.length) fakten.push(`Karten: ${karten.map((k) => `${spieler.find((p) => p.id === k.spieler)?.name ?? `id ${k.spieler}`} (${KARTE[k.art] ?? k.art}, ${k.minute}.)`).join(", ")}.`);
 
-  return { mid: s.mid, eigen, gegner, ergebnis, endstand: { eigen: we.tore, gegner: wg.tore }, halbzeiten, spieler, gegnerSpieler, fakten };
+  return { mid: s.mid, datum: s.datum, eigen, gegner, ergebnis, endstand: { eigen: we.tore, gegner: wg.tore }, halbzeiten, spieler, gegnerSpieler, fakten };
 }
 
 export const quoteText = prozent;

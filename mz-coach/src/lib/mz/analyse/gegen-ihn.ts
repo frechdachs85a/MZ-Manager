@@ -18,7 +18,10 @@ export type GegnerSeinesSpiels = {
   aggression?: string;
   klasse: string; // Fünferkette | enge Mitte | mit Außenspielern
   ergebnis: Ergebnis; // aus Sicht des Gegners des Gegners
+  seinErgebnis: Ergebnis; // aus Sicht des analysierten Teams (für die Anzeige: grün = er hat gewonnen)
   tore: { fuer: number; gegen: number };
+  feld: { x: number; y: number }[]; // Startaufstellung dieses Gegners (Editor-Koordinaten)
+  torwart?: { x: number; y: number };
 };
 
 export type Gruppe = { wert: string; spiele: number; bilanz: Bilanz; tore: { fuer: number; gegen: number }; quote: number };
@@ -72,6 +75,9 @@ export function gegenIhn(tid: number, spiele: StatsSpiel[]): GegenIhn {
         aggression: m.gegner.aggression,
         klasse: gegnerKlasse(m.gegner),
         ergebnis: umkehren(m.ergebnis),
+        seinErgebnis: m.ergebnis,
+        feld: m.gegner.feld,
+        torwart: m.gegner.torwart,
         tore: { fuer: m.tore.gegner, gegen: m.tore.eigen },
       };
     })
