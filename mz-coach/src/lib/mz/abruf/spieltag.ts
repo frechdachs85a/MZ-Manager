@@ -60,6 +60,17 @@ export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boo
         speichereSpielliste(db, { ...eigene, teamName: eigene.teamName ?? TEAM.name });
         const naechstes = naechstesLigaspiel(plan.spiele);
         teile.push(`Spielplan: ${plan.spiele.length} kommende Spiele.`);
+        // Kaderseite des Gegners im letzten Ligaspiel: Startelf-Wert beider Teams im Spielbericht (Marcus, 26.10.2026)
+        const zuletzt = letzteLigaspiele(eigene.spiele.filter(istLigaspiel), 99).find((x) => x.tore !== undefined);
+        const zg = zuletzt ? (zuletzt.heim.tid === TEAM.tid ? zuletzt.gast : zuletzt.heim) : undefined;
+        const naechsterTid = naechstes ? (naechstes.heim.tid === TEAM.tid ? naechstes.gast.tid : naechstes.heim.tid) : undefined;
+        if (zg?.tid && zg.tid !== naechsterTid) {
+          try {
+            teile.push(`Kaderseite ${zg.name} (letzter Gegner): ${await liesGegnerKader(db, s, zg.tid)} Spieler.`);
+          } catch (e) {
+            teile.push(`Kaderseite ${zg.name}: ${meldungAus(e)}`);
+          }
+        }
         if (!naechstes) {
           teile.push("Kein kommendes Ligaspiel im Spielplan.");
           return;

@@ -10,7 +10,7 @@ import { gegnerKlasse, spielMuster, stilText } from "@/lib/mz/analyse/muster";
 import { faelligAb } from "@/lib/spieltag-zeit";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
-import { kaderwertVergleich } from "@/lib/kaderwert";
+import { kaderwertVergleich, startelfWerte } from "@/lib/kaderwert";
 import { topGegenKlasse } from "@/lib/portfolio";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
 import { ladeKader } from "@/lib/db/kader";
@@ -45,6 +45,7 @@ export function spieltagLage(db: Database.Database) {
 
   const letztesSpiel = lauf?.letztesMid ? ladeSpiel(db, lauf.letztesMid) : null;
   const bericht = letztesSpiel ? spielBericht(letztesSpiel, TEAM.tid) : null;
+  const elfWerte = letztesSpiel ? startelfWerte(db, letztesSpiel) : null;
 
   const gegner = lauf?.gegnerTid ? gegnerAnalyseLaden(db, lauf.gegnerTid) : null;
   const gegen = gegner ? gegenIhn(gegner.tid, gegner.stats) : null;
@@ -283,6 +284,7 @@ export function spieltagLage(db: Database.Database) {
   }
 
   return {
+    elfWerte,
     kurzfassung,
     vorschlag,
     anpassungen,
