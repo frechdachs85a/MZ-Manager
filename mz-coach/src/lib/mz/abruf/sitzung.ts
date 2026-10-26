@@ -174,6 +174,9 @@ async function login(db: Database.Database, ctx: BrowserContext) {
       merkeLoginFehler(db, grund);
       throw new MzFehler(MELDUNG[grund]);
     }
+    // Login bestätigt: alte Sperre sofort aufheben, auch wenn später ein Teil des Abrufs scheitert
+    // (sonst blockiert ein früherer Fehlversuch weiter die automatischen Abrufe; beobachtet 25./26.10.2026)
+    if (ergebnis === "weiter") db.prepare("DELETE FROM einstellung WHERE schluessel = ?").run(LOGIN_FEHLER_KEY);
   } finally {
     await page.close();
   }
@@ -246,8 +249,11 @@ export async function mitMzSitzung<T>(
         await page.goto(url, { waitUntil: "commit", timeout: 60_000 });
         await page.unroute(nurZiel);
         if (htmlRoh !== null && istAbmeldeSeite(htmlRoh)) return { url, status, htmlRoh, htmlDom: null };
-        await page.waitForLoadState("load", { timeout: 60_000 });
-        await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+        // Manche MZ-Seiten melden "load" nie (beobachtet 25.10.2026: Abbruch nach 60 s). Das HTML ist dann trotzdem da,
+        // deshalb nur auf domcontentloaded bestehen und auf load/networkidle höchstens kurz warten.
+        await page.waitForLoadState("domcontentloaded", { timeout: 60_000 });
+        await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
+        await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
         const htmlDom = await page.content();
         const gelesen = (await Promise.all(skripte)).filter((x): x is { url: string; text: string } => x !== null);
         const extra = aufSeite && istEingeloggt(htmlDom) ? await aufSeite(page, htmlDom) : undefined;
