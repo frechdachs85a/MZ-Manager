@@ -116,7 +116,8 @@ export async function ligaHinterlegen(db: Database.Database, opt = { manuell: fa
         const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
         if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
         if ("fehler" in x) throw new MzFehler(x.fehler);
-        if (!/^"?true"?$/.test(x.antwort.trim())) throw new MzFehler(`ManagerZone hat das Speichern nicht bestätigt: ${x.antwort}`);
+        // Antwort ist JSON; der Editor prüft data == "true" (gesehen 26.10.2026: ["true"], in JavaScript gleich "true")
+        if (!/^\[?\s*"?true"?\s*\]?$/.test(x.antwort.trim())) throw new MzFehler(`ManagerZone hat das Speichern nicht bestätigt: ${x.antwort}`);
 
         // 2. Neu laden und vergleichen
         const neu = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => belegung(page, x.slot, "tacticsData") });
