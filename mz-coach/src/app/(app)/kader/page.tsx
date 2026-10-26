@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadges, statusHinweis } from "@/components/status";
+import { stufe, WertLegende } from "@/components/wert-stufe";
 import { Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader, type KaderEintrag } from "@/lib/db/kader";
@@ -118,12 +119,17 @@ export default async function Kader(props: PageProps<"/kader">) {
         </div>
         {/* Desktop: Tabelle mit dem MZ-Wert jeder Position, bester Wert hervorgehoben */}
         <div className="hidden lg:block">
-          <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Fett = bester Wert des Spielers. Hinterlegung: je kräftiger, desto höher der Wert im Vergleich zum ganzen Kader. ${statusHinweis(kader)}`}>
-            <KaderTabelle kader={sortiere(kader, sort)} sort={sort} />
+          <Section footer={`MZ-Wert je Position nach der Formel aus mz-wissen.md, Abschnitt 6. Unterstrichen = bester Wert des Spielers. Farbe = feste Stufe (Legende über der Tabelle), eine Lesehilfe dieser Seite, keine Einstufung von ManagerZone. ${statusHinweis(kader)}`}>
+            <WertLegende />
+            <div className="mt-3">
+              <KaderTabelle kader={sortiere(kader, sort)} sort={sort} />
+            </div>
           </Section>
         </div>
         <div className="lg:hidden">
-        <Section footer={`Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6). ${statusHinweis(kader)}`}>
+        <Section footer={`Wert = höchster MZ-Wert über alle Positionen (Formel aus mz-wissen.md, Abschnitt 6). Farbe = feste Stufe, eine Lesehilfe dieser Seite. ${statusHinweis(kader)}`}>
+          <WertLegende />
+          <div className="mt-3" />
           <List>
             {sortiere(kader, sort).map((s) => {
               const werte = alleMzWerte(s.skills);
@@ -148,7 +154,7 @@ export default async function Kader(props: PageProps<"/kader">) {
                     <span className="text-right">
                       {beste ? (
                         <>
-                          <span className="block text-[17px] font-semibold tabular-nums">{beste.wert.toFixed(2)}</span>
+                          <span className={`block rounded-[8px] px-2 py-0.5 text-[17px] font-semibold tabular-nums ${stufe(beste.wert).cls}`}>{beste.wert.toFixed(2)}</span>
                           <span className="block text-[12px] text-label-2">{beste.p}</span>
                         </>
                       ) : (
@@ -170,12 +176,6 @@ export default async function Kader(props: PageProps<"/kader">) {
   );
 }
 
-// Hinterlegung je Zelle: eine Farbe, je höher der MZ-Wert im Kader, desto kräftiger (4 % bis 30 %)
-function hinterlegung(wert: number, min: number, max: number) {
-  const t = max > min ? (wert - min) / (max - min) : 0;
-  return `color-mix(in oklab, var(--tint) ${(4 + t * 26).toFixed(0)}%, transparent)`;
-}
-
 function SpaltenKopf({ label, wert, sort, rechts = true }: { label: string; wert: Sortierung; sort: Sortierung; rechts?: boolean }) {
   const aktiv = sort === wert;
   return (
@@ -192,15 +192,10 @@ function SpaltenKopf({ label, wert, sort, rechts = true }: { label: string; wert
 }
 
 function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
-  const alle = kader.flatMap((s) => {
-    const w = alleMzWerte(s.skills);
-    return POSITIONEN.flatMap((p) => (w[p].ok ? [w[p].wert] : []));
-  });
-  const kMin = Math.min(...alle);
-  const kMax = Math.max(...alle);
   return (
-    <Card className="!overflow-clip">
-      <table className="w-full text-left text-[15px]">
+    // Unter 1400 px Breite quer scrollbar statt abgeschnitten; ab 1400 px passt alles und der Kopf bleibt oben stehen
+    <Card className="!overflow-x-auto min-[1400px]:!overflow-clip">
+      <table className="w-full min-w-[1080px] text-left text-[15px]">
         <thead className="sticky top-0 z-10 lg:top-12">
           <tr className="border-b border-separator bg-card-2 text-[11px] uppercase tracking-wider text-label-3">
             <th className="w-12 py-2.5 pl-4 text-right font-normal"><SpaltenKopf label="Nr" wert="nr" sort={sort} /></th>
@@ -230,16 +225,17 @@ function KaderTabelle({ kader, sort }: { kader: Zeile[]; sort: Sortierung }) {
                   return (
                     <td key={p} className="py-1 pl-2 text-right">
                       <span
-                        className={`inline-block min-w-[3.6rem] rounded-[8px] px-2 py-1 tabular-nums ${w.ok && w.wert === max ? "font-semibold text-label" : w.ok ? "text-label" : "text-label-3"}`}
-                        style={w.ok ? { background: hinterlegung(w.wert, kMin, kMax) } : undefined}
-                        title={w.ok && w.wert === max ? `${p}: bester Wert dieses Spielers` : undefined}
+                        className={`inline-block min-w-[3.6rem] rounded-[8px] px-2 py-1 tabular-nums ${w.ok ? stufe(w.wert).cls : "text-label-3"} ${
+                          w.ok && w.wert === max ? "font-bold underline decoration-2 underline-offset-[3px]" : ""
+                        }`}
+                        title={w.ok ? `${p}: ${stufe(w.wert).name}${w.wert === max ? ", bester Wert dieses Spielers" : ""}` : undefined}
                       >
                         {w.ok ? w.wert.toFixed(2) : "n. v."}
                       </span>
                     </td>
                   );
                 })}
-                <td className="py-1.5 pr-4 pl-4">
+                <td className="min-w-[170px] py-1.5 pr-4 pl-4">
                   <span className="flex flex-wrap gap-1">
                     <StatusBadges s={s} />
                   </span>

@@ -104,7 +104,7 @@ export default async function Markt() {
             title="Deine Schwachstellen"
             footer={
               start
-                ? `Startelf aus ${start.spiel.liga ? "dem Ligaspiel" : "dem Spiel"} vom ${spielDatum(start.spiel.datum) ?? "?"} (mid ${start.spiel.mid}). Rolle je Platz: Torwart; Abwehr y ≥ 222 = VT; außen (x ≤ 40 oder ≥ 170) = Flügel; Sturm y ≤ 110; sonst MF. Wert = MZ-Formel (mz-wissen.md, Abschnitt 6), Skala 0 bis 10.`
+                ? `Startelf aus ${start.spiel.liga ? "dem Ligaspiel" : "dem Spiel"} vom ${spielDatum(start.spiel.datum) ?? "?"} (mid ${start.spiel.mid}). Rolle je Platz: Torwart; Abwehr y ≥ 215 = VT; außen (x ≤ 40 oder ≥ 170) = Flügel; Sturm y ≤ 110; sonst MF. Wert = MZ-Formel (mz-wissen.md, Abschnitt 6), Skala 0 bis 10.`
                 : undefined
             }
           >

@@ -9,6 +9,7 @@ import { zugangStatus } from "@/lib/mz/zugang";
 import { anstoss, istLigaspiel, letzteLigaspiele, parseSpielliste, spiellisteHtmlAus, type ListenSpiel } from "@/lib/mz/parser/spielliste";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { meldungAus, spielXmlEinlesen, type Ergebnis } from "./kader";
+import { liesGegnerKader } from "./fremd";
 import { holeStatsXml } from "./spiele";
 import { marke, mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
 
@@ -71,6 +72,12 @@ export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boo
         const liste = await holeListe(db, s, g.tid, "played", "spielliste-gegner");
         speichereSpielliste(db, { ...liste, teamName: liste.teamName ?? g.name });
         gegnerSpiele = liste.spiele;
+        // Kaderseite des Gegners für den Kaderwert-Vergleich der Startelf (mz-wissen.md, Abschnitt 10)
+        try {
+          teile.push(`Kaderseite ${g.name}: ${await liesGegnerKader(db, s, g.tid)} Spieler.`);
+        } catch (e) {
+          teile.push(`Kaderseite ${g.name}: ${meldungAus(e)}`);
+        }
       },
       opt,
     );

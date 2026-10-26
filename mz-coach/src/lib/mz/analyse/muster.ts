@@ -72,14 +72,13 @@ export function lageAus(stand: string, heim: boolean): Lage {
 
 function stil(s: StatsSpiel, tid: number): Stil {
   const a = werteSpielAus(s, tid);
-  const abwehr = a.feld.filter((f) => f.p.y >= 222).length;
   return {
     formation: a.formation,
     tactic: a.tactic,
     playstyle: a.playstyle,
     aggression: a.aggression,
     engeMitte: a.engeMitte,
-    fuenferkette: abwehr >= 5,
+    fuenferkette: a.formation.abwehr >= 5,
     feld: a.feld.map((f) => f.p),
     torwart: a.torwart,
   };

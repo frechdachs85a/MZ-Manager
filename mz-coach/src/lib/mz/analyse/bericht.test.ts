@@ -44,3 +44,15 @@ describe.skipIf(!MIDS.every((m) => existsSync(fix(m))))("Was gegen YugiPeeK funk
     expect(g.spiele.every((s) => s.tid !== 97933)).toBe(true);
   });
 });
+
+describe.skipIf(!MIDS.every((m) => existsSync(fix(m))))("Steckbrief YugiPeeK", async () => {
+  const { steckbrief } = await import("./steckbrief");
+  const b = steckbrief(97933, MIDS.map((m) => parseStatsXml(readFileSync(fix(m), "utf8"))));
+  it("Bilanz, Tore und Gegentor-Minuten passen zusammen", () => {
+    expect(b.bilanz).toEqual({ S: 0, U: 0, N: 7, tore: 8, gegentore: 26 });
+    expect(b.spiele.reduce((n, s) => n + s.gegentorMinuten.length, 0)).toBe(26);
+    expect(b.torschuetzen.reduce((n, [, x]) => n + x, 0)).toBe(8);
+    expect(b.spiele[0].datum! < b.spiele.at(-1)!.datum!).toBe(true);
+    expect(b.stammElf!.spiele).toBeGreaterThanOrEqual(1);
+  });
+});

@@ -4,14 +4,19 @@ import { letzterLauf } from "@/lib/db/spieltag";
 import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { spielBericht } from "@/lib/mz/analyse/bericht";
 import { gegenIhn } from "@/lib/mz/analyse/gegen-ihn";
+import { steckbrief } from "@/lib/mz/analyse/steckbrief";
 import { de } from "@/lib/mz/analyse/gegner";
 import { gegnerKlasse, spielMuster, stilText } from "@/lib/mz/analyse/muster";
 import { faelligAb } from "@/lib/spieltag-zeit";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
+import { kaderwertVergleich } from "@/lib/kaderwert";
 import { topGegenKlasse } from "@/lib/portfolio";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
-import { TEAM } from "@/lib/wissen/startbasis";
+import { ladeKader } from "@/lib/db/kader";
+import type { FeldSpieler } from "@/components/spielfeld";
+import type { Befund } from "@/lib/mz/taktik/pruefer";
+import { TAKTIKEN, TEAM } from "@/lib/wissen/startbasis";
 
 // Spieltag (Auftrag Marcus, 26.10.2026): Spielbericht des letzten Ligaspiels und Taktikvorschlag für das nächste,
 // alles aus gespeicherten Daten. Der Vorschlag ist die Empfehlung nach den Faustregeln (mz-wissen.md, Abschnitt 10,
@@ -57,7 +62,33 @@ export function spieltagLage(db: Database.Database) {
     eigeneJeTaktik.set(k, b);
   }
 
-  const empfehlung = gegner?.analyse?.empfehlung;
+  // Seine Startaufstellung im neuesten ausgewerteten Ligaspiel (Bild) und der Kaderwert-Vergleich der Startelf
+  const gegnerAufstellung =
+    neuestes && gegner
+      ? {
+          mid: neuestes.mid,
+          datum: neuestes.datum,
+          gegen: neuestes.teams.find((t) => t.id !== gegner.tid)?.name ?? "",
+          feld: neuestes.spieler
+            .filter((p) => p.teamId === gegner.tid && p.editor)
+            .map((p) => ({ x: p.editor!.x, y: p.editor!.y, label: p.name.split(" ").at(-1)!, torwart: p.torwart })),
+          formation: gegner.analyse?.spiele.find((x) => x.mid === neuestes.mid)?.formation.text,
+          einstellung: (() => {
+            const t = neuestes.teams.find((x) => x.id === gegner.tid)!;
+            return `${de(t.tactic)} / ${de(t.playstyle)} / ${de(t.aggression)}`;
+          })(),
+        }
+      : null;
+  const kaderwert = gegner ? kaderwertVergleich(db, gegner.tid) : null;
+  const brief = gegner ? steckbrief(gegner.tid, gegner.stats) : null;
+
+  const empfehlung = gegner?.analyse?.empfehlung
+    ? {
+        ...gegner.analyse.empfehlung,
+        // Der Hinweis "Kaderwert-Vergleich fehlt" entfällt, sobald beide Startelf-Werte da sind
+        vorbehalte: gegner.analyse.empfehlung.vorbehalte.filter((v) => !(kaderwert?.eigen && kaderwert.gegner && v.startsWith("Kaderwert-Vergleich fehlt"))),
+      }
+    : undefined;
   const belege: Beleg[] = [];
   if (empfehlung && gegner?.analyse) {
     belege.push({ quelle: "Faustregel (mz-wissen.md, Abschnitt 10)", text: `${empfehlung.regel} ${empfehlung.gruende.join(" ")}`.trim() });
@@ -84,6 +115,19 @@ export function spieltagLage(db: Database.Database) {
           ? `Gegen „${klasse}“ bewährt (ab 3 Spielen, Punktquote ab 60 %): ${bewaehrt.map((t) => `${t.schluessel} ${t.S}/${t.U}/${t.N}${t.imArchiv.length ? ` (bei dir: ${t.imArchiv.join(", ")})` : ""}`).join("; ")}.`
           : `Gegen „${klasse}“ noch kein Stil der Top 10 mit mindestens 3 Spielen und 60 % Punktquote.`,
       });
+    if (kaderwert?.eigen && kaderwert.gegner) {
+      const e = kaderwert.eigen.summe;
+      const g = kaderwert.gegner.summe;
+      const eur = (n: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(n))} €`;
+      belege.push({
+        quelle: "Kaderwert",
+        text:
+          `Startelf-Marktwert: deine ${eur(e)} (${kaderwert.eigen.mitWert} von ${kaderwert.eigen.spieler} Spielern), seine ${eur(g)} (${kaderwert.gegner.mitWert} von ${kaderwert.gegner.spieler}). ` +
+          (g > e
+            ? `Er ist laut Marktwert stärker (${Math.round((g / e - 1) * 100)} % mehr): „Gegen starke Gegner beim Standard bleiben“ (Abschnitt 10).`
+            : `Du bist laut Marktwert stärker (${Math.round((e / g - 1) * 100)} % mehr).`),
+      });
+    }
     const eigenEmpf = eigeneJeTaktik.get(empfehlung.taktik);
     if (klasse)
       belege.push({
@@ -95,7 +139,38 @@ export function spieltagLage(db: Database.Database) {
       });
   }
 
+  // Aufstellung des vorgeschlagenen Reiters: aus deinem Taktik-Archiv (mit Namen und Prüfung gegen den heutigen
+  // Kader), sonst die Koordinaten aus mz-wissen.md, Abschnitt 8 (ohne Namen)
+  let aufstellung: { quelle: string; feld: FeldSpieler[]; einstellung?: string; fehler: Befund[]; hinweise: Befund[] } | null = null;
+  if (empfehlung) {
+    const a = archiv.find((x) => x.reiter === empfehlung.taktik);
+    if (a?.taktik) {
+      const namen = new Map(ladeKader(db).map((k) => [k.pid, k.name]));
+      const kurz = (n?: string) => (n ? n.split(" ").at(-1)! : "?");
+      aufstellung = {
+        quelle: `Taktik-Archiv, Reiter ${a.reiter} (gespeichert ${a.gespeichert.slice(0, 10).split("-").reverse().join(".")})`,
+        feld: a.taktik.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: kurz(namen.get(p.pid)), torwart: p.pos === "goalie" })),
+        einstellung: [a.taktik.team.tactics, a.taktik.team.playstyle, a.taktik.team.aggression].filter(Boolean).map((v) => de(v!)).join(" / ") || undefined,
+        fehler: a.pruefung?.fehler ?? [],
+        hinweise: a.pruefung?.hinweise ?? [],
+      };
+    } else {
+      const t = TAKTIKEN.find((x) => x.name === empfehlung.taktik);
+      if (t?.koordinaten)
+        aufstellung = {
+          quelle: `mz-wissen.md, Abschnitt 8 (${t.inhalt}); Reiter nicht im Taktik-Archiv, daher ohne Namen und ohne Prüfung`,
+          feld: t.koordinaten.map((k) => ({ x: k.x, y: k.y, label: k.rolle })),
+          fehler: [],
+          hinweise: [],
+        };
+    }
+  }
+
   return {
+    aufstellung,
+    gegnerAufstellung,
+    kaderwert,
+    steckbrief: brief,
     lauf,
     letzterVersuch,
     faelligAb: lauf?.anstoss ? faelligAb(lauf.anstoss) : null,

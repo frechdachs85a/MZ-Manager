@@ -6,7 +6,12 @@ import { AUSSEN_X_LINKS, AUSSEN_X_RECHTS, istAussen, STURM_Y } from "@/lib/mz/ta
 // Alles hier beruht auf den Stats-XML. Wo eine Regel aus mz-wissen.md keine genaue Grenze hat,
 // steht die verwendete Auslegung als Konstante mit Begründung.
 
-export const ABWEHR_Y = 222; // mz-wissen.md, Abschnitt 4: Abwehr y >= 222
+// Abwehr ab Editor-y 215: ManagerZone führt Spieler von Sydney FC bei y 215 (aus origin umgerechnet) als „Vert.“,
+// bei y 190 als „Mi.“ (Spielbericht 25.10.2026, Bild von Marcus vom 26.10.2026). Laut mz-wissen.md, Abschnitt 4,
+// zählt y 212 im Editor als Mittelfeld. y 213 und 214 sind nicht belegt: solche Spieler zählen als Mittelfeld
+// und die Formation wird als nicht eindeutig gekennzeichnet. (Früher hier 222; das war zu streng.)
+export const ABWEHR_Y = 215;
+export const MITTEL_BELEGT_BIS = 212;
 
 // Zwei Aufstellungen gelten als gleich, wenn jeder Feldspieler höchstens so weit vom passenden Platz
 // entfernt steht. Gemessen: Wiederholte Aufstellungen wichen höchstens 1 Punkt ab (Umrechnung auf
@@ -16,7 +21,9 @@ export const GLEICH_TOLERANZ = 2;
 // "Enge Mitte" (Arbeitsdefinition von Marcus, 25.10.2026): oberhalb der Abwehr steht niemand außen,
 // außen = x <= 40 oder x >= 170 (istAussen). Grenze unscharf. Fünferkette ist ein eigener Auslöser.
 
-export type Formation = { abwehr: number; mittel: number; sturm: number; text: string };
+// unklar: Spieler zwischen belegtem Mittelfeld (212) und belegter Abwehr (215), hier im Mittelfeld gezählt
+// unklarSturm: Spieler bei y 111 (laut mz-wissen.md 110 Sturm, 112 Mittelfeld; 111 nicht belegt), im Mittelfeld gezählt
+export type Formation = { abwehr: number; mittel: number; sturm: number; unklar: number; unklarSturm: number; text: string };
 
 export type SpielAuswertung = {
   mid: number;
@@ -45,7 +52,17 @@ export function formation(feld: Punkt[]): Formation {
   const abwehr = feld.filter((p) => p.y >= ABWEHR_Y).length;
   const sturm = feld.filter((p) => p.y <= STURM_Y).length;
   const mittel = feld.length - abwehr - sturm;
-  return { abwehr, mittel, sturm, text: `${abwehr}-${mittel}-${sturm}` };
+  const unklar = feld.filter((p) => p.y > MITTEL_BELEGT_BIS && p.y < ABWEHR_Y).length;
+  const unklarSturm = feld.filter((p) => p.y > STURM_Y && p.y < STURM_Y + 2).length;
+  const text = `${abwehr}-${mittel}-${sturm}`;
+  const oder = unklar || unklarSturm ? ` oder ${abwehr + unklar}-${mittel - unklar - unklarSturm}-${sturm + unklarSturm}` : "";
+  return { abwehr, mittel, sturm, unklar, unklarSturm, text: text + oder };
+}
+
+// Enge Mitte aus den Feldspieler-Positionen (siehe oben)
+export function engeMitteAus(feld: Punkt[]): { engeMitte: boolean; mittelfeldX?: { min: number; max: number } } {
+  const mittel = feld.filter((p) => p.y < ABWEHR_Y).map((p) => p.x);
+  return { engeMitte: mittel.length > 0 && !mittel.some(istAussen), mittelfeldX: mittel.length ? { min: Math.min(...mittel), max: Math.max(...mittel) } : undefined };
 }
 
 export function werteSpielAus(s: StatsSpiel, tid: number): SpielAuswertung {
@@ -55,8 +72,7 @@ export function werteSpielAus(s: StatsSpiel, tid: number): SpielAuswertung {
   const name = new Map(s.spieler.map((p) => [p.id, p.name]));
   const eigene = s.spieler.filter((p) => p.teamId === tid);
   const feld = eigene.filter((p) => p.editor && !p.torwart).map((p) => ({ name: p.name, p: p.editor! }));
-  const mittel = feld.filter((f) => f.p.y < ABWEHR_Y).map((f) => f.p.x);
-  const mittelfeldX = mittel.length ? { min: Math.min(...mittel), max: Math.max(...mittel) } : undefined;
+  const { engeMitte, mittelfeldX } = engeMitteAus(feld.map((f) => f.p));
   return {
     mid: s.mid,
     datum: s.datum,
@@ -70,7 +86,7 @@ export function werteSpielAus(s: StatsSpiel, tid: number): SpielAuswertung {
     feld,
     torwart: eigene.find((p) => p.torwart && p.editor)?.editor,
     mittelfeldX,
-    engeMitte: mittel.length > 0 && !mittel.some(istAussen),
+    engeMitte,
     bank: eigene.filter((p) => !p.origin).length,
     bankTorwart: eigene.some((p) => !p.origin && p.torwart),
     wechsel: s.wechsel
@@ -231,6 +247,11 @@ export function analysiereGegner(tid: number, spiele: StatsSpiel[]): GegnerAnaly
   if (ausw.length > 1) gruende.push(`Enge Mitte in ${engAnzahl} von ${ausw.length} Ligaspielen.`);
   const taktik = fuenferkette || neu.engeMitte ? "kupass" : "außenR";
   if (taktik === "außenR") gruende.push("Weder Fünferkette noch enge Mitte im neuesten Spiel.");
+  if (neu.formation.unklar && !fuenferkette && neu.formation.abwehr + neu.formation.unklar >= 5) {
+    vorbehalte.push(
+      `Fünferkette nicht eindeutig: ${neu.formation.unklar} Spieler stehen bei Editor-y 213 bis 214, zwischen belegtem Mittelfeld (212) und belegter Abwehr (215). Zählt ManagerZone sie zur Abwehr, wäre es ${neu.formation.abwehr + neu.formation.unklar}er-Kette und kupass angezeigt.`,
+    );
+  }
   const andere = ausw.filter((s) => s.formation.text !== neu.formation.text);
   if (andere.length) {
     const auchEng = andere.every((s) => s.engeMitte === neu.engeMitte && (s.formation.abwehr >= 5) === fuenferkette);

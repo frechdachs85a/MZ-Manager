@@ -72,7 +72,7 @@ Laufen gegen die Aufstellung aus dem letzten Ligaspiel des Gegners. Der Gegner s
 
 - x ca. 8 bis 200, y vorne mindestens 63, tiefste getestete Feldposition y 267
 - Mindestabstand zwischen Spielern ca. 47
-- Zonen: Abwehr y ≥ 222 (212 zählt als Mittelfeld), Sturm y ≤ 110 (112 = Mittelfeld)
+- Zonen: Abwehr y ≥ 215 (belegt am Spielbericht Sydney FC vom 25.10.2026: Spieler bei y 215 = „Vert.“, bei y 190 = „Mi.“; korrigiert am 26.10.2026, vorher hier 222), 212 zählt als Mittelfeld, 213 und 214 nicht belegt. Sturm y ≤ 110 (112 = Mittelfeld, 111 nicht belegt)
 - Höchstens 3 Stürmer
 - Bankplätze von oben: subgoalie (y117), Abwehr (y140), Mittelfeld (y163), Sturm (y186), X (y209). Bank nach Position sortieren, alle 5 Plätze besetzen. Ein Feldspieler auf subgoalie kann in Regeln nicht eingewechselt werden.
 - Auf der Bank oder im Feld bekommen Spieler Erfahrung und Form.
