@@ -1,3 +1,4 @@
+import { letzterAbruf } from "@/lib/db/abruf";
 import type Database from "better-sqlite3";
 import { ladeSpiel } from "@/lib/db/spiele";
 import { letzterLauf } from "@/lib/db/spieltag";
@@ -503,6 +504,7 @@ export function spieltagLage(db: Database.Database) {
 
   return {
     liga,
+    ligaStatus: letzterAbruf(db, "liga"),
     eigeneAufstellung,
     duelle: duellListe,
     erwartet,
