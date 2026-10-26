@@ -49,6 +49,12 @@ const GRUPPEN: { titel: string | null; tabs: Tab[] }[] = [
     ) },
   ] },
   { titel: "Spieltag", tabs: [
+    { href: "/spieltag", label: "Spieltag", icon: (
+      <svg viewBox="0 0 24 24" {...s}>
+        <rect x="3.5" y="4.5" width="17" height="16" rx="2" />
+        <path d="M3.5 9.5h17M8 2.5v4M16 2.5v4M8 14l2.5 2.5L16 12" />
+      </svg>
+    ) },
     { href: "/gegner", label: "Gegner", icon: (
       <svg viewBox="0 0 24 24" {...s}>
         <circle cx="11" cy="11" r="6.5" />
@@ -100,7 +106,7 @@ const EINSTELLUNGEN: Tab = { href: "/einstellungen", label: "Einstellungen", ico
 const ALLE = GRUPPEN.flatMap((g) => g.tabs);
 const tab = (href: string) => ALLE.find((t) => t.href === href)!;
 // Handy: die vier Bereiche, die man vor jedem Spieltag braucht
-const UNTEN: Tab[] = [tab("/"), tab("/kader"), { ...tab("/gegner"), label: "Spieltag" }, { ...tab("/markt"), label: "Markt" }];
+const UNTEN: Tab[] = [tab("/"), tab("/kader"), tab("/spieltag"), { ...tab("/markt"), label: "Markt" }];
 
 function istAktiv(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);

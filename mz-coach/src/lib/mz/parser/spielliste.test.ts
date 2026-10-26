@@ -52,3 +52,35 @@ describe("letzte Ligaspiele", () => {
     expect(r.at(-1)!.datum).toBe("2026-10-03");
   });
 });
+
+// Nachbau einer Zeile des Spielplans (type=scheduled) mit dem Aufbau der echten Antwort vom 26.10.2026,
+// Namen und Nummern ausgedacht: kein Action-Panel, Spielnummer nur im „vs“-Link, eigenes Team ohne tid im Link.
+const zeile = (mid: number, zeit: string, art: string, wettbewerb: string, uxx: boolean, gegnerTid: number) => `
+<dd class="odd${uxx ? " uxx" : ""}"> <dl class="flex-wrap responsive-show"> <dd class="flex-grow-1">${zeit} - <strong>${art}</strong> </dd> </dl>
+<dl class="flex-wrap"> <dd class="responsive-hide match-time match-reference-type">${zeit}</dd>
+<dd class="responsive-hide match-reference-text-wrapper flex-grow-0"> <span>${art}</span> <a href="/?p=league&type=senior">${wettbewerb}</a> </dd>
+<dd class="teams-wrapper flex-grow-1"> <dl class="flex-nowrap">
+<dd class="home-team-column flex-grow-1"> <a href="/?p=team" class="clippable"><strong><span class="full-name">Eigenes Team</span><span class="short-name">EIG</span></strong></a> </dd>
+<dd class="bold score-cell-wrapper textCenter flex-grow-0"> <a href="/?p=match&sub=result&mid=${mid}&tid=1" class="score-hidden gray">vs</a> <a href="/?p=match&sub=result&mid=${mid}&tid=1" class="score-shown gray">vs</a> </dd>
+<dd class="away-team-column flex-grow-1"> <a href="/?p=team&tid=${gegnerTid}" class="clippable"><span class="full-name">Gegner ${gegnerTid}</span></a> </dd>
+</dl> </dd> <dd class="set-default-wrapper"></dd> </dl> </dd>`;
+const SPIELPLAN = `<dl id="fixtures-results-list" class="hitlist_dl marker fixtures hide-children"> <dd id="head_to_head_title"></dd> <dt></dt>
+<dd class="group"> 28-10-2026 </dd>${zeile(1700000001, "15:00", "U18 Liga", "div2.8", true, 50)}${zeile(1700000002, "18:45", "Ligaspiel", "div1.1", false, 60)}</dl>`;
+
+describe("Spielplan (kommende Spiele)", () => {
+  const l = parseSpielliste(SPIELPLAN, 1);
+
+  it("liest Spielnummer aus dem vs-Link und setzt die eigene tid", async () => {
+    const { istLigaspiel } = await import("./spielliste");
+    expect(l.spiele).toHaveLength(2);
+    expect(l.spiele[1]).toMatchObject({ mid: 1700000002, datum: "2026-10-28", zeit: "18:45", art: "Ligaspiel", heim: { tid: 1 }, gast: { tid: 60 }, tore: undefined });
+    expect(l.spiele.filter(istLigaspiel).map((s) => s.mid)).toEqual([1700000002]);
+  });
+
+  it("Anstoß ist deutsche Zeit (Winterzeit UTC+1, Sommerzeit UTC+2)", async () => {
+    const { anstoss } = await import("./spielliste");
+    expect(anstoss(l.spiele[1])?.toISOString()).toBe("2026-10-28T17:45:00.000Z");
+    expect(anstoss({ ...l.spiele[1], datum: "2026-10-21", zeit: "14:45" })?.toISOString()).toBe("2026-10-21T12:45:00.000Z");
+    expect(anstoss({ ...l.spiele[1], zeit: undefined })).toBeUndefined();
+  });
+});

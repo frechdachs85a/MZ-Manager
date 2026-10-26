@@ -9,5 +9,8 @@ export function nachNeustart() {
     .prepare("UPDATE abruf_log SET beendet = ?, ok = 0, meldung = coalesce(meldung, '') || 'Abgebrochen (Neustart des Servers).' WHERE beendet IS NULL")
     .run(new Date().toISOString()).changes;
   if (n) console.log(`[start] ${n} unterbrochene Abrufe als abgebrochen markiert`);
+  getDb()
+    .prepare("UPDATE spieltag_lauf SET beendet = ?, ok = 0, meldung = coalesce(meldung, '') || 'Abgebrochen (Neustart des Servers).' WHERE beendet IS NULL")
+    .run(new Date().toISOString());
   rmSync(join(dirname(process.env.DATABASE_PATH ?? "./data/mz-coach.db"), "abruf.laeuft"), { force: true });
 }

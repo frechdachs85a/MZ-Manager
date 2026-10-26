@@ -1,5 +1,5 @@
 import { parse, type HTMLElement } from "node-html-parser";
-import { KaderSeiteUnbekannt, serverzeit } from "./kader";
+import { berlinZuUtc, KaderSeiteUnbekannt, serverzeit } from "./kader";
 
 // Liste gespielter Spiele eines Teams (?p=match&sub=played&tid=…). Aufbau an der echten Seite
 // vom 25.10.2026 geprüft (docs/mz-seiten.md): dl#fixtures-results-list, Datumszeilen dd.group,
@@ -51,6 +51,22 @@ export function spiellisteHtmlAus(antwort: string): string | null {
   }
 }
 
+// Zeilen der Liste (dd.group, dd.odd, dd.even). Im Spielplan (type=scheduled) beginnt jede Spielzeile mit
+// <dd class="odd"><dl …><dd …>; node-html-parser schließt dabei das äußere dd und hängt den Inhalt flach an die
+// Liste (am echten Spielplan vom 26.10.2026 gesehen). Dann wird das HTML an den Zeilenanfängen geteilt und jede
+// Zeile einzeln gelesen; die Abfragen unten brauchen nur die Klassen innerhalb der Zeile.
+function zeilen(html: string, liste: HTMLElement): HTMLElement[] {
+  const direkt = liste.childNodes.filter((n): n is HTMLElement => (n as HTMLElement).tagName === "DD");
+  if (direkt.some((d) => d.classList.contains("odd") || d.classList.contains("even"))) return direkt;
+  const start = html.indexOf('id="fixtures-results-list"');
+  const teile = html.slice(start).split(/(?=<dd class="(?:group|odd|even)[" ])/).slice(1);
+  return teile.map((t) => {
+    const k = t.match(/^<dd class="([^"]*)"/)![1];
+    const wurzel = parse(`<div class="${k}">${t.replace(/^<dd[^>]*>/, "")}</div>`).querySelector("div")!;
+    return wurzel;
+  });
+}
+
 export function parseSpielliste(html: string, tidVorgabe?: number): Spielliste {
   const doc = parse(html);
   const liste = doc.querySelector("dl#fixtures-results-list");
@@ -60,7 +76,7 @@ export function parseSpielliste(html: string, tidVorgabe?: number): Spielliste {
 
   const spiele: ListenSpiel[] = [];
   let datum: string | undefined;
-  for (const dd of liste.childNodes.filter((n): n is HTMLElement => (n as HTMLElement).tagName === "DD")) {
+  for (const dd of zeilen(html, liste)) {
     if (dd.classList.contains("group")) {
       const m = text(dd).match(/^(\d{2})-(\d{2})-(\d{4})$/);
       if (!m) throw new KaderSeiteUnbekannt(`Unbekanntes Datum „${text(dd)}“ in der Spielliste.`);
@@ -68,8 +84,11 @@ export function parseSpielliste(html: string, tidVorgabe?: number): Spielliste {
       continue;
     }
     if (!dd.classList.contains("odd") && !dd.classList.contains("even")) continue;
+    // Gespielte Spiele: dl#action-panel-<mid>. Kommende Spiele (type=scheduled, echte Antwort vom 26.10.2026):
+    // kein Action-Panel, die Spielnummer steht nur im Link der Ergebniszelle (…&mid=<mid>&tid=…, Text „vs“).
     const panel = dd.querySelectorAll("dl").find((d) => /^action-panel-\d+$/.test(d.id));
-    const mid = panel ? Number(panel.id.replace("action-panel-", "")) : undefined;
+    const link = (dd.querySelector(".score-cell-wrapper a")?.getAttribute("href") ?? "").match(/[?&]mid=(\d+)/);
+    const mid = panel ? Number(panel.id.replace("action-panel-", "")) : link ? Number(link[1]) : undefined;
     if (!mid || !datum) throw new KaderSeiteUnbekannt("Spiel ohne Spielnummer oder Datum in der Spielliste.");
     const ref = dd.querySelector(".match-reference-text-wrapper");
     const art = text(ref?.querySelector("span"));
@@ -92,6 +111,11 @@ export function parseSpielliste(html: string, tidVorgabe?: number): Spielliste {
       tore: ergebnis ? { heim: Number(ergebnis[1]), gast: Number(ergebnis[2]) } : undefined,
     });
   }
+  // Im Spielplan verlinkt das eigene Team nur auf "/?p=team" ohne tid: fehlt genau einer Seite die tid, ist es das Team der Liste
+  for (const s of spiele) {
+    if (s.heim.tid === undefined && s.gast.tid !== undefined && s.gast.tid !== tid) s.heim.tid = tid;
+    else if (s.gast.tid === undefined && s.heim.tid !== undefined && s.heim.tid !== tid) s.gast.tid = tid;
+  }
   const eigen = spiele.flatMap((s) => [s.heim, s.gast]).find((t) => t.tid === tid);
   return { tid, teamName: eigen?.name, spiele, serverzeit: serverzeit(html) };
 }
@@ -107,4 +131,15 @@ export function letzteLigaspiele<T extends ListenSpiel>(spiele: T[], n = ANALYSE
     .filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB)
     .sort((a, b) => `${b.datum} ${b.zeit ?? ""}`.localeCompare(`${a.datum} ${a.zeit ?? ""}`) || b.mid - a.mid)
     .slice(0, n);
+}
+
+// Senioren-Ligaspiel (U18/U21/U23-Ligen heißen „U18 Liga“ usw. und tragen die Klasse uxx)
+export const istLigaspiel = (s: ListenSpiel) => s.art === "Ligaspiel" && !s.altersklasse;
+
+// Anstoß als Zeitpunkt (Datum und Uhrzeit der Liste sind deutsche Zeit, siehe berlinZuUtc)
+export function anstoss(s: ListenSpiel): Date | undefined {
+  const d = s.datum.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const z = s.zeit?.match(/^(\d{1,2}):(\d{2})$/);
+  if (!d || !z) return undefined;
+  return berlinZuUtc(Number(d[1]), Number(d[2]) - 1, Number(d[3]), Number(z[1]), Number(z[2]));
 }

@@ -2,12 +2,14 @@ import { getDb } from "@/lib/db";
 import { abrufBeenden, abrufBeginnen } from "@/lib/db/abruf";
 import { aufraeumen, sichereDatenbank } from "@/lib/archiv";
 import { marktAbrufen, marktFaellig } from "@/lib/mz/abruf/markt";
+import { spieltagAbrufen, spieltagFaellig } from "@/lib/mz/abruf/spieltag";
 import { topAbrufen, topFaellig } from "@/lib/mz/abruf/top";
 import type Database from "better-sqlite3";
 
 // Prüft alle 15 Minuten, was fällig ist. Abrufe laufen nie parallel (mitMzSitzung).
 // 4 Uhr: Top 10 (Listen wöchentlich, Nachholen täglich), eigene Spiele, Tabelle
 // 6 Uhr: Transfermarkt
+// 5 Stunden nach jedem Ligaspiel: Spieltag (Spielbericht, nächster Gegner, Taktikvorschlag), sonst täglich der Spielplan
 // danach: Aufräumen täglich, Sicherung der Datenbank wöchentlich
 const TAKT_MS = 15 * 60 * 1000;
 const TAG_MS = 24 * 3600_000;
@@ -46,6 +48,11 @@ async function takt() {
   laeuft = true;
   try {
     const db = getDb();
+    const spieltag = spieltagFaellig(db);
+    if (spieltag) {
+      const r = await spieltagAbrufen(db, { manuell: false, ziel: spieltag.ziel });
+      console.log(`[zeitplan] ${r.meldung.slice(0, 300)}`);
+    }
     if (topFaellig(db)) {
       const r = await topAbrufen(db);
       console.log(`[zeitplan] ${r.meldung.slice(0, 300)}`);
@@ -65,7 +72,7 @@ async function takt() {
 export function starteZeitplan() {
   if (gestartet) return;
   gestartet = true;
-  console.log("[zeitplan] aktiv: 4 Uhr Top 10 (Listen wöchentlich) und eigene Spiele, 6 Uhr Transfermarkt, täglich Aufräumen, wöchentlich Sicherung");
+  console.log("[zeitplan] aktiv: 5 h nach jedem Ligaspiel Spieltag, 4 Uhr Top 10 (Listen wöchentlich) und eigene Spiele, 6 Uhr Transfermarkt, täglich Aufräumen, wöchentlich Sicherung");
   setTimeout(takt, 60_000).unref();
   setInterval(takt, TAKT_MS).unref();
 }

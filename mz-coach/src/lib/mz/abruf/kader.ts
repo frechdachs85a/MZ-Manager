@@ -144,8 +144,8 @@ export async function kaderAbrufen(db: Database.Database, opt = { manuell: false
             teile.push(`${pfad}: ${meldungAus(e)}`);
           }
         }
-        // Spielplan (anstehende Spiele) für die Automatik nach dem Ligaspiel. Ob die Listen-Anfrage mit type=scheduled
-        // die Spieltermine liefert, ist noch nicht belegt (26.10.2026): Antwort roh speichern und Lesen versuchen.
+        // Spielplan (anstehende Spiele): type=scheduled liefert die Termine (echte Antwort vom 26.10.2026, JSON mit
+        // dem Listen-HTML unter "list"). Roh gespeichert für die Diagnose; ausgewertet wird er im Spieltag-Abruf.
         try {
           const a = await s.sendeForm("/ajax.php?p=matches&sub=list&sport=soccer", {
             type: "scheduled",
