@@ -13,6 +13,7 @@ services:
     shm_size: "1gb" # Chromium braucht mehr gemeinsamen Speicher als die 64 MB, die Docker vorgibt
     environment:
       EINRICHTUNGSCODE: ${EINRICHTUNGSCODE:-}
+      FERN_AUS: ${FERN_AUS:-} # 1 = Fernzugang für Claude aus (siehe docs/hosting.md)
     volumes:
       - ./daten:/data
     expose:
