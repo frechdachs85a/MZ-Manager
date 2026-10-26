@@ -35,7 +35,7 @@ async function zustandLesen(s: MzSitzung, params: string, pid: number): Promise<
 type GebotErgebnis = { geboten: true; betrag: number; eur: number; antwort: string } | { geboten: false; grund: string; stop: boolean };
 
 // Im Browser auf der Marktseite: Gebotsfenster öffnen, vorausgefülltes Mindestgebot lesen, prüfen, bieten
-function gebotImBrowser(pid: number, maximumEur: number) {
+export function gebotImBrowser(pid: number, maximumEur: number) {
   return async (page: Page): Promise<GebotErgebnis> => {
     await page.evaluate((p) => (window as unknown as { buy: (x: number) => void }).buy(p), pid);
     await page.waitForSelector("#buyform_bid_player_currency", { timeout: 20_000 });
