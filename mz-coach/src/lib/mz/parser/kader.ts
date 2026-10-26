@@ -57,6 +57,12 @@ export function serverzeit(html: string): string | undefined {
   const m = html.match(/server_time = new Date\((\d+), (\d+), (\d+), (\d+), (\d+), (\d+)\)/);
   if (!m) return undefined;
   const [j, mo, t, h, mi, s] = m.slice(1).map(Number);
+  return berlinZuUtc(j, mo, t, h, mi, s).toISOString();
+}
+
+// Uhrzeit in Europe/Berlin (Monat 0-basiert wie in JavaScript) als Zeitpunkt. ManagerZone zeigt diesem Konto
+// die Zeiten in deutscher Zeit (server_time der Seiten stimmte am 26.10.2026 mit dem Abrufzeitpunkt überein).
+export function berlinZuUtc(j: number, mo: number, t: number, h: number, mi: number, s = 0): Date {
   // Offset von Europe/Berlin zu diesem Zeitpunkt bestimmen
   const alsUtc = Date.UTC(j, mo, t, h, mi, s);
   const teile = new Intl.DateTimeFormat("en-US", {
@@ -71,7 +77,7 @@ export function serverzeit(html: string): string | undefined {
   }).formatToParts(new Date(alsUtc));
   const w = (typ: string) => Number(teile.find((p) => p.type === typ)?.value);
   const berlinAlsUtc = Date.UTC(w("year"), w("month") - 1, w("day"), w("hour"), w("minute"), w("second"));
-  return new Date(alsUtc - (berlinAlsUtc - alsUtc)).toISOString();
+  return new Date(alsUtc - (berlinAlsUtc - alsUtc));
 }
 
 export function parseKaderSeite(html: string): KaderSeite {

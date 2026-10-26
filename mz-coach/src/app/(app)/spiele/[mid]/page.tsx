@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
+import { SpielberichtTeile } from "@/components/spielbericht";
 import { Spielfeld } from "@/components/spielfeld";
 import { StatVergleich } from "@/components/stat-vergleich";
 import { VerlaufAnsicht } from "@/components/verlauf-ansicht";
@@ -9,6 +10,7 @@ import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
 import { Card, Hero, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeSpiel } from "@/lib/db/spiele";
+import { spielBericht } from "@/lib/mz/analyse/bericht";
 import { datumZeit, spielDatum } from "@/lib/format";
 import { TEAM } from "@/lib/wissen/startbasis";
 
@@ -136,6 +138,9 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
           </Card>
         </Section>
         </div>
+
+        {/* Ausführlicher Bericht aus Sicht des eigenen Teams (bei fremden Spielen aus Sicht des Heimteams) */}
+        <SpielberichtTeile b={spielBericht(s, eigen?.id ?? heim.id)} />
 
         {verlaeufe.map(({ team, titel, v }) => (
           <Section

@@ -44,5 +44,9 @@ export function diagnose(db: Database.Database) {
     topSpiele: zahl("SELECT COUNT(*) AS n FROM top_spiel"),
     marktSuchen: zahl("SELECT COUNT(*) AS n FROM markt_suche"),
   };
-  return { erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, rohseiten, scout };
+  // Spieltag-Automatik: die letzten Läufe ohne Spielplan-JSON
+  const spieltag = db
+    .prepare("SELECT id, gestartet, beendet, ok, letztes_mid, naechstes_mid, gegner_tid, gegner_name, anstoss, heim, meldung FROM spieltag_lauf ORDER BY id DESC LIMIT 10")
+    .all();
+  return { erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, rohseiten, scout };
 }

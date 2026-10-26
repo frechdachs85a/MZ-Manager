@@ -34,6 +34,13 @@ export async function kaderJetztAbrufen(): Promise<AbrufState> {
   return r;
 }
 
+export async function spieltagJetztAbrufen(): Promise<AbrufState> {
+  const { spieltagAbrufen } = await import("@/lib/mz/abruf/spieltag");
+  const r = await spieltagAbrufen(getDb(), { manuell: true });
+  revalidatePath("/", "layout");
+  return r;
+}
+
 export async function kaderHochladen(_prev: AbrufState, formData: FormData): Promise<AbrufState> {
   const dateien = formData.getAll("datei").filter((d): d is File => d instanceof File && d.size > 0);
   if (dateien.length === 0) return { meldung: "Keine Datei ausgewählt." };

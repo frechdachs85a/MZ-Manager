@@ -196,6 +196,24 @@ const MIGRATIONEN: string[] = [
   -- Login-Verlauf vom 25.10.2026 enthielt die Login-Adresse mit md5 des Passworts: löschen (künftig geschwärzt)
   DELETE FROM rohseite WHERE art IN ('login-verlauf', 'login-ergebnis');
   `,
+  `
+  -- Spieltag-Automatik (Marcus, 26.10.2026): je Lauf das ausgewertete eigene Ligaspiel und das nächste Ligaspiel
+  -- laut Spielplan (Anstoß als UTC), dazu die kommenden Spiele aus dem Spielplan als JSON
+  CREATE TABLE spieltag_lauf (
+    id INTEGER PRIMARY KEY,
+    gestartet TEXT NOT NULL,
+    beendet TEXT,
+    ok INTEGER,
+    letztes_mid INTEGER,
+    naechstes_mid INTEGER,
+    gegner_tid INTEGER,
+    gegner_name TEXT,
+    anstoss TEXT,
+    heim INTEGER,
+    plan_json TEXT,
+    meldung TEXT
+  );
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

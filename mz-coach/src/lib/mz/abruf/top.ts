@@ -8,7 +8,7 @@ import { zugangStatus } from "@/lib/mz/zugang";
 import { parseSpielliste, spiellisteHtmlAus } from "@/lib/mz/parser/spielliste";
 import { auswahlLernspiele } from "./top-auswahl";
 import { meldungAus, spielXmlEinlesen, type Ergebnis } from "./kader";
-import { mitMzSitzung, MzFehler } from "./sitzung";
+import { marke, mitMzSitzung, MzFehler } from "./sitzung";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { letzteLigaspiele, type ListenSpiel } from "@/lib/mz/parser/spielliste";
 import { holeStatsXml } from "./spiele";
@@ -37,6 +37,7 @@ export function topWocheFaellig(db: Database.Database, jetzt = new Date()): bool
 
 export async function topAbrufen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "top10");
+  marke(true); // auch während der Stats-XML nach der Sitzung kein automatisches Update
   const teile: string[] = [];
   let ok = true;
   const woche = opt.manuell || topWocheFaellig(db);
@@ -139,6 +140,7 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
     if (listenLog && !listenFertig) abrufBeenden(db, listenLog, false, meldungAus(e));
   }
   const meldung = `Top 10: ${teile.join(" ")}`;
+  marke(false);
   abrufBeenden(db, log, ok, meldung);
   return { ok, meldung };
 }

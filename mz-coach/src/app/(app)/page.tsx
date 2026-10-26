@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, Hero, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { letzterGegner } from "@/lib/gegner-analyse";
+import { spieltagLage } from "@/lib/spieltag";
 import { spieltagCheckliste } from "@/lib/checkliste";
 import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
 import { tabelleAus } from "@/lib/mz/parser/tabelle";
@@ -27,6 +28,7 @@ export default async function Uebersicht() {
   const zurueck = einsatz.filter((x) => x.e.lage === "wieder_bereit");
   const gesperrt = kader.filter((s) => s.status?.gesperrt);
   const start = startelfAusLetztemSpiel(db);
+  const st = spieltagLage(db);
   const gegner = letzterGegner(db);
   const check = spieltagCheckliste(db);
   const tabRoh = letzteRohseite(db, "tabelle");
@@ -48,7 +50,38 @@ export default async function Uebersicht() {
       {/* Nächstes Spiel: das wichtigste Panel, wie die Spielvorschau im Manager-Spiel */}
       <div className="seite mt-6 grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          {gegner?.analyse ? (
+          {st.lauf?.gegnerTid && st.lauf.anstoss ? (
+            <Link href="/spieltag" className="block h-full">
+              <Hero className="h-full transition-colors hover:border-tint/50">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="kapitaelchen !text-tint-hell">
+                      Nächstes Ligaspiel ·{" "}
+                      {new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(st.lauf.anstoss))}
+                    </div>
+                    <div className="display mt-2 text-[15px] font-semibold uppercase text-label-2">{st.lauf.heim ? "Heimspiel gegen" : "Auswärts bei"}</div>
+                    <div className="display text-[34px] font-bold uppercase leading-none">{st.lauf.gegnerName}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="kapitaelchen">Taktikvorschlag</div>
+                    <div className="display mt-1 text-[44px] font-bold uppercase leading-none text-tint-hell">{st.empfehlung?.taktik ?? "n. v."}</div>
+                  </div>
+                </div>
+                <p className="mt-4 max-w-[70ch] text-[14px] leading-relaxed text-label-2">
+                  {st.gegner?.analyse?.urteilText ?? "Noch keine Ligaspiele des Gegners mit Stats-XML gespeichert."}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-label-3">
+                  {st.bericht && (
+                    <span>
+                      Letztes Ligaspiel {st.bericht.endstand.eigen}:{st.bericht.endstand.gegner} gegen {st.bericht.gegner.name}
+                    </span>
+                  )}
+                  <span>Stand {datumZeit(st.lauf.gestartet)}</span>
+                  <span className="font-semibold text-tint-hell">Spieltag öffnen →</span>
+                </div>
+              </Hero>
+            </Link>
+          ) : gegner?.analyse ? (
             <Link href={`/gegner/${gegner.tid}`} className="block h-full">
               <Hero className="h-full transition-colors hover:border-tint/50">
                 <div className="flex flex-wrap items-start justify-between gap-4">
