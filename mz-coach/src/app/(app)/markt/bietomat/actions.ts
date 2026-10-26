@@ -6,9 +6,10 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { aendereAuftrag, ladeAuftraege, loescheAuftrag, protokolliere, speichereAuftrag } from "@/lib/db/gebot";
 import type { MarktSpieler } from "@/lib/mz/parser/transfer";
+import type { Verkauf } from "@/lib/mz/parser/verkauf";
 import { berlinZuUtc } from "@/lib/mz/parser/kader";
 
-export type LadeState = { meldung?: string; spieler?: MarktSpieler; endeUtc?: string; auswahl?: (MarktSpieler & { endeUtc?: string })[] };
+export type LadeState = { meldung?: string; spieler?: MarktSpieler & { verkauf?: Verkauf }; endeUtc?: string; auswahl?: (MarktSpieler & { endeUtc?: string })[] };
 export type AuftragState = { meldung?: string; ok?: boolean };
 
 const ganzzahl = (v: FormDataEntryValue | null) => {
@@ -18,13 +19,9 @@ const ganzzahl = (v: FormDataEntryValue | null) => {
 
 // Spieler laden: aus der Trefferliste gewählt oder per Nummer/Name gesucht
 export async function spielerLadenAktion(_prev: LadeState, formData: FormData): Promise<LadeState> {
-  // Auswahl aus der Trefferliste: Daten liegen schon vor, nichts neu laden
+  // Auswahl aus der Trefferliste: per Spielernummer neu laden (frische Daten und letzter Verkauf)
   const gewaehlt = formData.get("gewaehlt");
-  if (gewaehlt) {
-    const sp = JSON.parse(String(gewaehlt)) as MarktSpieler & { endeUtc?: string };
-    return { spieler: sp, endeUtc: sp.endeUtc };
-  }
-  const eingabe = String(formData.get("suche") ?? "").trim();
+  const eingabe = gewaehlt ? String((JSON.parse(String(gewaehlt)) as MarktSpieler).pid) : String(formData.get("suche") ?? "").trim();
   if (eingabe.length < 2) return { meldung: "Bitte Spielernummer oder Namen eintragen." };
   const { spielerLaden } = await import("@/lib/mz/abruf/bietomat");
   const r = await spielerLaden(getDb(), eingabe);

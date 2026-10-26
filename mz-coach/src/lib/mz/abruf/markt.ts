@@ -12,6 +12,9 @@ import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { mitFiltern, suchZiele } from "./markt-ziel";
 import { meldungAus, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler } from "./sitzung";
+import { verkaufLaden } from "./verkauf";
+import { ladeVerkaeufe } from "@/lib/db/verkauf";
+import { marktErgebnis } from "@/lib/markt-ergebnis";
 
 // Tägliche Transfermarktsuche (eingeloggt). Ablauf wie das Userscript Mazyar (siehe parser/transfer.ts):
 // Suchformular #searchform der Marktseite lesen, mit genau dessen Feldern und Standardwerten
@@ -22,6 +25,7 @@ export const MAX_SEITEN = 25;
 const JE_SEITE = 20;
 const JE_ZIEL = 40; // Kandidaten je Rolle, dann nächste Rolle
 const SEITEN_JE_STUFE = 3;
+const VERKAEUFE_JE_SUCHE = 6; // Spielerseiten für den letzten Verkauf je Suche
 
 // Felder des Suchformulars als Parameter, wie Mazyar sie bildet: jedes input/select mit Namen,
 // Kontrollkästchen als 1/0, Auswahllisten mit der gewählten Option.
@@ -112,6 +116,20 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
           }
         }
         const id = speichereMarktSuche(db, { treffer, seiten, spieler: [...spieler.values()] });
+        // Letzter Verkauf (Spielerseite, Kasten "Transfers") für die Empfehlung und die nächsten Kandidaten, höchstens
+        // VERKAEUFE_JE_SUCHE Seiten; was in den letzten 7 Tagen gelesen wurde, nicht noch einmal
+        const e = marktErgebnis(db).ergebnis;
+        const bekannt = ladeVerkaeufe(db);
+        const frisch = (pid: number) => {
+          const v = bekannt.get(pid);
+          return v && Date.now() - new Date(v.stand).getTime() < 7 * 24 * 3600_000;
+        };
+        const fuer = (e ? [e.empfehlung, ...e.weitere] : []).filter((b): b is NonNullable<typeof b> => !!b).map((b) => b.kandidat.pid);
+        let verkaeufe = 0;
+        for (const pid of fuer.filter((p) => !frisch(p)).slice(0, VERKAEUFE_JE_SUCHE)) {
+          if (await verkaufLaden(db, s, pid)) verkaeufe++;
+        }
+        if (verkaeufe) ziel.push(`letzter Verkauf von ${verkaeufe} Kandidaten gelesen`);
         // Für die automatischen Einladungen: Herausforderungsseite samt challenges.js einmal sichern
         // (enthält challengeButtonAction, also wie eine Einladung abgeschickt wird). Nur lesen.
         const freund = ladeFreundTeam(db);

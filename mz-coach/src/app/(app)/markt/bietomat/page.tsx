@@ -11,6 +11,7 @@ import { auftragLoeschen } from "./actions";
 import { Bietomat, GebotKarte } from "./formulare";
 import { SpielerProfil } from "@/components/spieler-profil";
 import { MarktInfo } from "@/components/markt-info";
+import { ladeVerkaeufe } from "@/lib/db/verkauf";
 
 const STATUS_TON = {
   aktiv: "green",
@@ -25,6 +26,7 @@ export default async function BietomatSeite() {
   const auftraege = ladeAuftraege(db);
   const log = ladeProtokoll(db, undefined, 30);
   const saldo = ladeMarktRahmen(db)?.werte.kapital;
+  const verkaeufe = ladeVerkaeufe(db);
   const namen = new Map(auftraege.map((a) => [a.pid, a.name ?? String(a.pid)]));
   return (
     <>
@@ -77,7 +79,7 @@ export default async function BietomatSeite() {
                     />
                     {a.spieler && (
                       <div className="mt-3">
-                        <MarktInfo s={a.spieler} stand={`Stand beim Laden (${datumZeit(a.erstellt)}); Gebot und Ende verfolgt der Bietomat in der heißen Phase live.`} />
+                        <MarktInfo s={a.spieler} verkauf={verkaeufe.get(a.pid)} stand={`Stand beim Laden (${datumZeit(a.erstellt)}); Gebot und Ende verfolgt der Bietomat in der heißen Phase live.`} />
                       </div>
                     )}
                     {a.spieler && (

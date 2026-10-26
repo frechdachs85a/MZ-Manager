@@ -7,10 +7,12 @@ import { MARKT_PFAD, suchParameter } from "./markt";
 import { mitFiltern } from "./markt-ziel";
 import { meldungAus } from "./kader";
 import { mitMzSitzung } from "./sitzung";
+import { verkaufLaden } from "./verkauf";
+import type { Verkauf } from "@/lib/mz/parser/verkauf";
 
 // Bietomat: Spieler per Spielernummer ODER Name vom Transfermarkt laden (Feld "Name/ID" des Suchformulars, Marcus
 // 26.10.2026; sonst die Standardfilter der Marktseite). Mehrere Treffer beim Namen: Auswahlliste. Es wird nicht geboten.
-export type MitEnde = MarktSpieler & { endeUtc?: string };
+export type MitEnde = MarktSpieler & { endeUtc?: string; verkauf?: Verkauf };
 export type Geladen = { ok: true; spieler: MitEnde } | { ok: false; meldung: string; auswahl?: MitEnde[] };
 
 // Auktionsende (Berliner Zeit) als ISO-Zeitpunkt
@@ -32,7 +34,11 @@ export async function spielerLaden(db: Database.Database, eingabe: string): Prom
         const params = mitFiltern(suchParameter(seite.htmlDom ?? seite.htmlRoh ?? ""), { u: suche });
         const a = await s.holeText(`/ajax.php?p=transfer&sub=transfer-search&sport=soccer${params}&o=0`);
         speichereRohseite(db, { art: "gebot-suche", url: a.url, status: a.status, htmlRoh: a.text, htmlDom: null });
-        return parseTransferSuche(a.text).spieler.map((x) => ({ ...x, endeUtc: endeUtc(x.markt.ende) }));
+        const gefunden: MitEnde[] = parseTransferSuche(a.text).spieler.map((x) => ({ ...x, endeUtc: endeUtc(x.markt.ende) }));
+        // Genau ein Treffer: gleich den letzten Verkauf von der Spielerseite holen
+        const eins = pid !== undefined ? gefunden.filter((x) => x.pid === pid) : gefunden;
+        if (eins.length === 1) eins[0].verkauf = await verkaufLaden(db, s, eins[0].pid);
+        return gefunden;
       },
       { manuell: true },
     );
