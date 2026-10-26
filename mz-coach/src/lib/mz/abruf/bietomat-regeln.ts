@@ -22,7 +22,8 @@ export type Schritt =
   | { art: "fertig"; status: "beendet" | "abgebrochen"; text: string };
 
 // Nächster Schritt: warten, bieten oder fertig
-export function naechsterSchritt(z: Zustand, opt: { eigeneTid: number; bietenBisMs?: number; letztesEndeMs?: number; letzterBieter?: number }, jetzt: number): Schritt {
+// Kein "bieten bis" (Marcus, 26.10.2026): geboten wird bis zum Endpreis, egal wie oft sich die Auktion verlängert.
+export function naechsterSchritt(z: Zustand, opt: { eigeneTid: number; letztesEndeMs?: number; letzterBieter?: number }, jetzt: number): Schritt {
   const ende = z.endeMs ?? opt.letztesEndeMs;
   if (!z.gefunden || (ende !== undefined && jetzt > ende + 60_000)) {
     const bieter = z.gefunden ? z.bieterTid : opt.letzterBieter;
@@ -34,7 +35,6 @@ export function naechsterSchritt(z: Zustand, opt: { eigeneTid: number; bietenBis
   const rest = ende - jetzt;
   if (z.bieterTid === opt.eigeneTid) return { art: "warten", ms: Math.min(PRUEF_MS, Math.max(5_000, rest + 5_000)), grund: "du bist Höchstbietender" };
   if (rest > HEISS_MS) return { art: "warten", ms: Math.min(60_000, rest - HEISS_MS), grund: "noch nicht in den letzten 3 Minuten" };
-  if (opt.bietenBisMs !== undefined && jetzt > opt.bietenBisMs) return { art: "fertig", status: "abgebrochen", text: "„Bieten bis“ ist vorbei: nicht mehr geboten." };
   return { art: "bieten" };
 }
 

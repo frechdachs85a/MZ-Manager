@@ -9,18 +9,6 @@ import { auftragAendern, auftragSpeichern, empfehlungInBietomat, spielerLadenAkt
 
 const KNOPF = "pressable min-h-[46px] w-full knopf text-[16px] font-bold disabled:opacity-50";
 const zahl = (n?: number) => (n === undefined ? "–" : `${new Intl.NumberFormat("de-DE").format(n)} EUR`);
-// ISO (UTC) -> Wert für datetime-local in Berliner Zeit
-const alsLokal = (iso?: string) =>
-  iso
-    ? new Intl.DateTimeFormat("sv-SE", {
-        timeZone: "Europe/Berlin",
-        dateStyle: "short",
-        timeStyle: "short",
-      })
-        .format(new Date(iso))
-        .replace(" ", "T")
-    : "";
-
 function Feld({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex min-h-11 items-center gap-3 border-b border-separator px-4 last:border-b-0">
@@ -109,9 +97,6 @@ export function Bietomat({ saldo }: { saldo?: number }) {
                 </button>
               )}
             </Feld>
-            <Feld label="Bieten bis">
-              <input name="bis" type="datetime-local" defaultValue={alsLokal(geladen.endeUtc)} className={EINGABE} />
-            </Feld>
           </div>
           <button type="submit" disabled={speichert} className={`${KNOPF} mt-3`}>
             {speichert ? "Speichern …" : "Auftrag speichern"}
@@ -131,7 +116,6 @@ export function Bietomat({ saldo }: { saldo?: number }) {
 export function GebotKarte(p: {
   pid: number;
   maximum: number;
-  bietenBis?: string;
   auktionEnde?: string;
   eigenesGebot?: number;
 }) {
@@ -151,7 +135,7 @@ export function GebotKarte(p: {
         </div>
         <div className="text-[12.5px] text-label-2">
           <div>Ende {zeit(p.auktionEnde)}</div>
-          <div>Bieten bis {p.bietenBis ? zeit(p.bietenBis) : "Auktionsende"}</div>
+          <div>Geboten wird bis zum Endpreis, auch bei Verlängerung</div>
         </div>
         <button type="button" onClick={() => setOffen(!offen)} className="ml-auto rounded-md bg-fill px-3 py-1.5 text-[13px] font-semibold">
           {offen ? "Schließen" : "Bearbeiten"}
@@ -163,9 +147,6 @@ export function GebotKarte(p: {
           <div className="karte overflow-hidden rounded-[10px] bg-card">
             <Feld label="Endpreis (EUR)">
               <input name="maximum" inputMode="numeric" required defaultValue={p.maximum} className={EINGABE} />
-            </Feld>
-            <Feld label="Bieten bis">
-              <input name="bis" type="datetime-local" defaultValue={alsLokal(p.bietenBis)} className={EINGABE} />
             </Feld>
           </div>
           <button type="submit" disabled={pending} className={`${KNOPF} mt-2`}>

@@ -279,6 +279,11 @@ const MIGRATIONEN: string[] = [
     stand TEXT NOT NULL
   );
   `,
+  // 20: "bieten bis" abgeschafft (Marcus, 26.10.2026: bieten bis zum Endpreis, egal wie lange sich die Auktion
+  // verlängert). Gespeicherte Werte löschen; die Spalte bleibt, wird aber nicht mehr benutzt.
+  `
+  UPDATE gebot_auftrag SET bieten_bis = NULL;
+  `,
 ];
 
 // Schema auf den neuesten Stand bringen (Migrationen der Reihe nach)

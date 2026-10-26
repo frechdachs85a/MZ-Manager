@@ -42,7 +42,8 @@ describe("Bietomat-Regeln", () => {
     expect(naechsterSchritt({ gefunden: true, endeMs: t0, bieterTid: 2 }, { eigeneTid: ICH }, t0 + 2 * min)).toMatchObject({ art: "fertig" });
   });
 
-  it("respektiert „bieten bis“", () => {
-    expect(naechsterSchritt({ gefunden: true, endeMs: t0 + 2 * min, bieterTid: 2 }, { eigeneTid: ICH, bietenBisMs: t0 - min }, t0)).toMatchObject({ art: "fertig", status: "abgebrochen" });
+  it("bietet auch nach mehreren Verlängerungen weiter, solange der Endpreis reicht (keine Zeitgrenze)", () => {
+    // Ursprüngliches Ende t0, durch Gebote dreimal um 3 Minuten verlängert
+    expect(naechsterSchritt({ gefunden: true, endeMs: t0 + 9 * min + 2 * min, bieterTid: 2 }, { eigeneTid: ICH, letztesEndeMs: t0 }, t0 + 9 * min)).toEqual({ art: "bieten" });
   });
 });

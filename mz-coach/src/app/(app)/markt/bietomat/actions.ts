@@ -7,7 +7,6 @@ import { getDb } from "@/lib/db";
 import { aendereAuftrag, ladeAuftraege, loescheAuftrag, protokolliere, speichereAuftrag } from "@/lib/db/gebot";
 import type { MarktSpieler } from "@/lib/mz/parser/transfer";
 import type { Verkauf } from "@/lib/mz/parser/verkauf";
-import { berlinZuUtc } from "@/lib/mz/parser/kader";
 
 export type LadeState = { meldung?: string; spieler?: MarktSpieler & { verkauf?: Verkauf }; endeUtc?: string; auswahl?: (MarktSpieler & { endeUtc?: string })[] };
 export type AuftragState = { meldung?: string; ok?: boolean };
@@ -28,28 +27,17 @@ export async function spielerLadenAktion(_prev: LadeState, formData: FormData): 
   return r.ok ? { spieler: r.spieler, endeUtc: r.spieler.endeUtc } : { meldung: r.meldung, auswahl: r.auswahl };
 }
 
-// "bieten bis" kommt als datetime-local (Berliner Zeit, ohne Zone)
-function berlinIso(v: string): string | undefined {
-  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
-  if (!m) return undefined;
-  return berlinZuUtc(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).toISOString();
-}
-
-// Neuen Auftrag speichern (Endpreis, bieten bis, Auktionsende)
+// Neuen Auftrag speichern (Endpreis, Auktionsende). Geboten wird bis zum Endpreis, ohne Zeitgrenze.
 export async function auftragSpeichern(_prev: AuftragState, formData: FormData): Promise<AuftragState> {
   const pid = ganzzahl(formData.get("pid"));
   const maximum = ganzzahl(formData.get("maximum"));
   if (!pid) return { meldung: "Spielernummer fehlt." };
   if (!maximum) return { meldung: "Bitte das Maximalgebot als ganze Zahl (EUR) eintragen." };
   const spieler = JSON.parse(String(formData.get("spieler") ?? "null")) as MarktSpieler | null;
-  const bisText = String(formData.get("bis") ?? "");
-  const bietenBis = bisText ? berlinIso(bisText) : undefined;
-  if (bisText && !bietenBis) return { meldung: "„Bieten bis“ ist kein gültiger Zeitpunkt." };
   const auktionEnde = String(formData.get("ende") ?? "") || undefined;
-  if (bietenBis && auktionEnde && bietenBis > auktionEnde) return { meldung: "„Bieten bis“ liegt nach dem Auktionsende." };
   const db = getDb();
-  speichereAuftrag(db, { pid, name: spieler?.name, maximum, bietenBis, auktionEnde, spieler: spieler ?? undefined, status: "aktiv" });
-  protokolliere(db, pid, `Auftrag gespeichert: höchstens ${maximum} EUR${bietenBis ? `, bieten bis ${bietenBis}` : ""}.`, maximum);
+  speichereAuftrag(db, { pid, name: spieler?.name, maximum, auktionEnde, spieler: spieler ?? undefined, status: "aktiv" });
+  protokolliere(db, pid, `Auftrag gespeichert: höchstens ${maximum} EUR.`, maximum);
   revalidatePath("/markt/bietomat");
   return { ok: true, meldung: "Auftrag gespeichert." };
 }
@@ -64,7 +52,7 @@ export async function auftragLoeschen(formData: FormData) {
   revalidatePath("/markt/bietomat");
 }
 
-// Endpreis und „bieten bis“ eines Auftrags ändern
+// Endpreis eines Auftrags ändern
 export async function auftragAendern(_prev: AuftragState, formData: FormData): Promise<AuftragState> {
   const pid = ganzzahl(formData.get("pid"));
   const maximum = ganzzahl(formData.get("maximum"));
@@ -73,11 +61,8 @@ export async function auftragAendern(_prev: AuftragState, formData: FormData): P
   const db = getDb();
   const a = ladeAuftraege(db).find((x) => x.pid === pid);
   if (!a) return { meldung: "Auftrag nicht gefunden." };
-  const bisText = String(formData.get("bis") ?? "");
-  const bietenBis = bisText ? berlinIso(bisText) : undefined;
-  if (bisText && !bietenBis) return { meldung: "„Bieten bis“ ist kein gültiger Zeitpunkt." };
-  aendereAuftrag(db, pid, maximum, bietenBis ?? null);
-  protokolliere(db, pid, `Auftrag geändert: Endpreis ${a.maximum} → ${maximum} EUR${bietenBis ? `, bieten bis ${bietenBis}` : ""}.`, maximum);
+  aendereAuftrag(db, pid, maximum);
+  protokolliere(db, pid, `Auftrag geändert: Endpreis ${a.maximum} → ${maximum} EUR.`, maximum);
   revalidatePath("/markt/bietomat");
   return { ok: true, meldung: "Gespeichert." };
 }
