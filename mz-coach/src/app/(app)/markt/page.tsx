@@ -11,6 +11,9 @@ import { datumZeit, euro, spielDatum } from "@/lib/format";
 import { bewerteMarkt, GRUND_TEXT, HEIMATLAND, schwachstellen, type Bewertung, type Grund, type Schwachstelle } from "@/lib/mz/analyse/markt";
 import { ablehnen, zuruecknehmen } from "./actions";
 import { RahmenForm, SuchKnopf } from "./formulare";
+import { InBietomat } from "./bietomat/formulare";
+import { SpielerProfil } from "@/components/spieler-profil";
+import { ladeAuftraege } from "@/lib/db/gebot";
 
 const MZ = "https://www.managerzone.com";
 const komma = (n: number, s = 2) => n.toFixed(s).replace(".", ",");
@@ -25,6 +28,7 @@ export default async function Markt() {
   const freund = ladeFreundTeam(db);
   const abgelehnt = ladeAblehnungen(db);
   const abruf = letzterAbruf(db, "markt");
+  const imBietomat = new Map(ladeAuftraege(db).filter((a) => a.status === "aktiv").map((a) => [a.pid, a.maximum]));
   const schwach = start ? schwachstellen(start.elf, kader) : null;
   const r = rahmen?.werte;
   const ergebnis =
@@ -56,7 +60,7 @@ export default async function Markt() {
             ) : !suche ? (
               <Unavailable title="Empfehlung" reason="Noch keine Marktsuche. Sie läuft täglich ab 6 Uhr automatisch, oder unten jetzt suchen." />
             ) : ergebnis?.empfehlung ? (
-              <EmpfehlungKarte b={ergebnis.empfehlung} />
+              <EmpfehlungKarte b={ergebnis.empfehlung} imBietomat={imBietomat.get(ergebnis.empfehlung.kandidat.pid)} />
             ) : (
               <Card className="p-4">
                 <div className="text-[17px] font-semibold">Heute kein passender Spieler auf dem Markt</div>
@@ -71,12 +75,25 @@ export default async function Markt() {
             <Section title="Nächste Kandidaten" footer="Kommen nach, wenn du die Empfehlung ablehnst.">
               <List>
                 {ergebnis.weitere.map((b) => (
-                  <Row
-                    key={b.kandidat.pid}
-                    title={b.kandidat.name}
-                    detail={`${b.ziel.rolle} statt ${b.ziel.spieler.name} · ${b.kandidat.alter ?? "?"} J. · ${b.kandidat.nationalitaet} · ab ${euro(b.preis)}`}
-                    value={<span className="font-semibold tabular-nums text-label">+{komma(b.gewinn)}</span>}
-                  />
+                  <li key={b.kandidat.pid} className="py-2.5">
+                    <details>
+                      <summary className="flex cursor-pointer list-none items-center gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[14.5px] font-medium leading-snug">
+                            {b.kandidat.name}
+                            {imBietomat.has(b.kandidat.pid) && <span className="ml-2"><Badge tone="green">im Bietomat</Badge></span>}
+                          </div>
+                          <div className="mt-0.5 text-[12.5px] text-label-2">{`${b.ziel.rolle} statt ${b.ziel.spieler.name} · ${b.kandidat.alter ?? "?"} J. · ${b.kandidat.nationalitaet} · ab ${euro(b.preis)}`}</div>
+                        </div>
+                        <span className="font-semibold tabular-nums text-label">+{komma(b.gewinn)}</span>
+                        <span className="text-[12px] text-tint">Details</span>
+                      </summary>
+                      <div className="mt-3 space-y-3">
+                        <SpielerProfil skills={b.kandidat.skills} scout={b.kandidat.scout} />
+                        <InBietomat pid={b.kandidat.pid} imBietomat={imBietomat.get(b.kandidat.pid)} />
+                      </div>
+                    </details>
+                  </li>
                 ))}
               </List>
             </Section>
@@ -177,7 +194,7 @@ export default async function Markt() {
   );
 }
 
-function EmpfehlungKarte({ b }: { b: Bewertung }) {
+function EmpfehlungKarte({ b, imBietomat }: { b: Bewertung; imBietomat?: number }) {
   const k = b.kandidat;
   return (
     <div className="space-y-3">
@@ -228,6 +245,14 @@ function EmpfehlungKarte({ b }: { b: Bewertung }) {
             </li>
           ))}
         </ul>
+      </Card>
+      <Card className="p-4">
+        <div className="mb-2 text-[15px] font-semibold">Spieler</div>
+        <SpielerProfil skills={k.skills} scout={k.scout} />
+      </Card>
+      <Card className="p-4">
+        <div className="mb-2 text-[15px] font-semibold">Bieten {imBietomat ? "· im Bietomat" : ""}</div>
+        <InBietomat pid={k.pid} imBietomat={imBietomat} />
       </Card>
       <form action={ablehnen}>
         <input type="hidden" name="pid" value={k.pid} />

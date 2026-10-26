@@ -78,3 +78,22 @@ export async function auftragAendern(_prev: AuftragState, formData: FormData): P
   revalidatePath("/markt/bietomat");
   return { ok: true, meldung: "Gespeichert." };
 }
+
+// Aus der Empfehlung des Transfermarkts (Marcus, 26.10.2026): Spieler frisch laden (aktuelles Ende, Gebot, Scout-Daten)
+// und als Auftrag speichern
+export async function empfehlungInBietomat(_prev: AuftragState, formData: FormData): Promise<AuftragState> {
+  const pid = ganzzahl(formData.get("pid"));
+  const maximum = ganzzahl(formData.get("maximum"));
+  if (!pid) return { meldung: "Spielernummer fehlt." };
+  if (!maximum) return { meldung: "Bitte den Endpreis als ganze Zahl (EUR) eintragen." };
+  const { spielerLaden } = await import("@/lib/mz/abruf/bietomat");
+  const db = getDb();
+  const r = await spielerLaden(db, String(pid));
+  if (!r.ok) return { meldung: r.meldung };
+  const { endeUtc, ...spieler } = r.spieler;
+  speichereAuftrag(db, { pid, name: spieler.name, maximum, auktionEnde: endeUtc, spieler, status: "aktiv" });
+  protokolliere(db, pid, `Auftrag aus der Empfehlung gespeichert: höchstens ${maximum} EUR.`, maximum);
+  revalidatePath("/markt");
+  revalidatePath("/markt/bietomat");
+  return { ok: true, meldung: `Im Bietomat: Endpreis ${new Intl.NumberFormat("de-DE").format(maximum)} EUR, Ende ${spieler.markt.ende ?? "?"}.` };
+}

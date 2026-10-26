@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { SpielerProfil } from "@/components/spieler-profil";
-import { auftragAendern, auftragSpeichern, spielerLadenAktion, type AuftragState, type LadeState } from "./actions";
+import { auftragAendern, auftragSpeichern, empfehlungInBietomat, spielerLadenAktion, type AuftragState, type LadeState } from "./actions";
 
 const KNOPF = "pressable min-h-[46px] w-full knopf text-[16px] font-bold disabled:opacity-50";
 const zahl = (n?: number) => (n === undefined ? "–" : `${new Intl.NumberFormat("de-DE").format(n)} EUR`);
@@ -189,5 +189,24 @@ export function GebotKarte(p: {
         </form>
       )}
     </div>
+  );
+}
+
+// Knopf "In den Bietomat" für Empfehlung und Kandidaten auf der Marktseite
+export function InBietomat({ pid, imBietomat }: { pid: number; imBietomat?: number }) {
+  const [state, action, pending] = useActionState<AuftragState, FormData>(empfehlungInBietomat, {});
+  return (
+    <form action={action}>
+      <input type="hidden" name="pid" value={pid} />
+      <div className="karte overflow-hidden rounded-[10px] bg-card">
+        <Feld label="Endpreis (EUR)">
+          <input name="maximum" inputMode="numeric" required defaultValue={imBietomat ?? ""} placeholder="dein Höchstbetrag" className={EINGABE} />
+        </Feld>
+      </div>
+      <button type="submit" disabled={pending} className={`${KNOPF} mt-2`}>
+        {pending ? "Lädt den Spieler frisch (bis ca. 1 Minute) …" : imBietomat ? "Endpreis im Bietomat ändern" : "In den Bietomat"}
+      </button>
+      {state.meldung && <p className={`mt-1 text-[13px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</p>}
+    </form>
   );
 }
