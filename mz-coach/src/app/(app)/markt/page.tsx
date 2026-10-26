@@ -6,17 +6,16 @@ import { PageHeader } from "@/components/page-header";
 import { Badge, Card, Hero, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { letzterAbruf } from "@/lib/db/abruf";
-import { ladeKader } from "@/lib/db/kader";
-import { ladeFreundTeam } from "@/lib/db/freunde";
-import { ladeAblehnungen, ladeLetzteSuche, ladeMarktRahmen, startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { datumZeit, euro, spielDatum } from "@/lib/format";
-import { bewerteMarkt, GRUND_TEXT, HEIMATLAND, schwachstellen, type Bewertung, type Grund, type Schwachstelle } from "@/lib/mz/analyse/markt";
+import { GRUND_TEXT, HEIMATLAND, type Bewertung, type Grund, type Schwachstelle } from "@/lib/mz/analyse/markt";
 import { ablehnen, zuruecknehmen } from "./actions";
 import { RahmenForm, SuchKnopf } from "./formulare";
 import { InBietomat } from "./bietomat/formulare";
 import { SpielerProfil } from "@/components/spieler-profil";
 import { MarktInfo } from "@/components/markt-info";
 import { ladeAuftraege } from "@/lib/db/gebot";
+import { marktErgebnis } from "@/lib/markt-ergebnis";
+import { ladeVerkaeufe, type GespeicherterVerkauf } from "@/lib/db/verkauf";
 
 const MZ = "https://www.managerzone.com";
 const komma = (n: number, s = 2) => n.toFixed(s).replace(".", ",");
@@ -25,27 +24,10 @@ const komma = (n: number, s = 2) => n.toFixed(s).replace(".", ",");
 export default async function Markt() {
   await connection();
   const db = getDb();
-  const kader = ladeKader(db);
-  const start = startelfAusLetztemSpiel(db);
-  const suche = ladeLetzteSuche(db);
-  const rahmen = ladeMarktRahmen(db);
-  const freund = ladeFreundTeam(db);
-  const abgelehnt = ladeAblehnungen(db);
+  const { kader, start, suche, rahmen, abgelehnt, schwach, r, ergebnis } = marktErgebnis(db);
   const abruf = letzterAbruf(db, "markt");
   const imBietomat = new Map(ladeAuftraege(db).filter((a) => a.status === "aktiv").map((a) => [a.pid, a.maximum]));
-  const schwach = start ? schwachstellen(start.elf, kader) : null;
-  const r = rahmen?.werte;
-  const ergebnis =
-    schwach && suche && r
-      ? bewerteMarkt(suche.spieler, schwach.liste, {
-          kapital: r.kapital,
-          auslaenderFrei: r.auslaenderMax - r.auslaender,
-          bewilligungenFrei: r.bewilligungenMax - r.bewilligungen,
-          abgelehnt: new Set(abgelehnt.map((a) => a.pid)),
-          eigene: new Set(kader.map((s) => s.pid)),
-          gesperrteTeams: new Set(freund ? [freund.tid] : []),
-        })
-      : null;
+  const verkaeufe = ladeVerkaeufe(db);
   const auslaender = kader.filter((s) => s.nationalitaet && s.nationalitaet !== HEIMATLAND);
 
   return (
@@ -64,7 +46,7 @@ export default async function Markt() {
             ) : !suche ? (
               <Unavailable title="Empfehlung" reason="Noch keine Marktsuche. Sie läuft täglich ab 6 Uhr automatisch, oder unten jetzt suchen." />
             ) : ergebnis?.empfehlung ? (
-              <EmpfehlungKarte b={ergebnis.empfehlung} imBietomat={imBietomat.get(ergebnis.empfehlung.kandidat.pid)} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
+              <EmpfehlungKarte b={ergebnis.empfehlung} imBietomat={imBietomat.get(ergebnis.empfehlung.kandidat.pid)} verkauf={verkaeufe.get(ergebnis.empfehlung.kandidat.pid)} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
             ) : (
               <Card className="p-4">
                 <div className="text-[17px] font-semibold">Heute kein passender Spieler auf dem Markt</div>
@@ -93,7 +75,7 @@ export default async function Markt() {
                         <span className="text-[12px] text-tint">Details</span>
                       </summary>
                       <div className="mt-3 space-y-3">
-                        <MarktInfo s={b.kandidat} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
+                        <MarktInfo s={b.kandidat} verkauf={verkaeufe.get(b.kandidat.pid)} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
                         <SpielerProfil skills={b.kandidat.skills} scout={b.kandidat.scout} />
                         <InBietomat pid={b.kandidat.pid} imBietomat={imBietomat.get(b.kandidat.pid)} />
                       </div>
@@ -199,7 +181,7 @@ export default async function Markt() {
   );
 }
 
-function EmpfehlungKarte({ b, imBietomat, stand }: { b: Bewertung; imBietomat?: number; stand?: string }) {
+function EmpfehlungKarte({ b, imBietomat, stand, verkauf }: { b: Bewertung; imBietomat?: number; stand?: string; verkauf?: GespeicherterVerkauf }) {
   const k = b.kandidat;
   return (
     <div className="space-y-3">
@@ -253,7 +235,7 @@ function EmpfehlungKarte({ b, imBietomat, stand }: { b: Bewertung; imBietomat?: 
       </Card>
       <Card className="p-4">
         <div className="mb-2 text-[15px] font-semibold">Spieler</div>
-        <MarktInfo s={k} stand={stand} />
+        <MarktInfo s={k} stand={stand} verkauf={verkauf} />
         <div className="mt-3">
           <SpielerProfil skills={k.skills} scout={k.scout} />
         </div>

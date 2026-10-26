@@ -88,7 +88,7 @@ export function Bietomat({ saldo }: { saldo?: number }) {
               <div className="text-[16px] font-bold">{s.name}</div>
               <div className="mt-0.5 text-[12.5px] text-label-2">{s.pid}</div>
               <div className="mt-2">
-                <MarktInfo s={s} stand="Stand: gerade geladen" />
+                <MarktInfo s={s} verkauf={s.verkauf} stand="Stand: gerade geladen" />
               </div>
               <div className="mt-3">
                 <SpielerProfil skills={s.skills} scout={s.scout} />

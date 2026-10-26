@@ -1,8 +1,10 @@
 import type { MarktSpieler } from "@/lib/mz/parser/transfer";
+import type { Verkauf } from "@/lib/mz/parser/verkauf";
 
 // Eckdaten eines Spielers auf dem Transfermarkt, überall gleich (Marcus, 26.10.2026): Alter, Nationalität, Wert,
 // Startgebot (Mindestgebot ohne Vorgebot), aktuelles Gebot, Auktionsende. "stand" sagt, woher die Zahlen sind
-// (z. B. Marktsuche oder Laden), weil sich Gebot und Ende bis zur Auktion ändern können.
+// (z. B. Marktsuche oder Laden), weil sich Gebot und Ende bis zur Auktion ändern können. Letzter Verkauf aus dem
+// Kasten "Transfers" seiner Spielerseite, wenn schon gelesen.
 
 const eur = (n?: number) => (n === undefined ? "–" : `${new Intl.NumberFormat("de-DE").format(n)} €`);
 // "26-10-2026 18:38" (ManagerZone) -> "26.10.2026 18:38"
@@ -17,7 +19,7 @@ function Feld({ titel, wert, stark }: { titel: string; wert: string; stark?: boo
   );
 }
 
-export function MarktInfo({ s, stand, hell = false }: { s: MarktSpieler; stand?: string; hell?: boolean }) {
+export function MarktInfo({ s, stand, verkauf, hell = false }: { s: MarktSpieler; stand?: string; verkauf?: Verkauf; hell?: boolean }) {
   const gebot = s.markt.hoechstgebot;
   return (
     <div className={hell ? "text-white [&_.text-label]:text-white [&_.text-label-3]:text-white/70" : ""}>
@@ -28,6 +30,10 @@ export function MarktInfo({ s, stand, hell = false }: { s: MarktSpieler; stand?:
         <Feld titel="Startgebot" wert={eur(s.markt.gefordert)} />
         <Feld titel="Aktuelles Gebot" wert={gebot ? eur(gebot) : "noch keins"} stark />
         <Feld titel="Auktionsende" wert={ende(s.markt.ende)} stark />
+        <Feld
+          titel="Letzter Verkauf"
+          wert={!verkauf ? "noch nicht gelesen" : verkauf.preis !== undefined ? `${eur(verkauf.preis)}${verkauf.datum ? ` (${verkauf.datum.split("-").reverse().join(".")})` : ""}` : "noch nie verkauft"}
+        />
       </div>
       {stand && <div className={`mt-1.5 text-[11px] ${hell ? "text-white/60" : "text-label-3"}`}>{stand}</div>}
     </div>

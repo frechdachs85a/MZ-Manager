@@ -269,6 +269,16 @@ const MIGRATIONEN: string[] = [
     text TEXT NOT NULL
   );
   `,
+  // 19: Letzter Verkauf je Spieler aus dem Kasten "Transfers" seiner Spielerseite (Marcus, 26.10.2026)
+  `
+  CREATE TABLE spieler_verkauf (
+    pid INTEGER PRIMARY KEY,
+    preis INTEGER,                 -- EUR, NULL = noch nie verkauft
+    datum TEXT,                    -- Datum des letzten Verkaufs (JJJJ-MM-TT)
+    transfers INTEGER NOT NULL,    -- Zeilen in der Tabelle (inklusive Jugend-Zugang)
+    stand TEXT NOT NULL
+  );
+  `,
 ];
 
 // Schema auf den neuesten Stand bringen (Migrationen der Reihe nach)
