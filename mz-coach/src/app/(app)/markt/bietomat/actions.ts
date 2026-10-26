@@ -6,7 +6,7 @@ import { loescheAuftrag, protokolliere, speichereAuftrag } from "@/lib/db/gebot"
 import type { MarktSpieler } from "@/lib/mz/parser/transfer";
 import { berlinZuUtc } from "@/lib/mz/parser/kader";
 
-export type LadeState = { meldung?: string; spieler?: MarktSpieler; endeUtc?: string };
+export type LadeState = { meldung?: string; spieler?: MarktSpieler; endeUtc?: string; auswahl?: (MarktSpieler & { endeUtc?: string })[] };
 export type AuftragState = { meldung?: string; ok?: boolean };
 
 const ganzzahl = (v: FormDataEntryValue | null) => {
@@ -15,11 +15,17 @@ const ganzzahl = (v: FormDataEntryValue | null) => {
 };
 
 export async function spielerLadenAktion(_prev: LadeState, formData: FormData): Promise<LadeState> {
-  const pid = ganzzahl(formData.get("pid"));
-  if (!pid) return { meldung: "Bitte eine Spielernummer (nur Ziffern) eintragen." };
+  // Auswahl aus der Trefferliste: Daten liegen schon vor, nichts neu laden
+  const gewaehlt = formData.get("gewaehlt");
+  if (gewaehlt) {
+    const sp = JSON.parse(String(gewaehlt)) as MarktSpieler & { endeUtc?: string };
+    return { spieler: sp, endeUtc: sp.endeUtc };
+  }
+  const eingabe = String(formData.get("suche") ?? "").trim();
+  if (eingabe.length < 2) return { meldung: "Bitte Spielernummer oder Namen eintragen." };
   const { spielerLaden } = await import("@/lib/mz/abruf/bietomat");
-  const r = await spielerLaden(getDb(), pid);
-  return r.ok ? { spieler: r.spieler, endeUtc: r.endeUtc } : { meldung: r.meldung };
+  const r = await spielerLaden(getDb(), eingabe);
+  return r.ok ? { spieler: r.spieler, endeUtc: r.spieler.endeUtc } : { meldung: r.meldung, auswahl: r.auswahl };
 }
 
 // "bieten bis" kommt als datetime-local (Berliner Zeit, ohne Zone)

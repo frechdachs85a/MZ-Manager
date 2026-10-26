@@ -24,7 +24,7 @@ export default async function BietomatSeite() {
         <div>
           <Section
             title="Neuer Auftrag"
-            footer="Laden: Transfermarktsuche über das Feld Name/ID, sonst mit den Standardfiltern der Marktseite. Ohne „Bieten bis“ gilt das Auktionsende."
+            footer="Spielernummer oder Name eintippen: Suche über das Feld Name/ID von ManagerZone, sonst mit den Standardfiltern der Marktseite. Mehrere Treffer: aus der Liste wählen. Ohne „Bieten bis“ gilt das Auktionsende."
           >
             <Bietomat saldo={saldo} />
           </Section>
