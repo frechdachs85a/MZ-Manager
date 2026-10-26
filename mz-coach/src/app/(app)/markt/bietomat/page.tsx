@@ -35,7 +35,7 @@ export default async function BietomatSeite() {
         <div>
           <Section
             title="Neuer Auftrag"
-            footer="Spielernummer oder Name eintippen: Suche über das Feld Name/ID von ManagerZone, sonst mit den Standardfiltern der Marktseite. Mehrere Treffer: aus der Liste wählen. Ohne „Bieten bis“ gilt das Auktionsende."
+            footer="Spielernummer oder Name eintippen: Suche über das Feld Name/ID von ManagerZone, sonst mit den Standardfiltern der Marktseite. Mehrere Treffer: aus der Liste wählen."
           >
             <Bietomat saldo={saldo} />
           </Section>
@@ -73,7 +73,6 @@ export default async function BietomatSeite() {
                     <GebotKarte
                       pid={a.pid}
                       maximum={a.maximum}
-                      bietenBis={a.bietenBis}
                       auktionEnde={a.auktionEnde}
                       eigenesGebot={ladeProtokoll(db, a.pid, 50).find((l) => l.text.startsWith("Geboten:"))?.betrag ?? undefined}
                     />
