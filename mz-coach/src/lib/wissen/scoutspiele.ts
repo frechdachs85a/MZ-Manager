@@ -70,6 +70,7 @@ export const scoutBericht = (tid: number) => SCOUT_BERICHTE.find((b) => b.tid ==
 export const MIN_SCOUT_SPIELE = 8;
 export const PPS_SCHWELLE = 0.2;
 
+// Entscheidung zwischen zwei Taktiken aus den Scoutspielen
 export function scoutEntscheidung(b: ScoutBericht): { reiter: string; begruendung: string; kurz: string[] } | null {
   const t = b.taktiken.filter((x) => x.spiele >= MIN_SCOUT_SPIELE);
   if (t.length < 2) return null;

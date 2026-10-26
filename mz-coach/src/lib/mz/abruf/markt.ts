@@ -54,6 +54,7 @@ export function suchParameter(html: string): string {
   return teile.join("");
 }
 
+// Marktsuche (gezielt je Schwachstelle) abrufen und speichern
 export async function marktAbrufen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "markt");
   const ziel: string[] = [];
@@ -140,6 +141,7 @@ const berlinStunde = (d: Date) =>
 // Einmal am Tag ab STUNDE Uhr (Berlin), nur mit eingerichtetem Zugang. Ein fehlgeschlagener Versuch
 // zählt auch: kein zweiter Versuch am selben Tag (keine Login-Wiederholung, Sperrgefahr).
 export const STUNDE = 6;
+// Ist die tägliche Marktsuche fällig?
 export function marktFaellig(db: Database.Database, jetzt = new Date()): boolean {
   if (!zugangStatus(db).eingerichtet) return false;
   if (berlinStunde(jetzt) < STUNDE) return false;

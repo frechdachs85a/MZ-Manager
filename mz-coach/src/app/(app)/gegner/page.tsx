@@ -1,3 +1,5 @@
+// Gegnerübersicht: alle Teams mit gespeicherten Ligaspielen.
+
 import { connection } from "next/server";
 import { LinkZeile } from "@/components/link-zeile";
 import { PageHeader } from "@/components/page-header";
@@ -9,6 +11,7 @@ import { datumZeit } from "@/lib/format";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import { QUELLE_TOP10, TEAM, TOP10 } from "@/lib/wissen/startbasis";
 
+// Seite Gegnerübersicht
 export default async function Gegner() {
   await connection();
   const db = getDb();

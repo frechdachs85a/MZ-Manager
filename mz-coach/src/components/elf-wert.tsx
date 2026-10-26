@@ -1,3 +1,5 @@
+// Anzeige des Startelf-Werts und des prozentualen Unterschieds zum Gegner.
+
 import type { ElfWert } from "@/lib/kaderwert";
 
 const eur = (n: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(n))} €`;
@@ -19,6 +21,7 @@ export function wertUnterschied(eigen?: number, gegner?: number): number | undef
   return eigen && gegner ? Math.round((eigen / gegner - 1) * 100) : undefined;
 }
 
+// Prozentualer Unterschied der Startelf-Werte (+ = du hast mehr Wert)
 export function WertDiff({ eigen, gegner, klein = false }: { eigen?: number; gegner?: number; klein?: boolean }) {
   const d = wertUnterschied(eigen, gegner);
   if (d === undefined) return null;

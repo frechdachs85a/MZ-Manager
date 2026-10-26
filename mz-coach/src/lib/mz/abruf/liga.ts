@@ -1,7 +1,7 @@
 import "server-only";
 import type Database from "better-sqlite3";
 import type { Page } from "playwright";
-import { abrufBeenden, abrufBeginnen, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
+import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
 import { spieltagLage } from "@/lib/spieltag";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { TAKTIK_PFAD, meldungAus, type Ergebnis } from "./kader";
@@ -76,6 +76,7 @@ function abweichung(soll: Soll, ist: Ist): string | null {
   return fehlt.length ? fehlt.join(", ") : null;
 }
 
+// Formation Liga in den Editor-Reiter „Liga“ schreiben und prüfen
 export async function ligaHinterlegen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "liga");
   try {
@@ -137,4 +138,3 @@ export async function ligaHinterlegen(db: Database.Database, opt = { manuell: fa
   }
 }
 
-export const letzteLigaMeldung = (db: Database.Database) => letzterAbruf(db, "liga");

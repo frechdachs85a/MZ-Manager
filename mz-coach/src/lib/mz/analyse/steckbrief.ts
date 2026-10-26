@@ -52,6 +52,7 @@ const gleichePlaetze = (a: SteckbriefSpiel["elf"], b: SteckbriefSpiel["elf"]) =>
 const gleich = (a: SteckbriefSpiel["elf"], b: SteckbriefSpiel["elf"]) =>
   a.length === b.length && a.every((p) => b.some((q) => q.name === p.name && Math.abs(q.x - p.x) <= 2 && Math.abs(q.y - p.y) <= 2));
 
+// Steckbrief eines Gegners aus seinen Ligaspielen
 export function steckbrief(tid: number, stats: StatsSpiel[]): Steckbrief {
   const spiele: SteckbriefSpiel[] = stats
     .filter((s) => s.teams.some((t) => t.id === tid))

@@ -1,3 +1,5 @@
+// Bietomat-Seite: neuer Auftrag, Regeln des automatischen Bietens, Aufträge mit Gebotskarte und Spielerprofil, Protokoll.
+
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Badge, List, Row, Section, Unavailable } from "@/components/ui";
@@ -15,6 +17,7 @@ const STATUS_TON = {
   abgebrochen: "red",
 } as const;
 
+// Seite Bietomat
 export default async function BietomatSeite() {
   await connection();
   const db = getDb();

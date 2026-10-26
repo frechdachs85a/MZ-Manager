@@ -25,6 +25,7 @@ function auswerten(werte: { name: string; wert: number | null | undefined; alter
   };
 }
 
+// Startelf-Wert von dir und dem Gegner
 export function kaderwertVergleich(db: Database.Database, tid: number): { eigen: ElfWert | null; gegner: ElfWert | null; gegnerKaderStand?: string } {
   const kader = new Map(ladeKader(db).map((s) => [s.pid, s]));
   const start = startelfAusLetztemSpiel(db);

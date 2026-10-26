@@ -17,6 +17,7 @@ export type LigaAnpassung = { xml: string; kurz: string[]; getauscht: { name: st
 
 const ersetzeAttr = (zeile: string, k: string, v: string) => zeile.replace(new RegExp(`(\\s${k}=")[^"]*(")`), `$1${v}$2`);
 
+// Formation Liga aus einer Archiv-Taktik (nur Abwehr und Seite angepasst)
 export function ligaAusArchiv(opt: {
   xml: string;
   kader: SpielerDaten[];

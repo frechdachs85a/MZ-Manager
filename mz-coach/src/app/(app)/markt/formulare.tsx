@@ -1,5 +1,7 @@
 "use client";
 
+// Formulare des Transfermarkts: Rahmen (Saldo, Ausländer, Arbeitsbewilligungen) und Knopf „Markt jetzt durchsuchen“.
+
 import { useActionState } from "react";
 import { haptic } from "@/lib/haptics";
 import { jetztSuchen, rahmenSpeichern, type MarktState } from "./actions";
@@ -27,6 +29,7 @@ function Feld({ name, label, wert, platzhalter }: { name: string; label: string;
   );
 }
 
+// Formular: Rahmen des Transfermarkts
 export function RahmenForm({ werte }: { werte?: Record<string, number> }) {
   const [state, action, pending] = useActionState<MarktState, FormData>(rahmenSpeichern, {});
   return (
@@ -46,6 +49,7 @@ export function RahmenForm({ werte }: { werte?: Record<string, number> }) {
   );
 }
 
+// Knopf: Markt jetzt durchsuchen
 export function SuchKnopf() {
   const [state, action, pending] = useActionState<MarktState>(jetztSuchen, {});
   return (

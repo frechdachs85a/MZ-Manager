@@ -5,6 +5,7 @@ import { getSessionSecret, SESSION_COOKIE, verifySessionToken } from "@/lib/auth
 // Alles außer Login, Einrichtung, Gesundheitsprüfung und Icons ist nur mit gültiger Session erreichbar.
 // Ohne App-Passwort (Ersteinrichtung) führt jede Seite zu /einrichtung.
 let eingerichtet = false; // einmal eingerichtet, bleibt es so
+// Ohne gültige Sitzung zur Anmeldung umleiten
 export function proxy(request: NextRequest) {
   if (!eingerichtet && !(eingerichtet = istEingerichtet())) {
     if (request.nextUrl.pathname.startsWith("/api/")) return NextResponse.json({ error: "nicht eingerichtet" }, { status: 503 });

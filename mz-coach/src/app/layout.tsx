@@ -25,6 +25,7 @@ export const viewport: Viewport = {
   themeColor: "#eef2f6",
 };
 
+// Wurzel-Layout (Schrift, Farben, Metadaten)
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="de" className={`h-full antialiased ${inter.variable} ${barlow.variable}`}>

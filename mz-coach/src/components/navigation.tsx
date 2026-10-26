@@ -149,6 +149,7 @@ function Gruppen({ pathname, onClick }: { pathname: string; onClick?: () => void
   );
 }
 
+// Seitennavigation (Seitenleiste am Desktop, Leiste unten am Handy)
 export function Navigation() {
   const pathname = usePathname();
   const [mehr, setMehr] = useState(false);

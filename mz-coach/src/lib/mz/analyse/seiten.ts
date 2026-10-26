@@ -12,6 +12,7 @@ export type Seite = { seite: "links" | "mitte" | "rechts"; abwehr: SeitenSpieler
 const seiteVon = (x: number): Seite["seite"] => (x < LINKS_BIS ? "links" : x > RECHTS_AB ? "rechts" : "mitte");
 const mio = (n?: number) => (n === undefined ? "Wert n. v." : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
 
+// Seine schwächere Abwehrseite und deine Angriffsseite
 export function seitenVergleich(elf: SeitenSpieler[]): { seiten: Seite[]; text?: string; kurz?: string[]; angriff?: "links" | "rechts" } {
   const feld = elf.filter((p) => !p.torwart);
   const seiten: Seite[] = (["links", "mitte", "rechts"] as const).map((seite) => {

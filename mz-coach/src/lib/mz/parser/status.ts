@@ -38,6 +38,7 @@ export function istUnavailableSeite(html: string): boolean {
   return /id="squad_unavailable"/.test(html) && /<h3>\s*Verletzungen\s*<\/h3>/.test(html);
 }
 
+// Verletzt/Gesperrt-Seite lesen
 export function parseUnavailableSeite(html: string): UnavailableSeite {
   const doc = parse(html);
   const bereich = doc.querySelector("#squad_unavailable");
@@ -99,10 +100,12 @@ export type TrainingslagerSeite = {
   serverzeit?: string;
 };
 
+// Ist das die Trainingslager-Seite?
 export function istTrainingslagerSeite(html: string): boolean {
   return /id="training_camp_players_container"/.test(html);
 }
 
+// Trainingslager-Seite lesen
 export function parseTrainingslagerSeite(html: string): TrainingslagerSeite {
   const doc = parse(html);
   const container = doc.querySelector("#training_camp_players_container");
@@ -162,10 +165,12 @@ export type TaktikSeite = {
 // "on_field" (aufgestellt, Feld oder Bank), "draggable ui-draggable" (frei), "tc ui-draggable" (Kegel).
 const BEKANNTE_KLASSEN = new Set(["on_field", "draggable", "ui-draggable", "tc"]);
 
+// Ist das die Taktikseite?
 export function istTaktikSeite(html: string): boolean {
   return /<dd class="[^"]*" id="n_\d+">/.test(html) && /id="tacticset"/.test(html);
 }
 
+// Taktikseite lesen (aufstellbar ja/nein)
 export function parseTaktikSeite(html: string): TaktikSeite {
   const doc = parse(html);
   const eintraege = doc.querySelectorAll("dd").filter((dd) => /^n_\d+$/.test(dd.id));
@@ -198,6 +203,7 @@ export type SpielerSeite = {
   serverzeit?: string;
 };
 
+// Ist das die Spieleransicht?
 export function istSpielerSeite(html: string): boolean {
   return /id="thePlayers_\d+"/.test(html) && /class="player_skills/.test(html);
 }
@@ -214,6 +220,7 @@ function sterne(gruppe: HTMLElement | null): number | undefined {
   return i.filter((x) => !x.classList.contains("scout_report_star--disabled")).length;
 }
 
+// Spieleransicht lesen
 export function parseSpielerSeite(html: string): SpielerSeite {
   const doc = parse(html);
   const bloecke = doc.querySelectorAll("div").filter((d) => /^thePlayers_\d+$/.test(d.id));

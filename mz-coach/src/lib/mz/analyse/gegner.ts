@@ -48,6 +48,7 @@ export type SpielAuswertung = {
   statistik: Record<string, string>;
 };
 
+// Formation aus den Feldspielern (Zonen laut mz-wissen.md)
 export function formation(feld: Punkt[]): Formation {
   const abwehr = feld.filter((p) => p.y >= ABWEHR_Y).length;
   const sturm = feld.filter((p) => p.y <= STURM_Y).length;
@@ -65,6 +66,7 @@ export function engeMitteAus(feld: Punkt[]): { engeMitte: boolean; mittelfeldX?:
   return { engeMitte: mittel.length > 0 && !mittel.some(istAussen), mittelfeldX: mittel.length ? { min: Math.min(...mittel), max: Math.max(...mittel) } : undefined };
 }
 
+// Ein Spiel eines Teams auswerten (Formation, Stil, Wechsel)
 export function werteSpielAus(s: StatsSpiel, tid: number): SpielAuswertung {
   const team = s.teams.find((t) => t.id === tid);
   const gegner = s.teams.find((t) => t.id !== tid);
@@ -159,6 +161,7 @@ export function abweichung(a: Punkt[], b: Punkt[]): number {
 
 export type Vergleich = { gleich: boolean; unterschiede: string[]; maxAbweichung: number };
 
+// Zwei Spiele eines Teams vergleichen (gleiche Aufstellung?)
 export function vergleiche(a: SpielAuswertung, b: SpielAuswertung): Vergleich {
   const unterschiede: string[] = [];
   if (a.formation.text !== b.formation.text) unterschiede.push(`Formation ${a.formation.text} statt ${b.formation.text}`);
@@ -195,6 +198,7 @@ export const de = (v: string) => DE[v] ?? v;
 // "3-4-3 shortpass/normal/aggressive" -> "3-4-3 Kurzpass/normal/aggressiv" (Formation bleibt, Einstellungen deutsch)
 export const stilDe = (s: string) => s.replace(/[A-Za-z]+/g, (w) => DE[w] ?? w);
 
+// Alle Spiele eines Gegners auswerten
 export function analysiereGegner(tid: number, spiele: StatsSpiel[]): GegnerAnalyse {
   const ausw = spiele.map((s) => werteSpielAus(s, tid)).sort((a, b) => (b.datum ?? "").localeCompare(a.datum ?? ""));
   const neu = ausw[0];

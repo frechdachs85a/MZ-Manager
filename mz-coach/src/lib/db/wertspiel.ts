@@ -1,3 +1,5 @@
+// Datenbank: Spiele der Wertbereich-Statistik und Quoten je Wertbereich.
+
 import type Database from "better-sqlite3";
 
 export type WertSpiel = {
@@ -29,10 +31,12 @@ export type WertAufstellung = {
   b: { elf: number[]; wechsel: { minute: number; raus: number; rein: number }[] };
 };
 
+// Ist ein Spiel der Wertbereich-Statistik schon gespeichert?
 export function wertSpielVorhanden(db: Database.Database, mid: number): boolean {
   return !!db.prepare("SELECT 1 FROM wert_spiel WHERE mid = ? AND aufstellung_json IS NOT NULL").get(mid);
 }
 
+// Alle Spiele der Wertbereich-Statistik
 export function ladeWertSpiele(db: Database.Database): WertSpiel[] {
   const rows = db.prepare("SELECT * FROM wert_spiel WHERE aufstellung_json IS NOT NULL").all() as Record<string, unknown>[];
   return rows.map((r) => ({
@@ -53,6 +57,7 @@ export function ladeWertSpiele(db: Database.Database): WertSpiel[] {
   }));
 }
 
+// Spiel der Wertbereich-Statistik speichern
 export function speichereWertSpiel(db: Database.Database, w: WertSpiel, zeit = new Date().toISOString()) {
   db.prepare(
     `INSERT OR REPLACE INTO wert_spiel (mid, datum, wettbewerb, tid_a, tid_b, name_a, name_b, elf_a, elf_b, feld_a, feld_b,
@@ -94,6 +99,7 @@ export function quotenJeBereich(db: Database.Database, basis: "elf" | "feld" = "
   });
 }
 
+// Anzahl der Spiele in der Wertbereich-Statistik
 export function anzahlWertSpiele(db: Database.Database): number {
   return (db.prepare("SELECT COUNT(*) AS n FROM wert_spiel").get() as { n: number }).n;
 }

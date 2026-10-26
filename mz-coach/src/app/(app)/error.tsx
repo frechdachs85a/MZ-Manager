@@ -1,7 +1,10 @@
 "use client"; // Fehlergrenzen müssen Client-Komponenten sein
 
+// Fehlerseite des App-Bereichs, wenn eine Seite beim Laden scheitert.
+
 import { useEffect } from "react";
 
+// Fehleranzeige mit Knopf „Erneut versuchen“
 export default function Fehler({ error, retry }: { error: unknown; retry: () => void }) {
   useEffect(() => {
     console.error(error);

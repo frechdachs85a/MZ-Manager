@@ -1,9 +1,12 @@
+// Ersteinrichtung: App-Passwort festlegen, solange noch keins gesetzt ist.
+
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { istEingerichtet } from "@/lib/auth/geheimnisse";
 import { EinrichtungFormular } from "./formular";
 
+// Seite Ersteinrichtung
 export default async function Einrichtung() {
   await connection();
   if (istEingerichtet()) redirect("/login");

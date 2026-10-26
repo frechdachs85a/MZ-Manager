@@ -1,5 +1,7 @@
 "use server";
 
+// Server-Aktionen des Bietomats: Spieler laden (Nummer oder Name), Auftrag speichern, ändern, löschen, aus der Empfehlung übernehmen.
+
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { aendereAuftrag, ladeAuftraege, loescheAuftrag, protokolliere, speichereAuftrag } from "@/lib/db/gebot";
@@ -14,6 +16,7 @@ const ganzzahl = (v: FormDataEntryValue | null) => {
   return /^\d+$/.test(t) ? Number(t) : undefined;
 };
 
+// Spieler laden: aus der Trefferliste gewählt oder per Nummer/Name gesucht
 export async function spielerLadenAktion(_prev: LadeState, formData: FormData): Promise<LadeState> {
   // Auswahl aus der Trefferliste: Daten liegen schon vor, nichts neu laden
   const gewaehlt = formData.get("gewaehlt");
@@ -35,6 +38,7 @@ function berlinIso(v: string): string | undefined {
   return berlinZuUtc(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).toISOString();
 }
 
+// Neuen Auftrag speichern (Endpreis, bieten bis, Auktionsende)
 export async function auftragSpeichern(_prev: AuftragState, formData: FormData): Promise<AuftragState> {
   const pid = ganzzahl(formData.get("pid"));
   const maximum = ganzzahl(formData.get("maximum"));
@@ -53,6 +57,7 @@ export async function auftragSpeichern(_prev: AuftragState, formData: FormData):
   return { ok: true, meldung: "Auftrag gespeichert." };
 }
 
+// Auftrag löschen (läuft der Bietomat, hört er in der nächsten Runde auf)
 export async function auftragLoeschen(formData: FormData) {
   const pid = ganzzahl(formData.get("pid"));
   if (!pid) return;
@@ -62,6 +67,7 @@ export async function auftragLoeschen(formData: FormData) {
   revalidatePath("/markt/bietomat");
 }
 
+// Endpreis und „bieten bis“ eines Auftrags ändern
 export async function auftragAendern(_prev: AuftragState, formData: FormData): Promise<AuftragState> {
   const pid = ganzzahl(formData.get("pid"));
   const maximum = ganzzahl(formData.get("maximum"));

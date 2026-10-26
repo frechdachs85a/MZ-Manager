@@ -21,6 +21,7 @@ export type Schritt =
   | { art: "bieten" }
   | { art: "fertig"; status: "beendet" | "abgebrochen"; text: string };
 
+// Nächster Schritt: warten, bieten oder fertig
 export function naechsterSchritt(z: Zustand, opt: { eigeneTid: number; bietenBisMs?: number; letztesEndeMs?: number; letzterBieter?: number }, jetzt: number): Schritt {
   const ende = z.endeMs ?? opt.letztesEndeMs;
   if (!z.gefunden || (ende !== undefined && jetzt > ende + 60_000)) {
@@ -42,6 +43,7 @@ export function inEuro(betrag: number, kurs: number): number {
   return Math.ceil(betrag * kurs);
 }
 
+// Darf diese Stufe geboten werden? (harte Grenze Endpreis in Euro)
 export function gebotErlaubt(betrag: number, kurs: number | undefined, maximumEur: number): { ok: true; eur: number } | { ok: false; grund: string } {
   if (!Number.isFinite(betrag) || betrag <= 0) return { ok: false, grund: "Kein Mindestgebot im Gebotsfenster lesbar." };
   if (kurs === undefined || !Number.isFinite(kurs) || kurs <= 0) return { ok: false, grund: "Wechselkurs zur Verkäuferwährung nicht lesbar." };

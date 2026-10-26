@@ -19,6 +19,7 @@ export type SaisonSpiel = {
 
 const zahl = (v?: string) => (v !== undefined && v !== "" && Number.isFinite(Number(v)) ? Number(v) : undefined);
 
+// Eigene Ligaspiele der Saison auswerten
 export function saisonAuswertung(db: Database.Database, tid = TEAM.tid) {
   const rows = db.prepare("SELECT auswertung_json FROM spiel WHERE auswertung_json IS NOT NULL AND mid > ?").all(LIGA_MID_AB) as {
     auswertung_json: string;

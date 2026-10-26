@@ -88,6 +88,7 @@ async function takt() {
   }
 }
 
+// Zeitplan starten (Abrufe alle 15 Minuten, Bietomat alle 20 Sekunden)
 export function starteZeitplan() {
   if (gestartet) return;
   gestartet = true;

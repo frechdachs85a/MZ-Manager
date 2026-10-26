@@ -1,3 +1,5 @@
+// Gegnerseite: Startelf-Wert, Steckbrief, Formationen, Spiele und Belege zu einem Team.
+
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { LinkZeile } from "@/components/link-zeile";
@@ -44,6 +46,7 @@ const kurz = (name: string) => {
   return t.length > 1 ? `${t[0][0]} ${t.slice(1).join(" ")}` : name;
 };
 
+// Seite eines Gegners
 export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   await connection();
   const { tid: tidText } = await props.params;

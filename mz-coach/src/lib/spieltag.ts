@@ -49,6 +49,7 @@ function eigeneLigaspiele(db: Database.Database): StatsSpiel[] {
   return rows.map((r) => JSON.parse(r.auswertung_json) as StatsSpiel).filter((s) => s.typ === "1" && s.teams.some((t) => t.id === TEAM.tid));
 }
 
+// Alles für die Spieltag-Seite: Vorschlag, Belege, Formation Liga, Gegneranalyse
 export function spieltagLage(db: Database.Database) {
   const lauf = letzterLauf(db, true);
   const letzterVersuch = letzterLauf(db);

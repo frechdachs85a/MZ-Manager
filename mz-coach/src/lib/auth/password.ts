@@ -19,6 +19,7 @@ function scryptAsync(
   });
 }
 
+// Passwort hashen (scrypt mit Salz)
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
   const { N, r, p } = DEFAULT;
@@ -26,6 +27,7 @@ export async function hashPassword(password: string): Promise<string> {
   return ["scrypt", N, r, p, salt.toString("base64"), hash.toString("base64")].join(":");
 }
 
+// Passwort gegen gespeicherten Hash prüfen (zeitkonstant)
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const parts = stored.split(":");
   if (parts.length !== 6 || parts[0] !== "scrypt") return false;

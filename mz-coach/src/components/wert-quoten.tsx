@@ -1,3 +1,5 @@
+// Tabelle der Wertbereich-Statistik: Sieg/Unentschieden/Niederlage je Verhältnis der Startelf-Werte.
+
 import { Card } from "@/components/ui";
 import type { Quote } from "@/lib/db/wertspiel";
 

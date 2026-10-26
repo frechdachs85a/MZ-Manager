@@ -28,6 +28,7 @@ const aus = (z: Zeile): GebotAuftrag => ({
   geaendert: z.geaendert,
 });
 
+// Auftrag anlegen oder ersetzen
 export function speichereAuftrag(db: Database.Database, a: Omit<GebotAuftrag, "erstellt" | "geaendert">, zeit = new Date().toISOString()) {
   db.prepare(
     `INSERT INTO gebot_auftrag (pid, name, maximum, bieten_bis, auktion_ende, spieler_json, status, erstellt, geaendert) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -36,6 +37,7 @@ export function speichereAuftrag(db: Database.Database, a: Omit<GebotAuftrag, "e
   ).run(a.pid, a.name ?? null, a.maximum, a.bietenBis ?? null, a.auktionEnde ?? null, a.spieler ? JSON.stringify(a.spieler) : null, a.status, zeit, zeit);
 }
 
+// Alle Aufträge, aktive zuerst, nach Auktionsende
 export function ladeAuftraege(db: Database.Database): GebotAuftrag[] {
   return (db.prepare("SELECT * FROM gebot_auftrag ORDER BY status = 'aktiv' DESC, auktion_ende").all() as Zeile[]).map(aus);
 }
@@ -46,18 +48,22 @@ export function aendereAuftrag(db: Database.Database, pid: number, maximum: numb
   db.prepare("UPDATE gebot_auftrag SET maximum = ?, bieten_bis = ?, status = 'aktiv', geaendert = ? WHERE pid = ?").run(maximum, bietenBis, zeit, pid);
 }
 
+// Status eines Auftrags setzen
 export function setzeStatus(db: Database.Database, pid: number, status: GebotStatus, zeit = new Date().toISOString()) {
   db.prepare("UPDATE gebot_auftrag SET status = ?, geaendert = ? WHERE pid = ?").run(status, zeit, pid);
 }
 
+// Auftrag löschen
 export function loescheAuftrag(db: Database.Database, pid: number) {
   db.prepare("DELETE FROM gebot_auftrag WHERE pid = ?").run(pid);
 }
 
+// Eintrag im Bietomat-Protokoll
 export function protokolliere(db: Database.Database, pid: number, text: string, betrag?: number, zeit = new Date().toISOString()) {
   db.prepare("INSERT INTO gebot_log (pid, zeit, betrag, text) VALUES (?, ?, ?, ?)").run(pid, zeit, betrag ?? null, text);
 }
 
+// Neueste Protokolleinträge (alle oder eines Spielers)
 export function ladeProtokoll(db: Database.Database, pid?: number, n = 50): { pid: number; zeit: string; betrag: number | null; text: string }[] {
   return db
     .prepare(`SELECT pid, zeit, betrag, text FROM gebot_log ${pid ? "WHERE pid = ?" : ""} ORDER BY id DESC LIMIT ?`)
@@ -73,6 +79,7 @@ let bietomatLaeuft = false;
 export const setzeBietomatLaeuft = (an: boolean) => {
   bietomatLaeuft = an;
 };
+// Grund, warum gerade keine anderen Abrufe laufen dürfen, sonst null
 export function bietomatSperrt(db: Database.Database, jetzt = new Date()): string | null {
   if (bietomatLaeuft) return "Bietomat bietet gerade";
   const von = new Date(jetzt.getTime() - NACHLAUF_MIN * 60_000).toISOString();

@@ -1,8 +1,11 @@
 "use client";
 
+// Formular zum Speichern einer geprüften Taktik im Archiv.
+
 import { useActionState } from "react";
 import { taktikArchivieren, type ArchivState } from "./actions";
 
+// Formular: Taktik im Archiv speichern
 export function ArchivForm({ reiter }: { reiter: string[] }) {
   const [state, action, pending] = useActionState<ArchivState, FormData>(taktikArchivieren, {});
   return (

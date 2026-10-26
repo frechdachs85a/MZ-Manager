@@ -13,11 +13,13 @@ import { mitMzSitzung } from "./sitzung";
 export type MitEnde = MarktSpieler & { endeUtc?: string };
 export type Geladen = { ok: true; spieler: MitEnde } | { ok: false; meldung: string; auswahl?: MitEnde[] };
 
+// Auktionsende (Berliner Zeit) als ISO-Zeitpunkt
 export function endeUtc(ende?: string): string | undefined {
   const m = endeAlsDatum(ende)?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   return m ? berlinZuUtc(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).toISOString() : undefined;
 }
 
+// Spieler per Nummer oder Name vom Transfermarkt laden
 export async function spielerLaden(db: Database.Database, eingabe: string): Promise<Geladen> {
   const suche = eingabe.trim();
   const pid = /^\d+$/.test(suche) ? Number(suche) : undefined;

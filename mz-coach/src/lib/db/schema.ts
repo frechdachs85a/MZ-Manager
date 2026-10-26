@@ -271,6 +271,7 @@ const MIGRATIONEN: string[] = [
   `,
 ];
 
+// Schema auf den neuesten Stand bringen (Migrationen der Reihe nach)
 export function migrieren(db: Database.Database) {
   const version = db.pragma("user_version", { simple: true }) as number;
   for (let i = version; i < MIGRATIONEN.length; i++) {

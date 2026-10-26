@@ -1,5 +1,7 @@
 "use client";
 
+// Formular zum Bestätigen unklarer Scoutbericht-Einstufungen im Kader.
+
 import { useActionState } from "react";
 import { kombiBestaetigen, type ScoutState } from "./actions";
 
@@ -30,6 +32,7 @@ function Formular({ f }: { f: Fall }) {
   );
 }
 
+// Liste unklarer Scout-Einstufungen zum Bestätigen
 export function ScoutBestaetigen({ faelle }: { faelle: Fall[] }) {
   return (
     <ul className="karte divide-y divide-separator">

@@ -23,6 +23,7 @@ export type MarktSpieler = SpielerBlock & {
 
 export type TransferSuche = { treffer: number; spieler: MarktSpieler[] };
 
+// Antwort „nicht eingeloggt“?
 export function istNichtEingeloggt(antwort: string): boolean {
   return /You need to be logged in/i.test(antwort);
 }
@@ -62,6 +63,7 @@ function marktFelder(block: HTMLElement): MarktSpieler["markt"] {
   };
 }
 
+// Antwort der Marktsuche lesen (JSON mit Spielerblöcken)
 export function parseTransferSuche(antwort: string): TransferSuche {
   if (istNichtEingeloggt(antwort)) throw new KaderSeiteUnbekannt("Marktsuche: nicht eingeloggt.");
   let json: { totalHits?: unknown; players?: unknown };

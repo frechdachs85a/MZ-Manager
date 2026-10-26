@@ -12,6 +12,7 @@ function neuBestimmt<T extends Stil>(s: T): T {
 
 export type TopArt = "liga" | "weltliga";
 
+// Ist ein Top-10-Spiel schon gespeichert?
 export function topSpielVorhanden(db: Database.Database, mid: number, tid: number): boolean {
   return !!db.prepare("SELECT 1 FROM top_spiel WHERE mid = ? AND tid = ?").get(mid, tid);
 }

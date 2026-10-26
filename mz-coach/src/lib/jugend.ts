@@ -31,6 +31,7 @@ function vorschlagAus(e: ScoutEinstufung): Vorschlag {
   return "Abgabekandidat";
 }
 
+// Jugendspieler einstufen und Vorschlag je Spieler
 export function jugendAuswertung(kader: KaderEintrag[], kombis: Kombi[] = KOMBIS) {
   const mit = (s: KaderEintrag): JugendSpieler => {
     const scout = scoutEinstufung(s, kombis);

@@ -58,14 +58,11 @@ function speichereCookies(db: Database.Database, cookies: Cookie[]) {
   ).run(COOKIE_KEY, wert, new Date().toISOString());
 }
 
-export function loescheSitzung(db: Database.Database) {
-  db.prepare("DELETE FROM einstellung WHERE schluessel IN (?, ?)").run(COOKIE_KEY, LOGIN_FEHLER_KEY);
-}
-
 // Ein fehlgeschlagener Login wird gemerkt. Nach "falsches Passwort" gibt es keinen weiteren
 // Versuch, bis der Zugang neu gespeichert wurde (sonst droht die IP-Sperre von ManagerZone).
 type LoginFehler = { grund: "falsch" | "gesperrt" | "unbestaetigt"; zeit: string };
 
+// Gemerkter Login-Fehler, sonst null
 export function loginFehler(db: Database.Database): LoginFehler | null {
   const row = db.prepare("SELECT wert FROM einstellung WHERE schluessel = ?").get(LOGIN_FEHLER_KEY) as
     | { wert: string }
@@ -206,6 +203,7 @@ let laeuft = false;
 // Gezählt, damit ein ganzer Abruf (mit Stats-XML nach der Sitzung) die Markierung über die Sitzung hinaus halten kann.
 export const ABRUF_MARKE = join(dirname(process.env.DATABASE_PATH ?? "./data/mz-coach.db"), "abruf.laeuft");
 let marken = 0;
+// Markierung „Abruf läuft“ setzen oder entfernen (gezählt)
 export function marke(an: boolean) {
   marken = Math.max(0, marken + (an ? 1 : -1));
   try {

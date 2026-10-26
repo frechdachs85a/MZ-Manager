@@ -14,6 +14,7 @@ export type TopTeamAuswertung = TopTeam & {
   arten: [string, number][]; // Spielarten in der gespeicherten Liste (zur Kontrolle der Weltliga-Erkennung)
 };
 
+// Auswertung der Topteams
 export function topAuswertung(db: Database.Database) {
   const alle: SpielMuster[] = [];
   const teams: TopTeamAuswertung[] = ladeTopTeams(db).map((t) => {

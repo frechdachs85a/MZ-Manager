@@ -21,6 +21,7 @@ const gleich = (a: string, b: string) => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
+// Ersteinrichtung: Code prüfen, App-Passwort setzen
 export async function einrichten(_prev: EinrichtungState, formData: FormData): Promise<EinrichtungState> {
   if (istEingerichtet()) redirect("/login");
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() ?? "lokal";

@@ -1,5 +1,7 @@
 "use server";
 
+// Server-Aktionen der Gegnerseite: fehlende Stats-XML seiner Spiele und seinen Kader nachladen.
+
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { abrufBeenden, abrufBeginnen } from "@/lib/db/abruf";
@@ -35,6 +37,7 @@ export async function fehlendeSpieleHolen(tid: number): Promise<HolState> {
   return { ok: ok === fehlen.length, meldung };
 }
 
+// Kaderseite des Gegners laden und speichern
 export async function gegnerKaderHolen(tid: number): Promise<HolState> {
   const { gegnerKaderAbrufen } = await import("@/lib/mz/abruf/fremd");
   const r = await gegnerKaderAbrufen(getDb(), tid);

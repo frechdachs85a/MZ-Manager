@@ -1,8 +1,11 @@
 "use client";
 
+// Knopf „fehlende Spiele holen“ auf der Gegnerseite.
+
 import { useActionState } from "react";
 import { fehlendeSpieleHolen, type HolState } from "./actions";
 
+// Knopf: fehlende Stats-XML des Gegners holen
 export function HolKnopf({ tid, anzahl }: { tid: number; anzahl: number }) {
   const [state, action, pending] = useActionState<HolState>(() => fehlendeSpieleHolen(tid), {});
   return (

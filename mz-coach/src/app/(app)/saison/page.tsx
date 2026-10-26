@@ -1,3 +1,5 @@
+// Saisonstatistik: eigene Ligaspiele mit Ergebnis, Toren und Kennzahlen.
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -10,6 +12,7 @@ import { TEAM } from "@/lib/wissen/startbasis";
 const komma = (n?: number, s = 1) => (n === undefined ? "n. v." : n.toFixed(s).replace(".", ","));
 const FARBE = { S: "bg-tint text-white", U: "bg-gold-hell text-ink", N: "bg-red/85 text-white" } as const;
 
+// Seite Saison
 export default async function Saison() {
   await connection();
   const a = saisonAuswertung(getDb());

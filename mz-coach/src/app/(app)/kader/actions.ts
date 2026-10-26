@@ -1,5 +1,7 @@
 "use server";
 
+// Server-Aktion der Kaderseite: Einstufung eines Scoutberichts bestätigen.
+
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";

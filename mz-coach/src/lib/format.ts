@@ -1,3 +1,5 @@
+// Formatierung für die Anzeige (Datum, Euro, Zahlen) in deutscher Zeit.
+
 const ZEIT = new Intl.DateTimeFormat("de-DE", {
   timeZone: "Europe/Berlin",
   day: "2-digit",
@@ -7,14 +9,17 @@ const ZEIT = new Intl.DateTimeFormat("de-DE", {
   minute: "2-digit",
 });
 
+// Datum und Uhrzeit (deutsche Zeit)
 export function datumZeit(iso: string): string {
   return ZEIT.format(new Date(iso));
 }
 
+// Betrag mit Tausenderpunkten und „EUR“
 export function euro(wert: number): string {
   return `${zahl(wert)} EUR`;
 }
 
+// Zahl mit Tausenderpunkten
 export function zahl(wert: number): string {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(wert);
 }

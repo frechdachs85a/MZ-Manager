@@ -32,6 +32,7 @@ export function mzWert(skills: Skills, position: Position): MzWert {
   return { ok: true, wert: Math.round(summe * 100) / 100 };
 }
 
+// MZ-Werte eines Spielers für alle Rollen
 export function alleMzWerte(skills: Skills): Record<Position, MzWert> {
   return Object.fromEntries(POSITIONEN.map((p) => [p, mzWert(skills, p)])) as Record<Position, MzWert>;
 }

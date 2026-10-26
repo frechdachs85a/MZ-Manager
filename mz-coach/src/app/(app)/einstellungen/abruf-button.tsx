@@ -1,9 +1,12 @@
 "use client";
 
+// Knopf „Kader jetzt abrufen“ auf der Einstellungsseite (startet den Kaderabruf von Hand und zeigt die Meldung).
+
 import { useActionState } from "react";
 import { haptic } from "@/lib/haptics";
 import { kaderJetztAbrufen, type AbrufState } from "./actions";
 
+// Knopf: Kaderabruf von Hand starten, Meldung darunter
 export function AbrufButton() {
   const [state, action, pending] = useActionState<AbrufState>(kaderJetztAbrufen, {});
   return (

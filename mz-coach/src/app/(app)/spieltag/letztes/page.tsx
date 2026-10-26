@@ -1,3 +1,5 @@
+// Reiter „Dein letztes Ligaspiel“: Spielbericht des letzten eigenen Ligaspiels.
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -11,6 +13,7 @@ import { SpieltagReiter } from "../reiter";
 
 const ERG = { S: "Sieg", U: "Unentschieden", N: "Niederlage" } as const;
 
+// Seite letztes Ligaspiel
 export default async function LetztesLigaspiel() {
   await connection();
   const { bericht: b, lauf, elfWerte } = spieltagLage(getDb());

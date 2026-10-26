@@ -35,6 +35,7 @@ function aktivePids(db: Database.Database): Set<number> {
   return new Set((db.prepare("SELECT pid FROM spieler WHERE aktiv = 1").all() as { pid: number }[]).map((r) => r.pid));
 }
 
+// Verletzt/Gesperrt-Seite in den Kader übernehmen
 export function speichereUnavailable(
   db: Database.Database,
   seite: UnavailableSeite,
@@ -76,6 +77,7 @@ export function speichereUnavailable(
   return { ...r, nichtImKader, stand };
 }
 
+// Trainingslager-Seite in den Kader übernehmen
 export function speichereTrainingslager(
   db: Database.Database,
   seite: TrainingslagerSeite,
@@ -108,6 +110,7 @@ export function speichereTrainingslager(
   return { ...r, nichtImKader, stand };
 }
 
+// Aufstellbarkeit aus der Taktikseite übernehmen
 export function speichereTaktik(
   db: Database.Database,
   seite: TaktikSeite,
@@ -138,6 +141,7 @@ export function speichereTaktik(
   return { ...r, nichtImKader, unbekannt, stand };
 }
 
+// Spieleransicht (Nationalität, Arbeitsbewilligung, Scout) übernehmen
 export function speichereSpielerSeite(
   db: Database.Database,
   seite: SpielerSeite,

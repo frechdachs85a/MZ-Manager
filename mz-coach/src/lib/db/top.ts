@@ -1,3 +1,5 @@
+// Datenbank: Liste der Topteams.
+
 import type Database from "better-sqlite3";
 import { QUELLE_TOP10, TOP10 } from "@/lib/wissen/startbasis";
 
@@ -9,6 +11,3 @@ export function ladeTopTeams(db: Database.Database): TopTeam[] {
   return rows.length ? rows : TOP10.map((t) => ({ ...t, quelle: QUELLE_TOP10, stand: "2026-10-21" }));
 }
 
-export function istTopTeam(db: Database.Database, tid: number): boolean {
-  return ladeTopTeams(db).some((t) => t.tid === tid);
-}

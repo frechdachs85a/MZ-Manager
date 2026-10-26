@@ -26,6 +26,7 @@ const standardHolen = async (url: string) => {
 };
 const schlafen = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+// Stats-XML eines Spiels holen (ohne Login, mit Wiederholung)
 export async function holeStatsXml(mid: number, opt: HolOptionen = {}): Promise<HolErgebnis> {
   const holen = opt.holen ?? standardHolen;
   const warte = opt.warte ?? schlafen;

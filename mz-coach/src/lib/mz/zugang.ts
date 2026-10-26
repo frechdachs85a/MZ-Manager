@@ -7,6 +7,7 @@ const KEY = "mz_zugang";
 
 type Zugang = { benutzer: string; passwort: string };
 
+// Zugang verschlüsselt speichern
 export function speichereZugang(db: Database.Database, z: Zugang) {
   const wert = verschluesseln(JSON.stringify(z), tresorSchluessel());
   db.prepare(
@@ -21,6 +22,7 @@ function vergissSitzung(db: Database.Database) {
   db.prepare("DELETE FROM einstellung WHERE schluessel IN ('mz_cookies', 'mz_login_fehler')").run();
 }
 
+// Zugang entschlüsseln
 export function ladeZugang(db: Database.Database): Zugang | null {
   const row = db.prepare("SELECT wert FROM einstellung WHERE schluessel = ?").get(KEY) as
     | { wert: string }
@@ -36,6 +38,7 @@ export function zugangStatus(db: Database.Database): { eingerichtet: boolean; ge
   return row ? { eingerichtet: true, geaendert: row.geaendert } : { eingerichtet: false };
 }
 
+// Zugang löschen
 export function loescheZugang(db: Database.Database) {
   db.prepare("DELETE FROM einstellung WHERE schluessel = ?").run(KEY);
   vergissSitzung(db);

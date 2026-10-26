@@ -1,3 +1,5 @@
+// Taktik-Portfolio: bewährte Stile je Gegnerklasse aus dem Top-10-Wissen, mit Taktik-Code und bester Besetzung.
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -148,6 +150,7 @@ function Vorschlag({ klasse, s, u }: { klasse?: string; s: StilEintrag; u: Umfel
   );
 }
 
+// Seite Taktik-Portfolio
 export default async function Portfolio() {
   await connection();
   const db = getDb();

@@ -58,6 +58,7 @@ function gruppiere(spiele: GegnerSeinesSpiels[], schluessel: (s: GegnerSeinesSpi
 
 const bilanzText = (b: Bilanz) => `${b.S} S / ${b.U} U / ${b.N} N`;
 
+// Wie seine Gegner gegen ihn gespielt haben (Bilanz je Stil)
 export function gegenIhn(tid: number, spiele: StatsSpiel[]): GegenIhn {
   const liste: GegnerSeinesSpiels[] = spiele
     .filter((s) => s.teams.some((t) => t.id === tid))

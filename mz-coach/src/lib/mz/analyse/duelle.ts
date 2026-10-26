@@ -9,6 +9,7 @@ export type Duell = { stuermer: DuellSpieler; xBeiDir: number; gegenueber: Duell
 
 const mio = (n?: number) => (n === undefined ? "Wert n. v." : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
 
+// Seine Angreifer gegen deine Verteidiger (Marktwerte), Tauschvorschlag
 export function duelle(eigene: DuellSpieler[], gegner: DuellSpieler[]): { duelle: Duell[]; saetze: string[]; kurz: string[] } {
   const stuermer = gegner.filter((p) => !p.torwart && p.y <= STURM_Y).sort((a, b) => (b.wert ?? 0) - (a.wert ?? 0));
   const abwehr = eigene.filter((p) => !p.torwart && p.y >= ABWEHR_Y);

@@ -46,6 +46,7 @@ export function teamsAusTabelle(html: string): { tid: number; name: string }[] {
   return beste.length >= 4 ? beste : [];
 }
 
+// Liga, Weltliga oder anderes (dann null)
 export function wettbewerbVon(s: ListenSpiel): "liga" | "weltliga" | null {
   if (s.altersklasse || s.tore === undefined) return null;
   if (istWeltliga(s) && s.mid > WELTLIGA_MID_AB) return "weltliga";
@@ -160,6 +161,7 @@ export function wertSpieleNeuBerechnen(db: Database.Database): number {
   return alle.length;
 }
 
+// Wertbereich-Scan: Spiele und Kader der Topteams, Werte berechnen
 export async function wertScanAbrufen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "wertscan");
   marke(true);

@@ -1,3 +1,5 @@
+// Spieleseite: alle gespeicherten eigenen Spiele.
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -6,6 +8,7 @@ import { getDb } from "@/lib/db";
 import { listeSpiele } from "@/lib/db/spiele";
 import { EinfuegenForm } from "./einfuegen-form";
 
+// Seite Spiele
 export default async function Spiele() {
   await connection();
   const spiele = listeSpiele(getDb());

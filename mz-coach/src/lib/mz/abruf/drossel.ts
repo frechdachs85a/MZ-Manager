@@ -13,6 +13,7 @@ export const STANDARD_DROSSEL: DrosselOptionen = { maxParallel: 2, pauseMinMs: 2
 
 const schlafen = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+// Drossel: höchstens N gleichzeitig, Pause zwischen den Starts
 export function erzeugeDrossel(opt: DrosselOptionen = STANDARD_DROSSEL) {
   const warte = opt.warte ?? schlafen;
   const zufall = opt.zufall ?? Math.random;

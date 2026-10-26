@@ -64,6 +64,7 @@ function Spielertabelle({ spieler }: { spieler: SpielerWert[] }) {
   );
 }
 
+// Abschnitte des Spielberichts
 export function SpielberichtTeile({ b }: { b: SpielBericht }) {
   return (
     <>

@@ -11,6 +11,7 @@ export function hatLoginFormular(html: string): boolean {
   return /id="login_username"/.test(html) && /id="logindata"/.test(html);
 }
 
+// Ist die Seite eingeloggt geladen?
 export function istEingeloggt(html: string): boolean {
   return !istAbmeldeSeite(html) && !hatLoginFormular(html);
 }

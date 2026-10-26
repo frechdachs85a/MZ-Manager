@@ -1,7 +1,10 @@
 "use client";
 
+// Knopf, der einen Text (z. B. Taktik-Code) in die Zwischenablage kopiert.
+
 import { useState } from "react";
 
+// Kopiert den Text in die Zwischenablage
 export function KopierKnopf({ text, label = "Code kopieren" }: { text: string; label?: string }) {
   const [ok, setOk] = useState(false);
   return (

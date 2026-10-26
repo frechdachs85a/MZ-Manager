@@ -22,6 +22,7 @@ function ensureSwitch(): HTMLLabelElement {
   return label;
 }
 
+// Kurze Vibration auf dem Handy (wenn unterstützt)
 export function haptic() {
   if (typeof window === "undefined") return;
   if (typeof navigator.vibrate === "function") {

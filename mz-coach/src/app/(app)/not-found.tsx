@@ -1,5 +1,8 @@
+// Seite „nicht gefunden“ des App-Bereichs.
+
 import Link from "next/link";
 
+// Anzeige „Seite nicht gefunden“
 export default function NichtGefunden() {
   return (
     <div className="seite pt-24">

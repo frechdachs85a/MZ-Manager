@@ -1,3 +1,5 @@
+// Datenbank: Kader fremder Teams (Name, Alter, Marktwert).
+
 import type Database from "better-sqlite3";
 import type { SpielerBlock } from "@/lib/mz/parser/spielerblock";
 
@@ -12,6 +14,7 @@ export function speichereGegnerKader(db: Database.Database, tid: number, spieler
   })();
 }
 
+// Gespeicherter Kader eines fremden Teams
 export function ladeGegnerKader(db: Database.Database, tid: number): GegnerSpieler[] {
   return db.prepare('SELECT pid, name, alter_jahre AS "alter", wert, stand FROM gegner_kader WHERE tid = ?').all(tid) as GegnerSpieler[];
 }

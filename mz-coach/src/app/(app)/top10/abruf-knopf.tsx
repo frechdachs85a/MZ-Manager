@@ -1,8 +1,11 @@
 "use client";
 
+// Knopf „Top 10 jetzt abrufen“.
+
 import { useActionState } from "react";
 import { topJetztAbrufen, type TopState } from "./actions";
 
+// Knopf: Top 10 jetzt abrufen
 export function TopAbrufKnopf() {
   const [state, action, pending] = useActionState<TopState>(topJetztAbrufen, {});
   return (

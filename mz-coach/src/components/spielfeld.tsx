@@ -22,6 +22,7 @@ export const WERT_STUFEN: { wert: number; farbe: [number, number, number]; name:
   { wert: 1_500_000, farbe: [127, 29, 29], name: "dunkelrot" },
 ];
 const rgb = (f: [number, number, number]) => `rgb(${f.join(" ")})`;
+// Heatmap-Farbe eines Marktwerts (fest, linear zwischen den Stufen)
 export function heatFarbe(wert: number): string {
   const st = WERT_STUFEN;
   if (wert <= st[0].wert) return rgb(st[0].farbe);

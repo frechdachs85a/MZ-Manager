@@ -7,6 +7,7 @@ export function spielVorhanden(db: Database.Database, mid: number): boolean {
   return !!db.prepare("SELECT 1 FROM spiel WHERE mid = ? AND stats_xml IS NOT NULL").get(mid);
 }
 
+// Spiel (Stats-XML) speichern
 export function speichereSpiel(db: Database.Database, s: StatsSpiel, xml: string, zeit = new Date().toISOString()): "neu" | "vorhanden" {
   if (spielVorhanden(db, s.mid)) return "vorhanden";
   db.prepare(
@@ -17,6 +18,7 @@ export function speichereSpiel(db: Database.Database, s: StatsSpiel, xml: string
   return "neu";
 }
 
+// Gespeichertes Spiel
 export function ladeSpiel(db: Database.Database, mid: number): (StatsSpiel & { abgerufen: string }) | null {
   const row = db.prepare("SELECT auswertung_json, abgerufen FROM spiel WHERE mid = ?").get(mid) as
     | { auswertung_json: string | null; abgerufen: string }
@@ -26,6 +28,7 @@ export function ladeSpiel(db: Database.Database, mid: number): (StatsSpiel & { a
 
 export type SpielZeile = { mid: number; datum?: string; heim: string; gast: string; tore: string; final: boolean };
 
+// Gespeicherte Spiele, neueste zuerst
 export function listeSpiele(db: Database.Database, limit = 100): SpielZeile[] {
   const rows = db.prepare("SELECT auswertung_json FROM spiel WHERE auswertung_json IS NOT NULL").all() as {
     auswertung_json: string;

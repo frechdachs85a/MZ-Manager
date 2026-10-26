@@ -13,6 +13,7 @@ import { gebotsformularLesen } from "@/lib/mz/abruf/bietomat";
 // "gesperrt" blockiert die Sitzung selbst jeden weiteren Login.
 const ABRUFE = { kader: kaderAbrufen, markt: marktAbrufen, top: topAbrufen, spieltag: spieltagAbrufen, wertscan: wertScanAbrufen, liga: ligaHinterlegen, gebotsformular: (db: Parameters<typeof gebotsformularLesen>[0]) => gebotsformularLesen(db) } as const;
 
+// Fernabruf starten (nur mit Fernschlüssel; je Art gebremst)
 export async function POST(request: Request) {
   if (!fernErlaubt(request.headers.get("authorization"))) return new Response("nicht gefunden", { status: 404 });
   const art = new URL(request.url).searchParams.get("art") ?? "";

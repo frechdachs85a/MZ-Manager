@@ -1,11 +1,14 @@
 "use client";
 
+// Formular zum Prüfen einer Taktik-XML (Befunde je Aufstellung).
+
 import { useActionState } from "react";
 import { Spielfeld } from "@/components/spielfeld";
 import { taktikPruefen, type PruefState } from "./actions";
 
 const TITEL = ["Startaufstellung", "Alternative 1", "Alternative 2"];
 
+// Formular: Taktik-XML prüfen
 export function PruefForm() {
   const [state, action, pending] = useActionState<PruefState, FormData>(taktikPruefen, {});
   const e = state.ergebnis;

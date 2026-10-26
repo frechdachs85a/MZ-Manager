@@ -1,3 +1,5 @@
+// Transfermarkt: Empfehlung je Schwachstelle mit Spielerprofil und Bietomat, Kandidaten, Schwachstellen, Rahmen.
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -18,6 +20,7 @@ import { ladeAuftraege } from "@/lib/db/gebot";
 const MZ = "https://www.managerzone.com";
 const komma = (n: number, s = 2) => n.toFixed(s).replace(".", ",");
 
+// Seite Transfermarkt
 export default async function Markt() {
   await connection();
   const db = getDb();

@@ -49,6 +49,7 @@ const uhr = (clock: string) => {
 // Kartenarten laut mz-wissen.md: yellow, second yellow. Unbekannte Werte unverändert.
 const KARTE: Record<string, string> = { yellow: "Gelb", "second yellow": "Gelb-Rot", red: "Rot" };
 
+// Seite eines Spiels (Bericht, Aufstellungen, Verlauf)
 export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
   await connection();
   const { mid } = await props.params;

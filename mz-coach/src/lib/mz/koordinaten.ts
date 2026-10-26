@@ -8,6 +8,7 @@ export type Punkt = { x: number; y: number };
 
 export const EDITOR_Y_MIN = 63;
 
+// Koordinaten der Stats-XML in Editor-Koordinaten umrechnen
 export function originZuEditor(origin: Punkt, torwartOriginY: 0 | 1000): Punkt {
   const d = torwartOriginY === 1000 ? 1000 - origin.y : origin.y;
   const x = torwartOriginY === 1000 ? origin.x : 750 - origin.x;
