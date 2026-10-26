@@ -54,5 +54,6 @@ describe.skipIf(!MIDS.every((m) => existsSync(fix(m))))("Steckbrief YugiPeeK", a
     expect(b.torschuetzen.reduce((n, [, x]) => n + x, 0)).toBe(8);
     expect(b.spiele[0].datum! < b.spiele.at(-1)!.datum!).toBe(true);
     expect(b.stammElf!.spiele).toBeGreaterThanOrEqual(1);
+    expect(b.stammElf!.positionen).toBeGreaterThanOrEqual(b.stammElf!.spiele);
   });
 });

@@ -199,12 +199,15 @@ export function spieltagLage(db: Database.Database) {
   // Anpassungen aus den Scoutspielen und der Taktik-Code: Archiv-Taktik mit Anpassungen, oder (nicht im Archiv)
   // neu erzeugt aus den Koordinaten in mz-wissen.md mit deiner besten Besetzung
   const anpassungen = (scout?.anpassungen ?? []).filter((a) => a.art === "hinweis" || a.reiter === vorschlag?.taktik);
-  let taktikCode: { art: "archiv" | "angepasst" | "neu"; xml: string; geaendert: string[]; hinweise: string[] } | null = null;
+  let taktikCode: { art: "archiv" | "angepasst" | "neu" | "editor"; xml: string; geaendert: string[]; hinweise: string[] } | null = null;
   if (vorschlag) {
     const roh = ladeTaktiken(db).find((t) => t.reiter === vorschlag.taktik);
     if (roh) {
       const r = anpassen(roh.xml, anpassungen);
       taktikCode = { art: r.geaendert.length ? "angepasst" : "archiv", xml: r.xml, geaendert: r.geaendert, hinweise: [] };
+    } else if (TAKTIKEN.some((x) => x.name === vorschlag.taktik)) {
+      // Reiter gibt es in deinem Editor (mz-wissen.md, Abschnitt 8), nur nicht im Archiv dieser Seite: keine neue XML
+      taktikCode = { art: "editor", xml: "", geaendert: [], hinweise: [] };
     } else {
       const t = TAKTIKEN.find((x) => x.name === vorschlag.taktik);
       const st = scout?.taktiken.find((x) => x.reiter === vorschlag.taktik)?.einstellung.split(" / ");
@@ -245,7 +248,8 @@ export function spieltagLage(db: Database.Database) {
       kurzfassung.push({
         titel: "Erwartete Formation gegen dich",
         text:
-          `${st.formation}, ${st.einstellung}: dieselbe Startelf in ${brief.stammElf.spiele} von ${brief.stammElf.von} Ligaspielen` +
+          `${st.formation}, ${st.einstellung}: dieselbe Aufstellung in ${brief.stammElf.positionen} von ${brief.stammElf.von} Ligaspielen` +
+          (brief.stammElf.positionen !== brief.stammElf.spiele ? ` (mit denselben Spielern in ${brief.stammElf.spiele})` : "") +
           (brief.breite ? `, äußerste Feldspieler bei x ${brief.breite.min} und ${brief.breite.max}${brief.breite.min > 40 && brief.breite.max < 170 ? " (beide Flügel leer)" : ""}` : "") +
           "." +
           (umstellung.length ? ` Umgestellt hat er ${umstellung.length === 1 ? "einmal" : `${umstellung.length}-mal`}: ${umstellung.join("; ")}.` : ""),

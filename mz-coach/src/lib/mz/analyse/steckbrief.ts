@@ -26,7 +26,8 @@ export type Steckbrief = {
   torschuetzen: [string, number][];
   vorlagen: [string, number][];
   // Häufigste Startelf (gleiche Spieler auf gleichen Plätzen, ±2 Punkte) und in wie vielen Spielen sie stand
-  stammElf: { spiele: number; von: number; elf: SteckbriefSpiel["elf"]; abweichungen: { mid: number; datum?: string; text: string }[] } | null;
+  // positionen = Spiele mit denselben Plätzen (egal wer dort stand), spiele = zusätzlich dieselben Spieler
+  stammElf: { spiele: number; positionen: number; von: number; elf: SteckbriefSpiel["elf"]; abweichungen: { mid: number; datum?: string; text: string }[] } | null;
   breite?: { min: number; max: number }; // äußerste x der Feldspieler in der Stammelf
 };
 
@@ -34,6 +35,18 @@ const zaehle = (xs: string[]): [string, number][] => {
   const m = new Map<string, number>();
   for (const x of xs) m.set(x, (m.get(x) ?? 0) + 1);
   return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+};
+
+// Gleiche Plätze (±2 Punkte), unabhängig davon, wer dort stand
+const gleichePlaetze = (a: SteckbriefSpiel["elf"], b: SteckbriefSpiel["elf"]) => {
+  if (a.length !== b.length) return false;
+  const frei = [...b];
+  for (const p of a) {
+    const i = frei.findIndex((q) => q.torwart === p.torwart && Math.abs(q.x - p.x) <= 2 && Math.abs(q.y - p.y) <= 2);
+    if (i < 0) return false;
+    frei.splice(i, 1);
+  }
+  return true;
 };
 
 const gleich = (a: SteckbriefSpiel["elf"], b: SteckbriefSpiel["elf"]) =>
@@ -84,6 +97,7 @@ export function steckbrief(tid: number, stats: StatsSpiel[]): Steckbrief {
     if (!stammElf || gleiche.length > stammElf.spiele) {
       stammElf = {
         spiele: gleiche.length,
+        positionen: spiele.filter((s) => gleichePlaetze(s.elf, kandidat.elf)).length,
         von: spiele.length,
         elf: kandidat.elf,
         abweichungen: spiele

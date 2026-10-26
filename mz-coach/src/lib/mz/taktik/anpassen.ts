@@ -7,7 +7,7 @@ export function anpassen(xml: string, anpassungen: Anpassung[]): { xml: string; 
   const geaendert: string[] = [];
   let neu = xml;
   for (const a of anpassungen) {
-    if (a.art !== "wechselzeit") continue;
+    if (a.art !== "wechselzeit" || a.umgesetzt) continue;
     neu = neu.replace(/<TacticRule\b[^>]*\/>/g, (regel) => {
       if (!new RegExp(`\\bout_player="${a.outPid}"`).test(regel) || !/\bcheck_time="true"/.test(regel)) return regel;
       const m = regel.match(/\btime="(\d+)"/);
