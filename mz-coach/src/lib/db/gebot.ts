@@ -57,3 +57,22 @@ export function ladeProtokoll(db: Database.Database, pid?: number, n = 50): { pi
     .prepare(`SELECT pid, zeit, betrag, text FROM gebot_log ${pid ? "WHERE pid = ?" : ""} ORDER BY id DESC LIMIT ?`)
     .all(...(pid ? [pid, n] : [n])) as { pid: number; zeit: string; betrag: number | null; text: string }[];
 }
+
+// Vorrang des Bietomats (Marcus, 26.10.2026): kurz vor und während einer Auktion mit aktivem Auftrag starten keine
+// anderen Abrufe. VORLAUF deckt den längsten Abruf ab (Wertscan bis ca. 26 Minuten, gemessen 26.10.2026); NACHLAUF
+// deckt Verlängerungen ab (jedes Gebot in den letzten 3 Minuten verlängert um 3 Minuten).
+export const VORLAUF_MIN = 45;
+export const NACHLAUF_MIN = 60;
+let bietomatLaeuft = false;
+export const setzeBietomatLaeuft = (an: boolean) => {
+  bietomatLaeuft = an;
+};
+export function bietomatSperrt(db: Database.Database, jetzt = new Date()): string | null {
+  if (bietomatLaeuft) return "Bietomat bietet gerade";
+  const von = new Date(jetzt.getTime() - NACHLAUF_MIN * 60_000).toISOString();
+  const bis = new Date(jetzt.getTime() + VORLAUF_MIN * 60_000).toISOString();
+  const a = db
+    .prepare("SELECT name, pid, auktion_ende FROM gebot_auftrag WHERE status = 'aktiv' AND auktion_ende BETWEEN ? AND ? ORDER BY auktion_ende LIMIT 1")
+    .get(von, bis) as { name: string | null; pid: number; auktion_ende: string } | undefined;
+  return a ? `Auktion von ${a.name ?? a.pid} endet ${a.auktion_ende}` : null;
+}

@@ -7,6 +7,8 @@ import { spieltagAbrufen, spieltagFaellig } from "@/lib/mz/abruf/spieltag";
 import { topAbrufen, topFaellig } from "@/lib/mz/abruf/top";
 import { wertScanAbrufen, wertScanFaellig } from "@/lib/mz/abruf/wertscan";
 import type Database from "better-sqlite3";
+import { bietomatSperrt } from "@/lib/db/gebot";
+import { bietomatTakt } from "@/lib/mz/abruf/bietomat-lauf";
 
 // Prüft alle 15 Minuten, was fällig ist. Abrufe laufen nie parallel (mitMzSitzung).
 // 4 Uhr: Top 10 (Listen wöchentlich, Nachholen täglich), eigene Spiele, Tabelle
@@ -50,6 +52,12 @@ async function takt() {
   laeuft = true;
   try {
     const db = getDb();
+    // Bietomat hat Vorrang: dann diesen Takt auslassen, fällige Abrufe kommen im nächsten Takt dran
+    const sperre = bietomatSperrt(db);
+    if (sperre) {
+      console.log(`[zeitplan] ausgesetzt: ${sperre}`);
+      return;
+    }
     const spieltag = spieltagFaellig(db);
     if (spieltag) {
       const r = await spieltagAbrufen(db, { manuell: false, ziel: spieltag.ziel });
@@ -86,4 +94,6 @@ export function starteZeitplan() {
   console.log("[zeitplan] aktiv: 5 h nach jedem Ligaspiel Spieltag, 4 Uhr Top 10 (Listen wöchentlich) und eigene Spiele, 6 Uhr Transfermarkt, täglich Aufräumen, wöchentlich Sicherung");
   setTimeout(takt, 60_000).unref();
   setInterval(takt, TAKT_MS).unref();
+  // Bietomat: alle 20 Sekunden prüfen, ob eine Auktion mit aktivem Auftrag in die heiße Phase kommt
+  setInterval(() => void bietomatTakt(getDb()).catch((e) => console.error("[bietomat]", e instanceof Error ? e.message : e)), 20_000).unref();
 }

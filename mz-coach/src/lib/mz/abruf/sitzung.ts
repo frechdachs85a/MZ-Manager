@@ -2,6 +2,7 @@ import "server-only";
 import type Database from "better-sqlite3";
 import { rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { bietomatSperrt } from "@/lib/db/gebot";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { entschluesseln, tresorSchluessel, verschluesseln } from "@/lib/crypto/tresor";
 import { speichereRohseite } from "@/lib/db/abruf";
@@ -220,9 +221,12 @@ export function marke(an: boolean) {
 export async function mitMzSitzung<T>(
   db: Database.Database,
   arbeit: (s: MzSitzung) => Promise<T>,
-  opt: { manuell: boolean } = { manuell: false },
+  opt: { manuell: boolean; vorrang?: boolean } = { manuell: false },
 ): Promise<T> {
   if (laeuft) throw new MzFehler("Es läuft bereits ein Abruf.");
+  // Bietomat hat Vorrang (Marcus, 26.10.2026): in der heißen Phase keine anderen Abrufe, auch keine von Hand
+  const sperre = opt.vorrang ? null : bietomatSperrt(db);
+  if (sperre) throw new MzFehler(`Bietomat hat Vorrang (${sperre}). Abruf danach erneut starten.`);
   const vorher = loginFehler(db);
   if (vorher?.grund === "falsch") throw new MzFehler(MELDUNG.falsch);
   if (vorher && !opt.manuell) throw new MzFehler(`Letzter Login fehlgeschlagen (${vorher.zeit}). ${MELDUNG[vorher.grund]}`);
