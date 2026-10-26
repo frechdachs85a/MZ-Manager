@@ -50,6 +50,8 @@ export type TaktikReiter = {
   einsatz: string;
   // Feldspieler-Koordinaten im Editor, nur wo in mz-wissen.md angegeben (ohne Torwart)
   koordinaten?: { x: number; y: number; rolle: string }[];
+  // Zeitregel-Wechsel ohne Spielstandbedingung, wo von Marcus genannt (Minute, pid raus, pid rein)
+  wechsel?: { minute: number; raus: number; rein: number; quelle: string }[];
 };
 
 export const TAKTIKEN: TaktikReiter[] = [
@@ -61,6 +63,12 @@ export const TAKTIKEN: TaktikReiter[] = [
       { x: 26, y: 224, rolle: "AV" }, { x: 76, y: 224, rolle: "IV" }, { x: 125, y: 224, rolle: "IV" }, { x: 175, y: 224, rolle: "AV" },
       { x: 101, y: 183, rolle: "6" }, { x: 151, y: 183, rolle: "6" }, { x: 101, y: 135, rolle: "10" },
       { x: 129, y: 95, rolle: "ST" }, { x: 82, y: 77, rolle: "ST" }, { x: 200, y: 63, rolle: "Ecke" },
+    ],
+    // mz-wissen.md, Abschnitt 12.1 (Umsetzung 26.10.2026): 60. Kaupa für Nazarov, 60. Rodekamp für Cytrynski, 70. Ishizaki für Hyuga
+    wechsel: [
+      { minute: 60, raus: 227162857, rein: 226471405, quelle: "Marcus, 26.10.2026" },
+      { minute: 60, raus: 225629108, rein: 231999847, quelle: "Marcus, 26.10.2026" },
+      { minute: 70, raus: 229906765, rein: 230162433, quelle: "Marcus, 26.10.2026" },
     ],
   },
   { name: "außenL", inhalt: "gespiegelt, Ecke links", einsatz: "Variante" },

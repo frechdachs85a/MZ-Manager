@@ -1,5 +1,7 @@
 import type { StatsSpiel, StatsTeam } from "@/lib/mz/parser/stats";
-import { de } from "./gegner";
+import { de, formation } from "./gegner";
+
+export const ZEITFENSTER: [number, number][] = [[0, 50], [51, 70], [71, 999]];
 import { musterRolle, type Rolle } from "./rolle";
 
 // Ausführlicher Spielbericht aus der Stats-XML eines Spiels, aus Sicht eines Teams. Alle Werte stammen
@@ -204,6 +206,14 @@ export function spielBericht(s: StatsSpiel, tid: number): SpielBericht {
     const [h1, h2] = halbzeiten;
     fakten.push(`Tore je Halbzeit: 1. Halbzeit ${stand(h1.eigen.tore, h1.gegner.tore)}, 2. Halbzeit ${stand(h2.eigen.tore, h2.gegner.tore)}.`);
   }
+  // Tore nach Zeitfenster (mz-wissen.md, Abschnitt 14: Vergleich mit den Scoutspielen, bis 50., 51. bis 70., ab 71.)
+  const fenster = ZEITFENSTER.map(([von, bis]) => {
+    const im = s.tore.filter((t) => t.minute >= von && t.minute <= bis);
+    return `${von === 0 ? "bis" : `${von}. bis`} ${bis === 999 ? "Ende" : `${bis}.`} ${im.filter((t) => t.teamId === eigen.id).length}:${im.filter((t) => t.teamId === gegner.id).length}`;
+  });
+  fakten.push(`Tore nach Zeitfenster: ${fenster.join(", ").replace("bis 50.", "bis zur 50.")}.`);
+  const feldG = s.spieler.filter((p) => p.teamId === gegner.id && p.editor && !p.torwart).map((p) => p.editor!);
+  if (feldG.length) fakten.push(`Formation ${gegner.name} in diesem Spiel: ${formation(feldG).text}.`);
   const schuetzen = spieler.filter((p) => p.tore > 0).sort((a, b) => b.tore - a.tore);
   if (schuetzen.length) fakten.push(`Torschützen: ${schuetzen.map((p) => `${p.name} ${p.tore}`).join(", ")}.`);
   const vorl = spieler.filter((p) => p.vorlagen > 0).sort((a, b) => b.vorlagen - a.vorlagen);

@@ -24,7 +24,7 @@ const FARBE = { S: "text-green", U: "text-label-2", N: "text-red" } as const;
 export default async function Spieltag() {
   await connection();
   const l = spieltagLage(getDb());
-  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout } = l;
+  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, verlauf } = l;
   const gName = gegner?.name ?? lauf?.gegnerName ?? "Gegner";
 
   return (
@@ -61,6 +61,49 @@ export default async function Spieltag() {
                   </div>
                 ))}
               </dl>
+            </Card>
+          </Section>
+        )}
+
+        {verlauf && (
+          <Section
+            title="Kaderwert über die Spielzeit"
+            footer={`Summe der Marktwerte auf dem Feld je Zeitfenster zwischen den Wechseln, Verhältnis = deine ÷ seine; gewichtet nach Minuten (mz-wissen.md, Abschnitt 14). Du: ${verlauf.quelleEigen}. Er: ${verlauf.quelleGegner}.${verlauf.fehlend.length ? ` Ohne Marktwert (zählen mit 0): ${verlauf.fehlend.join(", ")}.` : ""}`}
+          >
+            <Card className="overflow-x-auto">
+              <table className="w-full min-w-[620px] text-[13.5px]">
+                <thead>
+                  <tr className="border-b border-separator bg-card-2 text-left text-[11px] uppercase tracking-wider text-label-3">
+                    <th className={th}>Minuten</th>
+                    <th className={th}>Wechsel davor</th>
+                    <th className={`${th} text-right`}>{TEAM.name}</th>
+                    <th className={`${th} text-right`}>{gName}</th>
+                    <th className={`${th} text-right`}>Verhältnis</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-separator">
+                  {verlauf.fenster.map((f) => (
+                    <tr key={f.von}>
+                      <td className={td}>{f.von === 0 ? "Anpfiff" : `${f.von}.`} bis {f.bis}.</td>
+                      <td className={`${td} text-label-2`}>{f.aenderung.join(", ") || "–"}</td>
+                      <td className={`${td} text-right`}>{euro(f.eigen)}</td>
+                      <td className={`${td} text-right`}>{euro(f.gegner)}</td>
+                      <td className={`${td} text-right font-bold ${f.verhaeltnis >= 1 ? "text-green" : "text-red"}`}>
+                        {f.verhaeltnis.toFixed(2).replace(".", ",")} ({f.verhaeltnis >= 1 ? "+" : ""}{Math.round((f.verhaeltnis - 1) * 100)} %)
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-card-2 font-semibold">
+                    <td className={td} colSpan={2}>Nach Minuten gewichtet</td>
+                    <td className={`${td} text-right`}>{euro(verlauf.gewichtet.eigen)}</td>
+                    <td className={`${td} text-right`}>{euro(verlauf.gewichtet.gegner)}</td>
+                    <td className={`${td} text-right ${verlauf.gewichtet.verhaeltnis >= 1 ? "text-green" : "text-red"}`}>
+                      {verlauf.gewichtet.verhaeltnis.toFixed(2).replace(".", ",")} ({verlauf.gewichtet.verhaeltnis >= 1 ? "+" : ""}
+                      {Math.round((verlauf.gewichtet.verhaeltnis - 1) * 100)} %)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </Card>
           </Section>
         )}

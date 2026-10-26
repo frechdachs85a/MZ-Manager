@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { ElfWertZeile } from "@/components/elf-wert";
+import { ElfWertZeile, WertDiff } from "@/components/elf-wert";
 import { SpielberichtTeile } from "@/components/spielbericht";
 import { Hero, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
@@ -30,10 +30,13 @@ export default async function LetztesLigaspiel() {
                   {b.eigen.name}
                   <ElfWertZeile w={elfWerte?.[b.eigen.id]} />
                 </div>
-                <div className="display text-[56px] font-bold leading-none tabular-nums lg:text-[72px]">
-                  {b.endstand.eigen}
-                  <span className="px-1 text-label-3">:</span>
-                  {b.endstand.gegner}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="display text-[56px] font-bold leading-none tabular-nums lg:text-[72px]">
+                    {b.endstand.eigen}
+                    <span className="px-1 text-label-3">:</span>
+                    {b.endstand.gegner}
+                  </div>
+                  <WertDiff eigen={elfWerte?.[b.eigen.id]?.summe} gegner={elfWerte?.[b.gegner.id]?.summe} />
                 </div>
                 <div className="display min-w-0 text-right text-[20px] font-bold uppercase leading-tight lg:text-[28px]">
                   {b.gegner.name}
