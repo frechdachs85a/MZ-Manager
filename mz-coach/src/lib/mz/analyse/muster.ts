@@ -342,9 +342,28 @@ export function regelMuster(spiele: SpielMuster[]): RegelSatz[] {
   if (verletzt.length) saetze.push({ art: "info", text: `${verletzt.length} Wechsel wegen Verletzung (keine Regel), Minuten ${verletzt.map((w) => w.minute).sort((a, b) => a - b).join(", ")}.` });
 
   // Taktikwechsel: je Lage, Art und neuer Einstellung. Bezug: Spiele, in denen das Team in dieser Lage war.
+  // Rot-Regel (Marcus, 26.10.2026): ein Taktikwechsel bis 2 Minuten nach einer eigenen Roten Karte gilt als
+  // Reaktion auf Rot, nicht als Spielstandregel. Kartenart laut XML: red (bzw. second yellow für Gelb-Rot).
+  const istRot = (art: string) => art === "red" || art === "second yellow";
+  const rot = new Map<string, { art: string; neu: string; mids: Set<number>; minuten: number[] }>();
+  const nachRot = (s: SpielMuster, minute: number) => s.karten.some((k) => istRot(k.art) && minute >= k.minute && minute - k.minute <= 2);
+  for (const s of spiele)
+    for (const t of s.taktikwechsel.filter((x) => nachRot(s, x.minute))) {
+      const k = `${t.art}|${t.neu}`;
+      const g = rot.get(k) ?? { art: t.art, neu: t.neu, mids: new Set(), minuten: [] };
+      g.mids.add(s.mid);
+      g.minuten.push(t.minute);
+      rot.set(k, g);
+    }
+  for (const g of rot.values()) {
+    const was = g.art === "aggression" && g.neu !== "normal" ? de(g.neu) : `${ART_DE[g.art] ?? g.art} ${de(g.neu)}`;
+    const mitRot = spiele.filter((s) => s.karten.some((k) => istRot(k.art))).length;
+    saetze.push({ art: "taktik", text: `Rot-Regel: stellt nach eigener Roter Karte sofort auf ${was} (in ${g.mids.size} von ${mitRot} Spielen mit eigener Roter Karte, Minute ${g.minuten.sort((a, b) => a - b).join(", ")}).` });
+  }
+
   const tg = new Map<string, { lage: Lage; art: string; neu: string; minuten: number[]; mids: Set<number> }>();
   for (const s of spiele)
-    for (const t of s.taktikwechsel) {
+    for (const t of s.taktikwechsel.filter((x) => !nachRot(s, x.minute))) {
       const k = `${t.lage}|${t.art}|${t.neu}`;
       const g = tg.get(k) ?? { lage: t.lage, art: t.art, neu: t.neu, minuten: [], mids: new Set() };
       g.minuten.push(t.minute);

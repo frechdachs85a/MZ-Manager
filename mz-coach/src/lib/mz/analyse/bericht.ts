@@ -107,7 +107,7 @@ function besitzAusTicks(a?: string, b?: string): [number | undefined, number | u
 }
 
 // Kartenarten laut mz-wissen.md: yellow, second yellow. Unbekannte Werte unverändert.
-const KARTE: Record<string, string> = { yellow: "Gelb", "second yellow": "Gelb-Rot" };
+const KARTE: Record<string, string> = { yellow: "Gelb", "second yellow": "Gelb-Rot", red: "Rot" };
 
 const prozent = (q: Quote) => (q ? `${Math.round(q.wert * 100)} %` : "n. v.");
 

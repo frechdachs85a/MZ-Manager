@@ -108,3 +108,18 @@ describe("Regelmuster über mehrere Spiele", () => {
     expect(t).toContain("Lag in 1 von 2 Spielen (erstmals ab der 20.), nie eine Änderung von Taktik, Spielweise oder Härte bei Rückstand: sehr wahrscheinlich keine Rückstandsregel dafür.");
   });
 });
+
+describe("Rot-Regel des Gegners", () => {
+  it("Taktikwechsel bis 2 Minuten nach eigener Roter Karte wird als Rot-Regel erkannt, nicht als Spielstandregel", () => {
+    const basis = { mid: 1, ergebnis: "U", tore: { eigen: 1, gegner: 1 }, wechsel: [], ablauf: [], torVerlauf: [] } as unknown as SpielMuster;
+    const spiel = {
+      ...basis,
+      karten: [{ minute: 43, lage: "gleich", art: "red", spieler: "", stand: "1:1" }],
+      taktikwechsel: [{ minute: 43, lage: "gleich", art: "playstyle", neu: "defensive", stand: "1:1" }],
+    } as SpielMuster;
+    const ohne = { ...basis, mid: 2, karten: [], taktikwechsel: [] } as unknown as SpielMuster;
+    const r = regelMuster([spiel, ohne]);
+    expect(r.some((x) => x.text.startsWith("Rot-Regel: stellt nach eigener Roter Karte sofort auf Spielweise defensiv (in 1 von 1"))).toBe(true);
+    expect(r.some((x) => x.text.startsWith("Stellt bei Gleichstand"))).toBe(false);
+  });
+});

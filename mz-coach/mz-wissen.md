@@ -243,3 +243,18 @@ Eigene Einordnung (Claude, 26.10.2026), nicht blind übernommen:
 - Der Einbruch nach der 50. in außenR fällt mit zwei Dingen zusammen: Hyuga raus (50.) und Sydneys frische Spieler (40.). Dass kupass trotz derselben Sydney-Wechsel nicht einbricht, stützt den Hyuga-Effekt. Bei 10 Spielen bleibt es eine gut begründete Hypothese.
 - Die Rückstandsregel wird nur bei Rückstand ausgelöst; 1:5 danach ist auch durch diesen Auswahleffekt erklärbar. Hinweis, kein Beweis.
 - Scoutspiele zeigen Sydneys Aufstellung vom 25.10.; live kann er gegen einen Eckstürmer umstellen (1 Ligaspiel als Beleg). Direkte Spiele gegen genau diesen Gegner wiegen schwerer als die allgemeine Faustregel aus Abschnitt 10, ersetzen aber den Live-Vorbehalt nicht.
+
+Umgesetzt (Marcus, 26.10.2026, live im Editor per Neuladen geprüft): außenR Wechsel Ishizaki für Hyuga von der 50. auf die 70. verschoben, sonst unverändert. Wechsel jetzt: 60. Kaupa für Nazarov, 60. Rodekamp für Cytrynski, 70. Ishizaki für Hyuga. Gilt für alle Spiele mit außenR; für das Ligaspiel Mi 28.10. 18:45 gegen Sydney (Heim, mid 1625669290) ausgewählt. Nach dem Spiel prüfen: Vergleichswert 4:9 Tore ab der 51. in den Scoutspielen.
+
+Weitere Beobachtungen von Marcus zu Sydney (Ligaspiele): Gegentore bekam Sydney von Flügelteams (Grn, BOD und 1.FC Aufbau-Einsturz je 2; Aufbau-Einsturz gewann 2:0). Kurzpass-Teams mit Spielweise normal erzielten 0 Tore.
+
+## 13. Technik und Datenquellen (Marcus, 26.10.2026)
+
+- Scoutspiele abrufen: POST /ajax.php?p=matches&sub=list&sport=soccer mit type=played, hidescore=false, tid1=847159, offset=, selectType=scout_match, limit=1 (1 Woche) oder max. Weitere selectType-Werte: all, friendlyseries, friendly, series, cup, private_cup, scout_match, u18_series, u21_series.
+- In der Spielliste steht hinter jedem eigenen Spiel der Name der genutzten Taktik (z. B. „außenR“, „kupass“): damit Scoutspiele automatisch nach Taktik gruppieren.
+- Stats-XML: `<Tactic teamId time="82:23.666" type="aggression|playstyle|tactic" new_setting="…"/>` nur mit time, ohne clock. `<Card time clock type="yellow|red"/>` steckt im `<Player>` (Spieler = Elternelement). `<Possession home="55" away="45"/>`. Player > Statistics: goals, interceptedPasses (= eigene Pässe abgefangen), goodPasses, shotsOnGoal, shotsWide, tacklesWon, tacklesLost, interceptions, yellowCards, redCards, ticks="a,b" (b = Einsatzzeit, 0 = nicht gespielt), distancesCovered. Bankspieler und Eingewechselte haben kein numerisches origin.
+- Gegner-Kader mit Marktwert und Alter: GET /?p=players&sub=alt&tid=<TID>; Text je Spieler „Nr Name Wert EUR Gehalt EUR AlterGeboren“ (Alter = erste 2 Ziffern, z. B. „2872“ = 28 Jahre).
+- Eigene Verletzte: auf /?p=players steht title="keine verletzten Spieler", wenn niemand verletzt ist.
+- Für ein geplantes Spiel gewählte Taktik: auf /?p=match&sub=scheduled im Select-Namen h:<mid>:a:series:<seriesId>:<Taktikname>. Hinweis der Seite: /?p=match ist für automatische Abrufe gesperrt (robots.txt); der Spielplan über ajax.php (type=scheduled) enthält dieselben Auswahllisten.
+- Koordinaten des Gegners in die eigene Editor-Sicht spiegeln: x_eigen = 208 − x_gegner.
+- Regel für die App: Nach jeder Scout-Serie Tore nach Zeitfenster auswerten (bis zum ersten eigenen Wechsel, danach). Kippt ein Muster nach einem bestimmten Wechsel, den Wechselzeitpunkt als Vorschlag melden. Gegner-Rot-Regeln erkennen: Taktikwechsel direkt nach eigener Roter Karte = Rot-Regel (umgesetzt 26.10.2026: bis 2 Minuten danach).

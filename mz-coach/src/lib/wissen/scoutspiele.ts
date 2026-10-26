@@ -17,7 +17,7 @@ export type ScoutTaktik = {
 
 // Anpassung an einer Taktik aus dem Archiv. wechselzeit: Wechselregel mit diesem Ausgewechselten erst ab Minute neu.
 export type Anpassung =
-  | { art: "wechselzeit"; reiter: string; outPid: number; name: string; ab: number; grund: string }
+  | { art: "wechselzeit"; reiter: string; outPid: number; name: string; ab: number; grund: string; umgesetzt?: string }
   | { art: "hinweis"; text: string };
 
 export type ScoutBericht = {
@@ -50,7 +50,7 @@ export const SCOUT_BERICHTE: ScoutBericht[] = [
       "Wiesenberg war als Joker (in kupass) der wirksamste Einwechsel-Stürmer: 2 Tore, 17 Schüsse aufs Tor.",
     ],
     anpassungen: [
-      { art: "wechselzeit", reiter: "außenR", outPid: 229906765, name: "Hyuga", ab: 70, grund: "Ausdauer 7 hält bis ca. 70.–80.; nach seinem Wechsel in der 50. brach außenR in den Scoutspielen ein (4:9 Tore)." },
+      { art: "wechselzeit", reiter: "außenR", outPid: 229906765, name: "Hyuga", ab: 70, grund: "Ausdauer 7 hält bis ca. 70.–80.; nach seinem Wechsel in der 50. brach außenR in den Scoutspielen ein (4:9 Tore).", umgesetzt: "26.10.2026 im Editor (laut Marcus, per Neuladen geprüft): 60. Kaupa für Nazarov, 60. Rodekamp für Cytrynski, 70. Ishizaki für Hyuga. Nach dem Spiel prüfen: Tore ab der 51. besser als 4:9?" },
       { art: "hinweis", text: "Keine aggressive Rückstandsregel, falls kupass gespielt wird (1:5 Tore nach dem Umschalten in 7 Spielen; Auswahleffekt möglich)." },
       { art: "hinweis", text: "Bekommt Sydney Rot, spielt er defensiv: dann lohnt Druck nach vorn." },
     ],

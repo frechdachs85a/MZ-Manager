@@ -167,7 +167,7 @@ export default async function Spieltag() {
 
 
         {sb && sb.spiele.length > 0 && (
-          <Section title={`Steckbrief ${gName}`} footer="Alles aus den Stats-XML seiner ausgewerteten Ligaspiele. Stammelf = gleiche Spieler auf gleichen Plätzen (±2 Punkte).">
+          <Section title={`Steckbrief ${gName}`} footer="Alles aus den Stats-XML seiner ausgewerteten Ligaspiele. Gleiche Aufstellung = gleiche Plätze (±2 Punkte), egal wer dort stand.">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
               <Card className="p-4">
                 <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
@@ -218,7 +218,7 @@ export default async function Spieltag() {
               {sb.stammElf && (
                 <Card className="p-4">
                   <div className="text-[14px] font-semibold">
-                    Stammelf in {sb.stammElf.spiele} von {sb.stammElf.von} Spielen
+                    Gleiche Aufstellung in {sb.stammElf.positionen} von {sb.stammElf.von} Spielen{sb.stammElf.positionen !== sb.stammElf.spiele && `, mit denselben Spielern in ${sb.stammElf.spiele}`}
                     {sb.breite && <span className="font-normal text-label-2"> · äußerste Feldspieler bei x {sb.breite.min} und {sb.breite.max}</span>}
                   </div>
                   <ul className="mt-2 space-y-0.5 text-[13px] tabular-nums">

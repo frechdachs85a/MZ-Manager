@@ -53,7 +53,10 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
                     {anpassungen.map((a, i) => (
                       <li key={i} className="flex gap-2">
                         <span aria-hidden className="text-tint-hell">→</span>
-                        <span>{a.art === "wechselzeit" ? `${a.name} erst ab der ${a.ab}. Minute auswechseln. ${a.grund}` : a.text}</span>
+                        <span>
+                          {a.art === "wechselzeit" ? `${a.name} erst ab der ${a.ab}. Minute auswechseln. ${a.grund}` : a.text}
+                          {a.art === "wechselzeit" && a.umgesetzt && <span className="mt-0.5 block font-semibold text-tint-hell">✓ Umgesetzt: {a.umgesetzt}</span>}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -85,13 +88,18 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
             <p className="mt-5 text-[14px] text-label-2">Noch keine Ligaspiele des Gegners mit Stats-XML gespeichert: kein Vorschlag möglich.</p>
           )}
 
-          {taktikCode && taktikCode.art !== "archiv" && (
+          {taktikCode && (taktikCode.art === "angepasst" || taktikCode.art === "neu") && (
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <DateiKnopf text={taktikCode.xml} dateiname={`${vorschlag?.taktik ?? "taktik"}-${lauf.gegnerName ?? "gegner"}.xml`.replace(/[^\w.-]+/g, "_")} label={taktikCode.art === "angepasst" ? "Angepasste Taktik als XML" : "Taktik als XML (neu)"} />
               <span className="text-[12.5px] text-label-2">
                 {taktikCode.art === "angepasst" ? `Dein Reiter ${vorschlag?.taktik} aus dem Archiv mit: ${taktikCode.geaendert.join(", ")}.` : `${vorschlag?.taktik} ist nicht in deinem Archiv: neu erzeugt mit deiner besten Besetzung.`}
               </span>
             </div>
+          )}
+          {taktikCode?.art === "editor" && (
+            <p className="mt-4 text-[12.5px] text-label-2">
+              Reiter {vorschlag?.taktik} hast du im Editor: im Spiel diesen Reiter wählen. Für die Prüfung von Aufstellung, Bank und Regeln den XML-Export unter „Taktik“ ins Archiv laden.
+            </p>
           )}
           {taktikCode?.art === "archiv" && <p className="mt-4 text-[12.5px] text-label-2">Reiter {vorschlag?.taktik} ist in deinem Archiv und braucht keine Änderung: im Spiel einfach diesen Reiter wählen.</p>}
 
