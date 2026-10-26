@@ -192,6 +192,8 @@ const DE: Record<string, string> = {
   passive: "passiv",
 };
 export const de = (v: string) => DE[v] ?? v;
+// "3-4-3 shortpass/normal/aggressive" -> "3-4-3 Kurzpass/normal/aggressiv" (Formation bleibt, Einstellungen deutsch)
+export const stilDe = (s: string) => s.replace(/[A-Za-z]+/g, (w) => DE[w] ?? w);
 
 export function analysiereGegner(tid: number, spiele: StatsSpiel[]): GegnerAnalyse {
   const ausw = spiele.map((s) => werteSpielAus(s, tid)).sort((a, b) => (b.datum ?? "").localeCompare(a.datum ?? ""));

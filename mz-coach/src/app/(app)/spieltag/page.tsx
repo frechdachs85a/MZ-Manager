@@ -24,7 +24,7 @@ const FARBE = { S: "text-green", U: "text-label-2", N: "text-red" } as const;
 export default async function Spieltag() {
   await connection();
   const l = spieltagLage(getDb());
-  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb } = l;
+  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout } = l;
   const gName = gegner?.name ?? lauf?.gegnerName ?? "Gegner";
 
   return (
@@ -50,6 +50,68 @@ export default async function Spieltag() {
           </Card>
         )}
 
+        {kurzfassung.length > 0 && (
+          <Section title={`Das Wichtigste über ${gName}`} footer="Aus den Stats-XML seiner ausgewerteten Ligaspiele und seiner Kaderseite.">
+            <Card>
+              <dl className="divide-y divide-separator">
+                {kurzfassung.map((k) => (
+                  <div key={k.titel} className="grid gap-1 px-4 py-3 sm:grid-cols-[200px_1fr] sm:gap-4">
+                    <dt className="text-[13px] font-bold uppercase tracking-wider text-label-2">{k.titel}</dt>
+                    <dd className="text-[14.5px] leading-relaxed">{k.text}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Card>
+          </Section>
+        )}
+
+        {scout && (
+          <Section title={`Deine Scoutspiele gegen ${scout.gegner}`} footer={`${scout.quelle}. ${scout.vorbehalte.join(" ")}`}>
+            <Card className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-[13.5px]">
+                <thead>
+                  <tr className="border-b border-separator bg-card-2 text-left text-[11px] uppercase tracking-wider text-label-3">
+                    <th className={th}>Taktik</th>
+                    <th className={`${th} text-right`}>Spiele</th>
+                    <th className={`${th} text-right`}>S / U / N</th>
+                    <th className={`${th} text-right`}>Punkte je Spiel</th>
+                    <th className={`${th} text-right`}>Tore</th>
+                    <th className={`${th} text-right`}>Ecken</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-separator">
+                  {scout.taktiken.map((t) => (
+                    <tr key={t.reiter} className={t.reiter === l.vorschlag?.taktik ? "bg-tint/[0.08] font-semibold" : ""}>
+                      <td className={td}>
+                        {t.reiter} <span className="font-normal text-label-2">({t.einstellung})</span>
+                      </td>
+                      <td className={`${td} text-right`}>{t.spiele}</td>
+                      <td className={`${td} text-right`}>{t.S} / {t.U} / {t.N}</td>
+                      <td className={`${td} text-right`}>{((3 * t.S + t.U) / t.spiele).toFixed(2).replace(".", ",")}</td>
+                      <td className={`${td} text-right`}>{t.tore}:{t.gegentore}</td>
+                      <td className={`${td} text-right`}>{t.ecken ? `${t.ecken[0]}:${t.ecken[1]}` : "n. v."}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+            <Card className="mt-3 p-4">
+              <ul className="space-y-1.5 text-[14px] leading-relaxed">
+                {scout.befunde.map((b, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span aria-hidden className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-tint" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </Section>
+        )}
+
+        <details className="group mt-8">
+          <summary className="flex min-h-[48px] cursor-pointer items-center rounded-[8px] bg-card px-4 text-[14px] font-bold uppercase tracking-wider text-tint karte">
+            Alle Details zum Gegner: Aufstellung, Kaderwert, Steckbrief, Belege, Spiele
+          </summary>
         {(ga || kw) && (
           <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
             {ga && (
@@ -275,6 +337,7 @@ export default async function Spieltag() {
             </Card>
           </Section>
         )}
+        </details>
       </div>
     </>
   );

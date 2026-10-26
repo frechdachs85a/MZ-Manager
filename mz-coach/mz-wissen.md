@@ -221,3 +221,25 @@ Format: Nr Name (Alter) pid, wichtigste Skills
 - Jito am 23.10.2026 für 1,4 Mio verkauft
 
 Kaderziele: Ersatz für Cytrynski (intern Peschke), zweiter Flügelspieler (intern kurzfristig niemand), junger Innenverteidiger. Gute Spieler sind selten auf dem Markt und teuer, eher selbst aufbauen.
+
+## 12. Scoutspiele gegen kommende Gegner
+
+### 12.1 Sydney FC (tid 97246), 22 Scoutspiele vom 26.10.2026 (Auswertung von Marcus)
+
+Grundlage: 11 Spiele mit außenR (Flügel/offensiv/normal), 11 mit kupass (Kurzpass/normal/normal), alle Stats-XML gelesen. Sydney spielt in Scoutspielen fest die Aufstellung aus dem letzten Ligaspiel (25.10. gegen Hannover) und reagiert nicht auf FC Toho.
+
+- Sydney: Guderian 104/318; Knapp 103/240, Roos 64/215, Zhou 142/215; Lopez 103/190; Reifer 62/167, Raufelder 143/165; Mogg 102/143; Gimenez 74/106, Alberts 120/99, Lenz 91/63. Kurzpass/normal/aggressiv, Flügel leer. Aus FC-Toho-Sicht gespiegelt (x = 208 − x): Alberts bei x 88 (Zone Nazarov), Gimenez bei x 134 (Zone Vranken), Lenz/Toscano bei x 117.
+- Wechsel in jedem Spiel 40.: Toscano für Lenz, Denzin für Reifer, danach keine.
+- Sydney hat eine Rot-Regel: nach eigener Roter Karte sofort Spielweise defensiv (Zhou Rot 43. → 43. defensiv, Knapp Rot 92. → 92. defensiv). Erklärt vermutlich das „45. defensiv“ im Ligaspiel vom 14.10.
+- Ergebnisse: außenR 4 S / 2 U / 5 N, Tore 17:20, Schüsse aufs Tor 150:171, Ballbesitz 47,9 %, Ecken 14:6. kupass 4 S / 3 U / 4 N, Tore 15:23, Schüsse 167:184, Ballbesitz 53,5 %, Ecken 6:4.
+- außenR ohne das Spiel mit Vranken-Rot (18.): bis zur 50. 12:8 Tore, ab der 51. 4:9. Hyuga als Eckstürmer 8 Vorlagen, alle vor seiner Auswechslung in der 50.; Cavalcante 12 der 17 Tore. Ishizaki (ab 50. für Hyuga): 0 Vorlagen, 0 Schüsse aufs Tor, Zweikämpfe 2:11.
+- kupass: bis zur 55. 8:12, danach 7:11 (kein Einbruch durch den Hyuga-Wechsel). Wiesenberg als Joker (55.): 2 Tore, 17 Schüsse aufs Tor. Nach Umschalten der Rückstandsregel (offensiv + aggressiv, bei 2 Toren Alt2 Flügel) 1:5 Tore in 7 Spielen, in außenR 1:1.
+- Spieler: Pinheiro wichtigster Abräumer (Zweikämpfe außenR 67:47, kupass 43:39). Nazarov hält die Alberts-Zone (40:29, 33:32). Vranken in außenR 46:56 (Schwachstelle gegen die Gimenez/Toscano-Seite), in kupass 53:44. Kaupa ab 60. gut (19:10, 11:9). Zahl in außenR 52 angekommene / 68 abgefangene Pässe auf 151/183, in kupass 127/49. Schobel in außenR Zweikämpfe 26:44.
+- Karten: FC Toho Rot Vranken (außenR, 18.), Zahl (kupass, 88.); Sydney Rot Zhou, Knapp.
+- Empfehlung von Marcus: außenR beibehalten; Hyuga frühestens ca. 70. auswechseln (Ausdauer 7); gegen Sydney keine aggressiven Rückstandsregeln in kupass; Wiesenberg wirksamster Einwechsel-Stürmer; Vorbehalt: gegen den einzigen Gegner mit Eckstürmer (BOD, 07.10.) stellte Sydney live auf Viererkette um; bei Rot für Sydney wird es defensiv, dann Druck nach vorn.
+
+Eigene Einordnung (Claude, 26.10.2026), nicht blind übernommen:
+- Punkte pro Spiel 1,27 gegen 1,36 bei je 11 Spielen ist kein Unterschied, der über Zufall hinausgeht. Deutlich verschieden ist die Tordifferenz (−3 gegen −8), dazu Ecken 14:6 und die starke erste Stunde: das spricht für außenR.
+- Der Einbruch nach der 50. in außenR fällt mit zwei Dingen zusammen: Hyuga raus (50.) und Sydneys frische Spieler (40.). Dass kupass trotz derselben Sydney-Wechsel nicht einbricht, stützt den Hyuga-Effekt. Bei 10 Spielen bleibt es eine gut begründete Hypothese.
+- Die Rückstandsregel wird nur bei Rückstand ausgelöst; 1:5 danach ist auch durch diesen Auswahleffekt erklärbar. Hinweis, kein Beweis.
+- Scoutspiele zeigen Sydneys Aufstellung vom 25.10.; live kann er gegen einen Eckstürmer umstellen (1 Ligaspiel als Beleg). Direkte Spiele gegen genau diesen Gegner wiegen schwerer als die allgemeine Faustregel aus Abschnitt 10, ersetzen aber den Live-Vorbehalt nicht.

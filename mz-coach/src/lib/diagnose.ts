@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { parse } from "node-html-parser";
+import { spieltagLage } from "@/lib/spieltag";
 import { ladeKader } from "@/lib/db/kader";
 import { schwaerzen } from "@/lib/schwaerzen";
 import { ladeKombis, scoutEinstufung } from "@/lib/scout";
@@ -55,5 +56,21 @@ export function diagnose(db: Database.Database) {
   const spieltag = db
     .prepare("SELECT id, gestartet, beendet, ok, letztes_mid, naechstes_mid, gegner_tid, gegner_name, anstoss, heim, meldung FROM spieltag_lauf ORDER BY id DESC LIMIT 10")
     .all();
-  return { erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, suchformular, rohseiten, scout };
+  // Ergebnis der Spieltag-Analyse (zum Abgleich mit ManagerZone): Vorschlag, Kurzfassung, Kaderwerte
+  let analyse: unknown = null;
+  try {
+    const l = spieltagLage(db);
+    analyse = {
+      vorschlag: l.vorschlag,
+      anpassungen: l.anpassungen,
+      taktikCode: l.taktikCode ? { art: l.taktikCode.art, geaendert: l.taktikCode.geaendert } : null,
+      kurzfassung: l.kurzfassung,
+      formationen: l.gegner?.analyse?.spiele.map((x) => ({ mid: x.mid, datum: x.datum, formation: x.formation.text })),
+      kaderwert: l.kaderwert ? { eigen: l.kaderwert.eigen?.summe, gegner: l.kaderwert.gegner?.summe } : null,
+      belege: l.belege,
+    };
+  } catch (e) {
+    analyse = { fehler: e instanceof Error ? e.message : String(e) };
+  }
+  return { analyse, erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, suchformular, rohseiten, scout };
 }
