@@ -48,31 +48,30 @@ export default async function BietomatSeite() {
             {auftraege.length ? (
               <List>
                 {auftraege.map((a) => (
-                  <Row
-                    key={a.pid}
-                    title={`${a.name ?? "?"} (${a.pid})`}
-                    detail={
-                      <>
-                        {a.auktionEnde
-                          ? `Endpreis ${euro(a.maximum)} · Auktionsende ${datumZeit(a.auktionEnde)}${a.bietenBis ? ` · bieten bis ${datumZeit(a.bietenBis)}` : ""}`
-                          : `Endpreis ${euro(a.maximum)} · Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten`}
-                        {a.spieler && (
-                          <div className="mt-2">
-                            <SpielerProfil skills={a.spieler.skills} />
-                          </div>
-                        )}
-                      </>
-                    }
-                    value={<Badge tone={STATUS_TON[a.status]}>{a.status}</Badge>}
-                    accessory={
+                  <li key={a.pid} className="py-3">
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[14.5px] font-medium leading-snug">{`${a.name ?? "?"} (${a.pid})`}</div>
+                        <div className="mt-0.5 text-[12.5px] text-label-2">
+                          {a.auktionEnde
+                            ? `Endpreis ${euro(a.maximum)} · Auktionsende ${datumZeit(a.auktionEnde)}${a.bietenBis ? ` · bieten bis ${datumZeit(a.bietenBis)}` : ""}`
+                            : `Endpreis ${euro(a.maximum)} · Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten`}
+                        </div>
+                      </div>
+                      <Badge tone={STATUS_TON[a.status]}>{a.status}</Badge>
                       <form action={auftragLoeschen}>
                         <input type="hidden" name="pid" value={a.pid} />
                         <button type="submit" className="text-[13px] font-semibold text-red">
                           Löschen
                         </button>
                       </form>
-                    }
-                  />
+                    </div>
+                    {a.spieler && (
+                      <div className="mt-2">
+                        <SpielerProfil skills={a.spieler.skills} scout={a.spieler.scout} />
+                      </div>
+                    )}
+                  </li>
                 ))}
               </List>
             ) : (

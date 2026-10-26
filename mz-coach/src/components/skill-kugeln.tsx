@@ -2,10 +2,11 @@ import type { SkillWert } from "@/lib/mz/skills";
 
 // 10 Kugeln wie auf ManagerZone. Ausgemaxte Skills rot, trainierbare in Akzentfarbe,
 // Skills ohne Rot/Schwarz-Angabe (Erfahrung, Form: nicht trainierbar) grau.
-export function SkillKugeln({ label, skill }: { label: string; skill?: SkillWert }) {
+// kompakt: niedrigere Zeilen für Listen mit mehreren Spielern (Bietomat)
+export function SkillKugeln({ label, skill, kompakt }: { label: string; skill?: SkillWert; kompakt?: boolean }) {
   return (
-    <div className="flex min-h-9 items-center gap-3">
-      <span className="w-[118px] shrink-0 text-[15px]">
+    <div className={`flex items-center ${kompakt ? "min-h-6 gap-2" : "min-h-9 gap-3"}`}>
+      <span className={`shrink-0 ${kompakt ? "w-[104px] text-[13px]" : "w-[118px] text-[15px]"}`}>
         {label}
         {skill?.markierung === 1 && <sup className="ml-0.5 text-[11px] font-semibold text-green">1</sup>}
         {skill?.markierung === 2 && <sup className="ml-0.5 text-[11px] font-semibold text-orange">2</sup>}
@@ -28,7 +29,7 @@ export function SkillKugeln({ label, skill }: { label: string; skill?: SkillWert
               />
             ))}
           </span>
-          <span className={`w-6 text-right text-[15px] font-semibold tabular-nums ${skill.gemaxt ? "text-skill-max" : ""}`}>
+          <span className={`w-6 text-right font-semibold tabular-nums ${kompakt ? "text-[13px]" : "text-[15px]"} ${skill.gemaxt ? "text-skill-max" : ""}`}>
             {skill.wert}
           </span>
           {skill.gemaxt !== undefined && <span className="sr-only">{skill.gemaxt ? "ausgemaxt" : "trainierbar"}</span>}

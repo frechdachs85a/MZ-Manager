@@ -23,7 +23,9 @@ describe.skipIf(!vorhanden)("Spielerblock (div.playerContainer)", () => {
       expect(b.name).toBe(k.name);
       expect(b.alter).toBe(k.alter);
       expect(b.wert).toBe(k.marktwert);
-      expect(b.skills).toEqual(k.skills);
+      // Stärken/Schwächen (markierung) stehen nur im Spielerblock, nicht in der Kaderübersicht
+      const ohne = Object.fromEntries(Object.entries(b.skills).map(([n, v]) => [n, { wert: v!.wert, ...(v!.gemaxt !== undefined ? { gemaxt: v!.gemaxt } : {}) }]));
+      expect(ohne).toEqual(k.skills);
     }
   });
 

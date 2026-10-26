@@ -16,6 +16,8 @@ export type SpielerBlock = {
   wert?: number; // EUR
   gehalt?: number; // EUR
   skills: Skills;
+  // Scoutbericht-Zeile, falls ManagerZone sie zeigt (Marktsuche, gesehen 26.10.2026): Sterne für Hoch¹, Niedrig², Tr. Geschwindigkeit
+  scout?: { hoch?: number; niedrig?: number; training?: number };
 };
 
 const OHNE_MAXED: Skill[] = ["erfahrung", "form"];
@@ -62,6 +64,20 @@ export function parseSpielerBlock(block: HTMLElement): SpielerBlock {
     const w = Number(text(wertEl));
     if (!Number.isInteger(w) || w < 0 || w > 10) throw new KaderSeiteUnbekannt(`Skillwert „${text(wertEl)}“ bei ${name}.`);
     skills[skill] = OHNE_MAXED.includes(skill) ? { wert: w } : { wert: w, gemaxt: wertEl.classList.contains("maxed") };
+    // Hochgestellte 1/2 am Skillnamen: Stärke (Hoch¹) bzw. Schwäche (Niedrig²) laut Scoutbericht
+    const sup = text(tr.querySelector("span.skill_name > span.sup"));
+    if (sup === "1" || sup === "2") skills[skill]!.markierung = Number(sup) as 1 | 2;
+  }
+
+  // Sterne zählen: je Abschnitt die <i>-Sterne im ersten Kind (high-stars, low-stars, Trainingsgeschwindigkeit)
+  let scout: SpielerBlock["scout"];
+  for (const abschnitt of tabelle?.querySelectorAll("div.scout_report_stars") ?? []) {
+    const n = abschnitt.querySelector("div")?.querySelectorAll("i").length ?? 0;
+    const name = text(abschnitt.querySelector(".scout_report_name > span"));
+    scout ??= {};
+    if (/^Hoch/i.test(name)) scout.hoch = n;
+    else if (/^Niedrig/i.test(name)) scout.niedrig = n;
+    else if (/Geschwindigkeit/i.test(name)) scout.training = n;
   }
 
   return {
@@ -73,5 +89,6 @@ export function parseSpielerBlock(block: HTMLElement): SpielerBlock {
     wert,
     gehalt,
     skills,
+    ...(scout ? { scout } : {}),
   };
 }
