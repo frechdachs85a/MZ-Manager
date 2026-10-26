@@ -107,17 +107,30 @@ export function spieltagLage(db: Database.Database) {
   // (direkte Spiele wiegen schwerer als die allgemeine Faustregel); sonst die Faustregel aus Abschnitt 10.
   const scout = gegner ? scoutBericht(gegner.tid) : undefined;
   const scoutWahl = scout ? scoutEntscheidung(scout) : null;
-  const vorschlag: { taktik: string; quelle: string; begruendung: string } | null = scoutWahl
-    ? { taktik: scoutWahl.reiter, quelle: "Deine Scoutspiele gegen ihn", begruendung: scoutWahl.begruendung }
+  // Kurze Gründe der Faustregel (Abschnitt 10) für den Matchplan
+  const regelKurz = (): string[] => {
+    const a = gegner?.analyse;
+    if (!a || !empfehlung) return [];
+    const neu = a.spiele[0];
+    const eng = a.spiele.filter((x) => x.engeMitte).length;
+    return [
+      a.urteil === "immer_gleich" ? "Spielt immer gleich → anpassen erlaubt" : a.urteil === "duenn" ? "Wenig Daten → Standard" : "Spielt wechselnd → Standard",
+      ...(neu.formation.abwehr >= 5 ? [`Fünferkette (${neu.formation.text})`] : []),
+      `Enge Mitte in ${eng} von ${a.spiele.length} Spielen`,
+      `→ ${empfehlung.taktik}`,
+    ];
+  };
+  const vorschlag: { taktik: string; quelle: string; begruendung: string; kurz: string[] } | null = scoutWahl
+    ? { taktik: scoutWahl.reiter, quelle: "Deine Scoutspiele gegen ihn", begruendung: scoutWahl.begruendung, kurz: scoutWahl.kurz }
     : empfehlung
-      ? { taktik: empfehlung.taktik, quelle: "Faustregel (mz-wissen.md, Abschnitt 10)", begruendung: `${empfehlung.regel} ${empfehlung.gruende.join(" ")}`.trim() }
+      ? { taktik: empfehlung.taktik, quelle: "Faustregel (mz-wissen.md, Abschnitt 10)", begruendung: `${empfehlung.regel} ${empfehlung.gruende.join(" ")}`.trim(), kurz: regelKurz() }
       : null;
 
   const belege: Beleg[] = [];
   if (scout && scoutWahl) {
     belege.push({
       quelle: "Scoutspiele",
-      text: `${scout.quelle}: ${scout.taktiken.map((t) => `${t.reiter} ${t.S} S / ${t.U} U / ${t.N} N, Tore ${t.tore}:${t.gegentore}${t.ecken ? `, Ecken ${t.ecken[0]}:${t.ecken[1]}` : ""}`).join("; ")}. ${scoutWahl.begruendung}`,
+      text: scout.taktiken.map((t) => `${t.reiter} ${t.S}/${t.U}/${t.N}, Tore ${t.tore}:${t.gegentore}`).join(" · "),
       stuetzt: true,
     });
   }
@@ -125,22 +138,20 @@ export function spieltagLage(db: Database.Database) {
     const gleich = empfehlung.taktik === vorschlag.taktik;
     belege.push({
       quelle: "Faustregel (mz-wissen.md, Abschnitt 10)",
-      text:
-        `${empfehlung.regel} ${empfehlung.gruende.join(" ")}`.trim() +
-        (gleich ? "" : ` Die Faustregel allein ergäbe ${empfehlung.taktik}; die direkten Scoutspiele gegen ihn wiegen schwerer.`),
+      text: regelKurz().join(" · ") + (gleich ? "" : ` (Scoutspiele wiegen schwerer)`),
       stuetzt: scoutWahl ? gleich : undefined,
     });
     // Taktik-Einstellung des vorgeschlagenen Reiters aus deinem Archiv
     const reiter = archiv.find((a) => a.reiter === vorschlag.taktik)?.taktik?.team.tactics;
     if (gegen && gegen.spiele.length) {
       const g = reiter ? gegen.nachTaktik.find((x) => x.wert === de(reiter)) : undefined;
-      if (!reiter) belege.push({ quelle: "Gegen ihn", text: `Reiter ${vorschlag.taktik} ist nicht im Taktik-Archiv: Einstellung unbekannt, kein Abgleich.` });
-      else if (!g) belege.push({ quelle: "Gegen ihn", text: `Kein Gegner spielte gegen ihn mit ${de(reiter)} (wie ${vorschlag.taktik}).` });
+      if (!reiter) belege.push({ quelle: "Gegen ihn", text: `${vorschlag.taktik} nicht im Archiv: kein Abgleich` });
+      else if (!g) belege.push({ quelle: "Gegen ihn", text: `Niemand spielte gegen ihn mit ${de(reiter)}` });
       else {
         const q = quote(g.bilanz.S, g.bilanz.U, g.bilanz.N);
         belege.push({
           quelle: "Gegen ihn",
-          text: `Mit ${g.wert} (wie ${vorschlag.taktik}) holten seine Gegner ${g.bilanz.S} S / ${g.bilanz.U} U / ${g.bilanz.N} N in ${g.spiele} ${g.spiele === 1 ? "Spiel" : "Spielen"}, Tore ${g.tore.fuer}:${g.tore.gegen}.${g.spiele < 3 ? " Wenige Spiele: nur ein Hinweis." : ""}`,
+          text: `Seine Gegner mit ${g.wert}: ${g.bilanz.S}/${g.bilanz.U}/${g.bilanz.N}, Tore ${g.tore.fuer}:${g.tore.gegen}${g.spiele < 3 ? " (wenige Spiele)" : ""}`,
           stuetzt: g.spiele >= 2 ? q >= 0.5 : undefined,
         });
       }
@@ -150,8 +161,8 @@ export function spieltagLage(db: Database.Database) {
       belege.push({
         quelle: "Top 10",
         text: bewaehrt.length
-          ? `Gegen „${klasse}“ bewährt (ab 3 Spielen, Punktquote ab 60 %): ${bewaehrt.map((t) => `${stilDe(t.schluessel)} ${t.S} S / ${t.U} U / ${t.N} N${t.imArchiv.length ? ` (bei dir: ${t.imArchiv.join(", ")})` : ""}`).join("; ")}.`
-          : `Gegen „${klasse}“ noch kein Stil der Top 10 mit mindestens 3 Spielen und 60 % Punktquote.`,
+          ? `Gegen „${klasse}“ bewährt: ${bewaehrt.map((t) => `${stilDe(t.schluessel)} ${t.S}/${t.U}/${t.N}${t.imArchiv.length ? ` (hast du: ${t.imArchiv.join(", ")})` : ""}`).join(" · ")}`
+          : `Gegen „${klasse}“ noch kein bewährter Stil`,
       });
     if (kaderwert?.eigen && kaderwert.gegner) {
       const e = kaderwert.eigen.summe;
@@ -159,11 +170,7 @@ export function spieltagLage(db: Database.Database) {
       const eur = (n: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(n))} €`;
       belege.push({
         quelle: "Kaderwert",
-        text:
-          `Startelf-Marktwert: deine ${eur(e)} (${kaderwert.eigen.mitWert} von ${kaderwert.eigen.spieler} Spielern), seine ${eur(g)} (${kaderwert.gegner.mitWert} von ${kaderwert.gegner.spieler}). ` +
-          (g > e
-            ? `Er ist laut Marktwert stärker (${Math.round((g / e - 1) * 100)} % mehr): „Gegen starke Gegner beim Standard bleiben“ (Abschnitt 10).`
-            : `Du bist laut Marktwert stärker (${Math.round((e / g - 1) * 100)} % mehr).`),
+        text: `Du ${eur(e)} · er ${eur(g)} → ${g > e ? `er +${Math.round((g / e - 1) * 100)} % (Standard bleiben)` : `du +${Math.round((e / g - 1) * 100)} %`}`,
       });
     }
     const eigenEmpf = eigeneJeTaktik.get(vorschlag.taktik);
@@ -171,8 +178,8 @@ export function spieltagLage(db: Database.Database) {
       belege.push({
         quelle: "Deine Ligaspiele",
         text: eigene.length
-          ? `Gegen „${klasse}“ ${eigene.length} gespeicherte Ligaspiele: ${[...eigeneJeTaktik.entries()].map(([k, b]) => `${k} ${b.S} S / ${b.U} U / ${b.N} N`).join("; ")}.`
-          : `Noch kein gespeichertes eigenes Ligaspiel gegen „${klasse}“.`,
+          ? `Gegen „${klasse}“: ${[...eigeneJeTaktik.entries()].map(([k, b]) => `${k} ${b.S}/${b.U}/${b.N}`).join(" · ")}`
+          : `Noch kein eigenes Ligaspiel gegen „${klasse}“`,
         stuetzt: eigenEmpf && eigenEmpf.S + eigenEmpf.U + eigenEmpf.N >= 2 ? quote(eigenEmpf.S, eigenEmpf.U, eigenEmpf.N) >= 0.5 : undefined,
       });
   }
@@ -241,54 +248,67 @@ export function spieltagLage(db: Database.Database) {
     }
   }
 
-  // Das Wichtigste über den Gegner auf einen Blick (Marcus, 26.10.2026): Form, erwartete Formation gegen dich,
-  // Trends, Torgefahr, Schwächen, Kaderwert. Nur Aussagen aus den gespeicherten Spielen, mit Spielzahl.
-  const kurzfassung: { titel: string; text: string }[] = [];
+  // Das Wichtigste über den Gegner auf einen Blick (Marcus, 26.10.2026): kurze Stichpunkte, Zahlen statt Sätze.
+  const kurzfassung: { titel: string; punkte: string[] }[] = [];
+  const mioK = (n?: number) => (n === undefined ? "?" : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
   if (brief && brief.spiele.length && gegner) {
     const b = brief.bilanz;
-    const letzte = brief.spiele.slice(-3).map((x) => `${x.tore.eigen}:${x.tore.gegner} ${x.heim ? "gegen" : "bei"} ${x.gegner}`);
-    kurzfassung.push({ titel: "Form", text: `${b.S} Siege, ${b.U} Remis, ${b.N} Niederlagen in ${brief.spiele.length} Ligaspielen, Tore ${b.tore}:${b.gegentore}. Zuletzt: ${letzte.join(", ")}.` });
+    kurzfassung.push({
+      titel: "Form",
+      punkte: [
+        `${b.S} S · ${b.U} U · ${b.N} N in ${brief.spiele.length} Ligaspielen`,
+        `Tore ${b.tore}:${b.gegentore}`,
+        `Zuletzt: ${brief.spiele.slice(-3).map((x) => `${x.tore.eigen}:${x.tore.gegner} ${x.heim ? "vs" : "bei"} ${x.gegner}`).join(" · ")}`,
+      ],
+    });
     if (brief.stammElf) {
       const st = brief.spiele.find((x) => x.elf === brief.stammElf!.elf) ?? brief.spiele.at(-1)!;
-      const abw = brief.stammElf.abweichungen.filter((a) => /anderen Plätzen/.test(a.text));
-      const umstellung = abw.map((a) => {
-        const g = gegen?.spiele.find((x) => x.mid === a.mid);
-        return g ? `${datumKurz(a.datum)} gegen ${g.name} (${g.stil}, Typ „${g.klasse}“)` : `${datumKurz(a.datum)}`;
-      });
+      const abw = brief.stammElf.abweichungen.filter((x) => /anderen Plätzen/.test(x.text));
       kurzfassung.push({
-        titel: "Erwartete Formation gegen dich",
-        text:
-          `${st.formation}, ${st.einstellung}: dieselbe Aufstellung in ${brief.stammElf.positionen} von ${brief.stammElf.von} Ligaspielen` +
-          (brief.stammElf.positionen !== brief.stammElf.spiele ? ` (mit denselben Spielern in ${brief.stammElf.spiele})` : "") +
-          (brief.breite ? `, äußerste Feldspieler bei x ${brief.breite.min} und ${brief.breite.max}${brief.breite.min > 40 && brief.breite.max < 170 ? " (beide Flügel leer)" : ""}` : "") +
-          "." +
-          (umstellung.length ? ` Umgestellt hat er ${umstellung.length === 1 ? "einmal" : `${umstellung.length}-mal`}: ${umstellung.join("; ")}.` : ""),
+        titel: "Erwartete Formation",
+        punkte: [
+          `${st.formation} · ${st.einstellung}`,
+          `So in ${brief.stammElf.positionen} von ${brief.stammElf.von} Spielen`,
+          ...(brief.breite && brief.breite.min > 40 && brief.breite.max < 170 ? [`Flügel leer (x ${brief.breite.min} bis ${brief.breite.max})`] : []),
+          ...(abw.length > 2
+            ? [`${abw.length}-mal umgestellt, zuletzt ${abw.slice(-2).map((x) => datumKurz(x.datum)).join(" und ")}`]
+            : abw.map((x) => {
+                const g = gegen?.spiele.find((y) => y.mid === x.mid);
+                return `Umgestellt ${datumKurz(x.datum)}${g ? ` gegen ${g.name} (${g.stil})` : ""}`;
+              })),
+        ],
       });
     }
-    const trends = (gegner.regeln ?? []).filter((r) => r.art === "wechsel" || r.art === "taktik").map((r) => r.text);
-    if (trends.length) kurzfassung.push({ titel: "Wechsel und Regeln", text: trends.slice(0, 3).join(" ") });
+    const wechselPunkte = (gegner.regeln ?? [])
+      .filter((r) => r.art === "wechsel" || r.art === "taktik")
+      .slice(0, 3)
+      .map((r) => r.text.replace(/\s*\([^)]*\)/g, "").replace(/\.$/, ""));
+    if (wechselPunkte.length) kurzfassung.push({ titel: "Wechsel und Regeln", punkte: wechselPunkte });
     const schuesse = brief.spiele.map((x) => x.schuesseTor).filter((x): x is number => x !== undefined);
     kurzfassung.push({
       titel: "Torgefahr",
-      text:
-        `${brief.torschuetzen.slice(0, 3).map(([n, z]) => `${n} ${z}`).join(", ") || "keine Tore"}` +
-        (schuesse.length ? `; im Schnitt ${(schuesse.reduce((a, c) => a + c, 0) / schuesse.length).toFixed(1).replace(".", ",")} Schüsse aufs Tor je Spiel.` : "."),
+      punkte: [
+        ...brief.torschuetzen.slice(0, 3).map(([n, z]) => `${n}: ${z} Tore`),
+        ...(schuesse.length ? [`Ø ${(schuesse.reduce((x, c) => x + c, 0) / schuesse.length).toFixed(1).replace(".", ",")} Schüsse aufs Tor je Spiel`] : []),
+      ],
     });
     const gegentore = brief.spiele.flatMap((x) => x.gegentorMinuten);
-    if (gegentore.length) {
-      const spaet = gegentore.filter((m) => m > 70).length;
-      kurzfassung.push({ titel: "Gegentore", text: `${gegentore.length} Gegentore, davon ${spaet} nach der 70. Minute und ${gegentore.filter((m) => m <= 45).length} in der ersten Halbzeit.` });
-    }
+    if (gegentore.length)
+      kurzfassung.push({
+        titel: "Gegentore",
+        punkte: [`${gegentore.length} insgesamt`, `${gegentore.filter((m) => m <= 45).length} in der 1. Halbzeit`, `${gegentore.filter((m) => m > 70).length} nach der 70.`],
+      });
     const punkteten = gegen?.spiele.filter((x) => x.seinErgebnis !== "S") ?? [];
     if (punkteten.length)
       kurzfassung.push({
-        titel: "Wer gegen ihn gepunktet hat",
-        text: punkteten.map((x) => `${x.name} ${x.seinErgebnis === "N" ? "gewann" : "spielte remis"} ${x.tore.fuer}:${x.tore.gegen} mit ${x.stil}`).join("; ") + ".",
+        titel: "Gegen ihn gepunktet",
+        punkte: punkteten.map((x) => `${x.name} ${x.tore.fuer}:${x.tore.gegen} (${x.seinErgebnis === "N" ? "Sieg" : "Remis"}) mit ${x.stil}`),
       });
     if (kaderwert?.eigen && kaderwert.gegner) {
       const e = kaderwert.eigen.summe;
       const g = kaderwert.gegner.summe;
-      kurzfassung.push({ titel: "Kaderwert der Startelf", text: g > e ? `Er ist ${Math.round((g / e - 1) * 100)} % mehr wert als deine Startelf.` : `Deine Startelf ist ${Math.round((e / g - 1) * 100)} % mehr wert.` });
+      const d = Math.round((e / g - 1) * 100);
+      kurzfassung.push({ titel: "Kaderwert Startelf", punkte: [`Du ${mioK(e)} · er ${mioK(g)}`, `${d >= 0 ? "+" : ""}${d} % für ${d >= 0 ? "dich" : "ihn"}`] });
     }
   }
 
@@ -342,18 +362,16 @@ export function spieltagLage(db: Database.Database) {
     belege.push({
       quelle: "Kaderwert über 90 Minuten",
       text:
-        `Verhältnis je Zeitfenster ${verlauf.fenster.map((x) => `${x.von}.–${x.bis}. ${f(x.verhaeltnis)}`).join(", ")}; nach Minuten gewichtet ${f(v)}. ` +
+        `Gewichtet ${f(v)} · ` +
         (() => {
           const q = quotenJeBereich(db, "feld").find((x) => v >= x.von && v < x.bis);
           return q && q.spiele >= 30
-            ? `In den gescannten Spielen mit Feld-Wert-Verhältnis ${q.bereich}: ${Math.round((q.S / q.spiele) * 100)} % Siege, ${Math.round((q.U / q.spiele) * 100)} % Remis, ${Math.round((q.N / q.spiele) * 100)} % Niederlagen (${q.spiele} Sichten).`
-            : `Wertbereich ${wertbereich(v)}.`;
-        })() +
-        (scout ? " Deine Scoutspiele gegen ihn haben Vorrang vor dieser allgemeinen Statistik (Abschnitt 14)." : ""),
+            ? `bei ${q.bereich}: ${Math.round((q.S / q.spiele) * 100)} % S / ${Math.round((q.U / q.spiele) * 100)} % U / ${Math.round((q.N / q.spiele) * 100)} % N (${q.spiele})`
+            : wertbereich(v).replace(/^[^:]*: in den Top-10-Spielen /, "Top 10: ");
+        })(),
     });
-    const kf = kurzfassung.find((k) => k.titel === "Kaderwert der Startelf");
-    const zusatz = ` Über 90 Minuten gewichtet (mit den üblichen Wechseln beider Teams) ${f(v)}, Wertbereich ${wertbereich(v)}.`;
-    if (kf) kf.text += zusatz;
+    const kf = kurzfassung.find((k) => k.titel === "Kaderwert Startelf");
+    if (kf) kf.punkte.push(`Über 90 Min. mit Wechseln: ${f(v)}`);
   }
 
   // Seine wahrscheinliche Aufstellung gegen dich: die häufigste Aufstellung seiner Ligaspiele, mit Marktwert je Platz
@@ -375,7 +393,7 @@ export function spieltagLage(db: Database.Database) {
         })()
       : null;
 
-  if (erwartet?.seiten.text) kurzfassung.splice(2, 0, { titel: "Angriffsseite", text: erwartet.seiten.text });
+  if (erwartet?.seiten.kurz) kurzfassung.splice(2, 0, { titel: "Angriffsseite", punkte: erwartet.seiten.kurz });
 
   // Deine Aufstellung mit Marktwerten für Heatmap und Duelle: Archiv-Reiter des Vorschlags, sonst die Startelf
   // deines letzten Ligaspiels (tatsächliche Plätze aus der Stats-XML)
@@ -391,7 +409,7 @@ export function spieltagLage(db: Database.Database) {
       : null;
   const skala = skalaAus([...(eigeneAufstellung?.feld ?? []), ...(erwartet?.feld ?? [])].filter((p) => !p.torwart).map((p) => p.wert));
   const duellListe = eigeneAufstellung && erwartet ? { ...duelle(eigeneAufstellung.feld.map((p) => ({ ...p, name: p.label })), erwartet.feld.map((p) => ({ ...p, name: p.label }))), quelle: eigeneAufstellung.quelle } : null;
-  if (duellListe?.saetze.length) kurzfassung.splice(3, 0, { titel: "Duelle", text: duellListe.saetze.join(" ") });
+  if (duellListe?.kurz.length) kurzfassung.splice(3, 0, { titel: "Duelle", punkte: duellListe.kurz });
 
   return {
     eigeneAufstellung,

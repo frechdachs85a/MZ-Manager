@@ -56,9 +56,18 @@ export default async function Spieltag() {
             <Card>
               <dl className="divide-y divide-separator">
                 {kurzfassung.map((k) => (
-                  <div key={k.titel} className="grid gap-1 px-4 py-3 sm:grid-cols-[200px_1fr] sm:gap-4">
-                    <dt className="text-[13px] font-bold uppercase tracking-wider text-label-2">{k.titel}</dt>
-                    <dd className="text-[14.5px] leading-relaxed">{k.text}</dd>
+                  <div key={k.titel} className="grid gap-1 px-4 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-4">
+                    <dt className="pt-0.5 text-[12px] font-bold uppercase tracking-wider text-label-2">{k.titel}</dt>
+                    <dd>
+                      <ul className="space-y-0.5 text-[14px] leading-snug">
+                        {k.punkte.map((p, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-tint" />
+                            <span>{p}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -79,14 +88,8 @@ export default async function Spieltag() {
                   <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} heatmap={erwartet.ohneWert.length < erwartet.feld.length} skala={skala} />
                 </div>
                 <p className="mt-2 text-[12px] leading-relaxed text-label-3">
-                  Aus seiner Sicht (sein Tor unten). Farbe = Marktwert laut Kaderseite, gleiche Skala wie deine Aufstellung im Matchplan; genauer Wert beim Antippen. Seine linke Seite liegt deiner rechten gegenüber (x = 208 − x).
+                  Seine Sicht (sein Tor unten). Seine linke Seite = deine rechte. Farbe = Marktwert, gleiche Skala wie deine Aufstellung.
                 </p>
-                {erwartet.seiten.text && (
-                  <div className="mt-3 rounded-[8px] bg-tint/[0.08] p-3 text-[13.5px] leading-relaxed">
-                    <span className="font-bold">Angriffsseite: </span>
-                    {erwartet.seiten.text}
-                  </div>
-                )}
               </Card>
             )}
             </div>

@@ -12,7 +12,7 @@ export type Seite = { seite: "links" | "mitte" | "rechts"; abwehr: SeitenSpieler
 const seiteVon = (x: number): Seite["seite"] => (x < LINKS_BIS ? "links" : x > RECHTS_AB ? "rechts" : "mitte");
 const mio = (n?: number) => (n === undefined ? "Wert n. v." : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
 
-export function seitenVergleich(elf: SeitenSpieler[]): { seiten: Seite[]; text?: string } {
+export function seitenVergleich(elf: SeitenSpieler[]): { seiten: Seite[]; text?: string; kurz?: string[] } {
   const feld = elf.filter((p) => !p.torwart);
   const seiten: Seite[] = (["links", "mitte", "rechts"] as const).map((seite) => {
     const alle = feld.filter((p) => seiteVon(p.x) === seite);
@@ -35,6 +35,11 @@ export function seitenVergleich(elf: SeitenSpieler[]): { seiten: Seite[]; text?:
   const unterschied = Math.round((1 - schwach.abwehrSchnitt! / stark.abwehrSchnitt!) * 100);
   return {
     seiten,
+    kurz: [
+      `Schwächer: ${schwach.seite} (${schwach.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")})`,
+      `Stärker: ${stark.seite} (${stark.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")})`,
+      `→ Über deine ${deine} Seite angreifen`,
+    ],
     text:
       `Seine schwächere Abwehrseite ist ${schwach.seite} (${schwach.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")}), ` +
       `${unterschied} % weniger wert als ${stark.seite} (${stark.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")}). ` +
