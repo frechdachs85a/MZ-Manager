@@ -10,26 +10,26 @@ export const FELD = { x0: 8.4, x1: 200, y0: 8, y1: 318, mitte: 163 } as const;
 // zusatz: zweite Zeile unter dem Namen. wert: Marktwert für die Heatmap und den Tooltip
 export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; wert?: number; ton?: "normal" | "rot" | "grau"; torwart?: boolean };
 
-// Heatmap (Marcus, 26.10.2026): gleiche Skala für beide Teams, keine Ampelfarben (ein starker Gegenspieler soll
-// nicht "gut" aussehen). Farbverlauf dunkelviolett -> pink -> orange -> hellgelb ("inferno"): Farbton und Helligkeit
-// ändern sich, damit auch kleine Unterschiede sichtbar sind; hebt sich vom Rasen ab. Hell = hoher Marktwert.
+// Heatmap (Marcus, 26.10.2026): Ampel-Verlauf, gleiche Skala für beide Teams. Hellgrün = niedrigster Marktwert,
+// dann dunkelgrün, gelb, rot, dunkelrot = höchster ("ganz gefährlich"). Der farbige Ring je Spieler trägt die Farbe,
+// weil Grün als Schein auf dem Rasen kaum zu sehen ist.
 export type Skala = { min: number; max: number };
 export function skalaAus(werte: (number | undefined)[]): Skala | undefined {
   const w = werte.filter((x): x is number => x !== undefined);
   return w.length ? { min: Math.min(...w), max: Math.max(...w) } : undefined;
 }
-const INFERNO: [number, number, number][] = [
-  [59, 15, 112],
-  [140, 41, 129],
-  [222, 73, 104],
-  [254, 159, 109],
-  [252, 253, 191],
+const AMPEL: [number, number, number][] = [
+  [187, 247, 208], // hellgrün
+  [21, 128, 61], // dunkelgrün
+  [250, 204, 21], // gelb
+  [239, 68, 68], // rot
+  [127, 29, 29], // dunkelrot
 ];
 export function heatFarbe(t: number): string {
-  const k = Math.max(0, Math.min(1, t)) * (INFERNO.length - 1);
-  const i = Math.min(INFERNO.length - 2, Math.floor(k));
+  const k = Math.max(0, Math.min(1, t)) * (AMPEL.length - 1);
+  const i = Math.min(AMPEL.length - 2, Math.floor(k));
   const f = k - i;
-  const [x, y] = [INFERNO[i], INFERNO[i + 1]];
+  const [x, y] = [AMPEL[i], AMPEL[i + 1]];
   return `rgb(${x.map((v, j) => Math.round(v + (y[j] - v) * f)).join(" ")})`;
 }
 const anteil = (wert: number, sk: Skala) => (sk.max > sk.min ? (wert - sk.min) / (sk.max - sk.min) : 0.5);
@@ -115,7 +115,12 @@ export function Spielfeld({ spieler, titel, heatmap = false, skala }: { spieler:
               <title>{`${s.label}${s.zusatz ? ` · ${s.zusatz}` : ""}${s.wert !== undefined ? ` · ${new Intl.NumberFormat("de-DE").format(s.wert)} €` : ""}${s.torwart ? " (Torwart)" : ""} · x ${s.x} / y ${s.y}`}</title>
               <circle r={8} fill={farbe} stroke="rgba(0,0,0,.18)" strokeWidth="0.8" filter={`url(#schatten-${id})`} />
               <circle r={8} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth="1" opacity={s.ton === "grau" ? 0 : 0.5} />
-              {sk && s.wert !== undefined && !s.torwart && <circle r={10.2} fill="none" stroke={heatFarbe(anteil(s.wert, sk))} strokeWidth="2.6" />}
+              {sk && s.wert !== undefined && !s.torwart && (
+                <>
+                  <circle r={11.4} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="1" />
+                  <circle r={10.2} fill="none" stroke={heatFarbe(anteil(s.wert, sk))} strokeWidth="3" />
+                </>
+              )}
               <rect x={-breite / 2} y={10.5} width={breite} height={s.zusatz ? 18 : 10} rx={5} fill="rgba(0,0,0,.5)" />
               <text y={17.8} textAnchor="middle" fontSize="7.2" fill="#fff" fontWeight="600">
                 {s.label}

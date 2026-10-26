@@ -9,10 +9,10 @@ export type Duell = { stuermer: DuellSpieler; xBeiDir: number; gegenueber: Duell
 
 const mio = (n?: number) => (n === undefined ? "Wert n. v." : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
 
-export function duelle(eigene: DuellSpieler[], gegner: DuellSpieler[]): { duelle: Duell[]; saetze: string[] } {
+export function duelle(eigene: DuellSpieler[], gegner: DuellSpieler[]): { duelle: Duell[]; saetze: string[]; kurz: string[] } {
   const stuermer = gegner.filter((p) => !p.torwart && p.y <= STURM_Y).sort((a, b) => (b.wert ?? 0) - (a.wert ?? 0));
   const abwehr = eigene.filter((p) => !p.torwart && p.y >= ABWEHR_Y);
-  if (!stuermer.length || !abwehr.length) return { duelle: [], saetze: [] };
+  if (!stuermer.length || !abwehr.length) return { duelle: [], saetze: [], kurz: [] };
   const nachWert = [...abwehr].sort((a, b) => (b.wert ?? 0) - (a.wert ?? 0));
   const d: Duell[] = stuermer.map((st, i) => {
     const xBeiDir = 208 - st.x;
@@ -27,5 +27,8 @@ export function duelle(eigene: DuellSpieler[], gegner: DuellSpieler[]): { duelle
       `dort steht ${x.gegenueber.name} (${mio(x.gegenueber.wert)}).` +
       (x.tauschen && x.ideal ? ` Stärker wäre ${x.ideal.name} (${mio(x.ideal.wert)}): Plätze von ${x.ideal.name} und ${x.gegenueber.name} tauschen erwägen.` : ""),
   );
-  return { duelle: d, saetze };
+  const kurz = d.map(
+    (x) => `${x.stuermer.name} ${mio(x.stuermer.wert)} gegen ${x.gegenueber.name} ${mio(x.gegenueber.wert)}${x.tauschen && x.ideal ? ` → ${x.ideal.name} (${mio(x.ideal.wert)}) dorthin?` : ""}`,
+  );
+  return { duelle: d, saetze, kurz };
 }

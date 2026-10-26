@@ -61,8 +61,14 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
           {vorschlag ? (
             <>
               <div className="mt-4 text-[12.5px] font-semibold uppercase tracking-wider text-label-3">Grundlage: {vorschlag.quelle}</div>
-              <p className="mt-1 text-[14px] leading-relaxed text-label">{vorschlag.begruendung}</p>
-              {gegner?.analyse && <p className="mt-2 text-[13.5px] leading-relaxed text-label-2">{gegner.analyse.urteilText}</p>}
+              <ul className="mt-1.5 space-y-0.5 text-[14px] leading-snug text-label">
+                {vorschlag.kurz.map((k, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span aria-hidden className="text-tint-hell">•</span>
+                    <span>{k}</span>
+                  </li>
+                ))}
+              </ul>
               {anpassungen.length > 0 && (
                 <div className="mt-4 rounded-[8px] bg-white/[0.07] p-3">
                   <div className="text-[12.5px] font-bold uppercase tracking-wider text-tint-hell">Anpassungen für dieses Spiel</div>
@@ -71,8 +77,8 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
                       <li key={i} className="flex gap-2">
                         <span aria-hidden className="text-tint-hell">→</span>
                         <span>
-                          {a.art === "wechselzeit" ? `${a.name} erst ab der ${a.ab}. Minute auswechseln. ${a.grund}` : a.text}
-                          {a.art === "wechselzeit" && a.umgesetzt && <span className="mt-0.5 block font-semibold text-tint-hell">✓ Umgesetzt: {a.umgesetzt}</span>}
+                          {a.kurz}
+                          {a.art === "wechselzeit" && a.umgesetzt && <span className="font-semibold text-tint-hell"> ✓ umgesetzt</span>}
                         </span>
                       </li>
                     ))}
@@ -115,7 +121,7 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
           )}
           {taktikCode?.art === "editor" && (
             <p className="mt-4 text-[12.5px] text-label-2">
-              Reiter {vorschlag?.taktik} hast du im Editor: im Spiel diesen Reiter wählen. Für die Prüfung von Aufstellung, Bank und Regeln den XML-Export unter „Taktik“ ins Archiv laden.
+              {vorschlag?.taktik} hast du im Editor. Für Prüfung und Heatmap: XML unter „Taktik“ hochladen.
             </p>
           )}
           {taktikCode?.art === "archiv" && <p className="mt-4 text-[12.5px] text-label-2">Reiter {vorschlag?.taktik} ist in deinem Archiv und braucht keine Änderung: im Spiel einfach diesen Reiter wählen.</p>}

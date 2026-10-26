@@ -10,7 +10,7 @@ const XML = `<SoccerTactics>
 
 describe("Archiv-Taktik anpassen", () => {
   it("setzt nur die Zeitregel des genannten Spielers auf die neue Minute", () => {
-    const r = anpassen(XML, [{ art: "wechselzeit", reiter: "außenR", outPid: 229906765, name: "Hyuga", ab: 70, grund: "" }]);
+    const r = anpassen(XML, [{ art: "wechselzeit", reiter: "außenR", outPid: 229906765, name: "Hyuga", ab: 70, grund: "", kurz: "" }]);
     expect(r.geaendert).toEqual(["Wechsel Hyuga: Minute 50 → 70"]);
     expect(r.xml).toContain('time="70" check_goal_condition="false" out_player="229906765"');
     expect(r.xml).toContain('time="60" check_goal_condition="false" out_player="227162857"');
