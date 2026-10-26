@@ -15,7 +15,7 @@ export const stufe = (w: number) => STUFEN.find((s) => w >= s.ab)!;
 
 export function WertLegende() {
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 text-[12.5px]">
+    <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11.5px]">
       <span className="text-label-3">MZ-Wert:</span>
       {STUFEN.map((s, i) => (
         <span key={s.name} className={`rounded-[6px] px-2 py-0.5 ${s.cls} ${s.name === "ungeeignet" ? "border border-separator" : ""}`}>
