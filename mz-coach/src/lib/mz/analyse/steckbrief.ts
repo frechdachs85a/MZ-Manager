@@ -16,7 +16,7 @@ export type SteckbriefSpiel = {
   gegentorMinuten: number[];
   einstellung: string;
   formation: string;
-  elf: { name: string; x: number; y: number; torwart: boolean }[];
+  elf: { pid: number; name: string; x: number; y: number; torwart: boolean }[];
 };
 
 export type Steckbrief = {
@@ -63,7 +63,7 @@ export function steckbrief(tid: number, stats: StatsSpiel[]): Steckbrief {
       const gegner = Number(g.statistik.goals ?? NaN);
       const elf = s.spieler
         .filter((p) => p.teamId === tid && p.editor)
-        .map((p) => ({ name: p.name, x: p.editor!.x, y: p.editor!.y, torwart: p.torwart }))
+        .map((p) => ({ pid: p.id, name: p.name, x: p.editor!.x, y: p.editor!.y, torwart: p.torwart }))
         .sort((a, b) => Number(b.torwart) - Number(a.torwart) || b.y - a.y || a.x - b.x);
       return {
         mid: s.mid,
