@@ -115,7 +115,7 @@ function SeitenLink({ t, aktiv, onClick }: { t: Tab; aktiv: boolean; onClick?: (
       className={`relative flex min-h-10 items-center gap-3 rounded-[6px] px-3 text-[14px] transition-colors ${
         aktiv
           ? "bg-tint/[0.12] font-semibold text-label before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-tint"
-          : "text-label-2 hover:bg-white/[0.04] hover:text-label"
+          : "text-label-2 hover:bg-fill hover:text-label"
       }`}
     >
       <span className={`h-[20px] w-[20px] shrink-0 ${aktiv ? "text-tint" : ""}`}>{t.icon}</span>
@@ -186,7 +186,7 @@ export function Navigation() {
         </ul>
       </nav>
       {mehr && (
-        <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setMehr(false)}>
+        <div className="fixed inset-0 z-30 bg-label/40 lg:hidden" onClick={() => setMehr(false)}>
           <div
             className="pb-tabbar absolute inset-x-0 bottom-0 max-h-[80dvh] overflow-y-auto rounded-t-[16px] border-t border-separator bg-nacht px-4 pt-5"
             onClick={(e) => e.stopPropagation()}

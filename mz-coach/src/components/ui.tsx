@@ -68,7 +68,7 @@ export function Row({
 // "Nicht verfügbar" mit Grund. Grundregel der Webseite: nie Werte erfinden.
 export function Unavailable({ title, reason }: { title: string; reason: string }) {
   return (
-    <div className="rounded-[10px] border border-dashed border-white/15 bg-card/50 p-4">
+    <div className="rounded-[10px] border border-dashed border-label-3/40 bg-card/70 p-4">
       <div className="kapitaelchen !text-label-3">Nicht verfügbar</div>
       <div className="display mt-1 text-[17px] font-semibold uppercase">{title}</div>
       <div className="mt-1 text-[13.5px] leading-relaxed text-label-2">{reason}</div>
@@ -84,7 +84,7 @@ export function Badge({
   tone?: "neutral" | "green" | "red" | "orange" | "tint";
 }) {
   const tones = {
-    neutral: "bg-white/[0.06] text-label-2",
+    neutral: "bg-fill text-label-2",
     green: "bg-green/15 text-green",
     red: "bg-red/15 text-red",
     orange: "bg-orange/15 text-orange",
@@ -116,7 +116,7 @@ export function Kachel({
   href?: string;
   ton?: "tint" | "gold" | "red" | "neutral";
 }) {
-  const linie = { tint: "before:bg-tint", gold: "before:bg-gold", red: "before:bg-red", neutral: "before:bg-white/20" }[ton];
+  const linie = { tint: "before:bg-tint", gold: "before:bg-gold", red: "before:bg-red", neutral: "before:bg-label-3" }[ton];
   const inhalt = (
     <>
       <div className="kapitaelchen">{titel}</div>

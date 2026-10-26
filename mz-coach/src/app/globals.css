@@ -3,39 +3,40 @@
 /* Farben und Flächen (hell / dunkel). Akzent und Skill-Farben aus der geprüften Datenpalette
    (dataviz-Referenz: Blau #2a78d6/#3987e5, Rot #e34948/#e66767; CVD-Abstand ≥ 19 in beiden Modi). */
 :root {
-  /* Manager-Spiel-Stil (Marcus, 26.10.2026: angelehnt an aktuelle Fußballmanager wie Football Manager / EA FC):
-     dunkles Nachtblau, Flächen leicht abgesetzt, Rasengrün als Akzent, Gold für Bewertungen */
-  --bg: #0b1118;
-  --card: #131b25;
-  --card-2: #1a2430;
-  --label: #e9eef3;
-  --label-2: #9eabb8;
-  --label-3: #697686;
-  --separator: rgba(255, 255, 255, 0.08);
-  --fill: rgba(255, 255, 255, 0.045);
-  --bar: rgba(11, 17, 24, 0.86);
-  --ink: #0b1118;
-  --tint: #22c98f;
-  --tint-hell: #5ee8b5;
-  --gold: #e6b44a;
-  --gold-hell: #f3d48c;
-  --nacht: #0e151e;
-  --green: #34d399;
-  --red: #f87171;
-  --orange: #fb923c;
-  --yellow: #facc15;
-  --purple: #a78bfa;
-  --lime: #a3e635;
-  --pink: #f472b6;
-  --pitch: #1f6b45;
-  --pitch-2: #1a5c3b;
-  /* Skill-Farben: Dunkel-Stufen der geprüften Datenpalette (dataviz: Rot #e66767, Blau #3987e5) */
-  --skill-max: #e66767;
-  --skill-train: #3987e5;
-  --skill-fix: #5f6b79;
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 30px -18px rgba(0, 0, 0, 0.8);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  color-scheme: dark;
+  /* Hell im Stil aktueller Fußballmanager (Marcus, 26.10.2026: „heller machen, nicht schwarz“, gute Lesbarkeit):
+     helles Blaugrau, weiße Karten, dunkle Schrift, Rasengrün als Akzent (dunkel genug für Text auf Weiß) */
+  --bg: #eef2f6;
+  --card: #ffffff;
+  --card-2: #f3f6f9;
+  --label: #14212e;
+  --label-2: #4a5b6c;
+  --label-3: #5a6979;
+  --separator: rgba(20, 33, 46, 0.11);
+  --fill: rgba(20, 33, 46, 0.045);
+  --bar: rgba(255, 255, 255, 0.9);
+  --ink: #14212e;
+  --auf-akzent: #ffffff;
+  --tint: #077a53;
+  --tint-hell: #055f40;
+  --gold: #9a6b12;
+  --gold-hell: #f1d58f;
+  --nacht: #ffffff;
+  --green: #15803d;
+  --red: #c0392b;
+  --orange: #b45309;
+  --yellow: #eab308;
+  --purple: #6d28d9;
+  --lime: #4d7c0f;
+  --pink: #be185d;
+  --pitch: #2f7d50;
+  --pitch-2: #276b44;
+  /* Skill-Farben: Hell-Stufen der geprüften Datenpalette (dataviz: Rot #e34948, Blau #2a78d6) */
+  --skill-max: #e34948;
+  --skill-train: #2a78d6;
+  --skill-fix: #a3adb8;
+  --shadow: 0 1px 2px rgba(20, 33, 46, 0.06), 0 10px 26px -16px rgba(20, 33, 46, 0.22);
+  --shadow-sm: 0 1px 2px rgba(20, 33, 46, 0.08);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -50,6 +51,7 @@
   --color-bar: var(--bar);
   --color-tint: var(--tint);
   --color-tint-hell: var(--tint-hell);
+  --color-auf-akzent: var(--auf-akzent);
   --color-green: var(--green);
   --color-red: var(--red);
   --color-orange: var(--orange);
@@ -68,6 +70,14 @@
   --font-sans: var(--font-inter), system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: var(--font-barlow), "Arial Narrow", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* Lesbarkeit (Marcus, 26.10.2026): zwischen zwei Tabellenspalten immer Abstand, auch wenn eine Zelle selbst keinen
+   setzt ("Schwäche" klebte an "endet ca. bei 4 bis 5"). Eigene Abstände der Zellen haben Vorrang. */
+@layer base {
+  :where(td, th) + :where(td, th) {
+    padding-left: 0.75rem;
+  }
 }
 
 html {
@@ -160,11 +170,11 @@ body {
   }
 }
 
-/* Hauptknopf: Akzentgrün mit dunkler Schrift */
+/* Hauptknopf: Akzentgrün mit weißer Schrift */
 .knopf {
   border-radius: 8px;
   background: var(--tint);
-  color: var(--ink);
+  color: var(--auf-akzent);
   font-weight: 700;
   letter-spacing: 0.02em;
   box-shadow: var(--shadow-sm);
@@ -178,13 +188,18 @@ body {
   opacity: 1;
 }
 
-/* Kopfkarte für die wichtigste Information einer Seite (wie das Spielvorschau-Panel im Manager) */
+/* Kopfkarte (Spielvorschau, Empfehlung): kräftiges Dunkelblau, nicht schwarz. Innerhalb gelten helle Textfarben. */
 .hero {
+  --label: #f3f7fb;
+  --label-2: #c9d6e3;
+  --label-3: #9fb2c6;
+  --tint-hell: #6ee7b7;
+  --separator: rgba(255, 255, 255, 0.16);
+  --fill: rgba(255, 255, 255, 0.08);
   background:
-    radial-gradient(90% 140% at 100% 0%, rgba(34, 201, 143, 0.22), transparent 60%),
-    linear-gradient(135deg, #15212e 0%, #0f1822 100%);
+    radial-gradient(90% 140% at 100% 0%, rgba(16, 185, 129, 0.28), transparent 60%),
+    linear-gradient(135deg, #1b3a5a 0%, #15304b 100%);
   color: var(--label);
-  border: 1px solid rgba(34, 201, 143, 0.25);
   box-shadow: var(--shadow);
 }
 

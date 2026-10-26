@@ -92,7 +92,7 @@ export default async function Kader(props: PageProps<"/kader">) {
           // Hinweisbalken statt großer Liste: aufklappen nur bei Bedarf
           <details className="group mt-6 rounded-[10px] border border-red/30 bg-red/[0.07]">
             <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-[14px]">
-              <span className="flex h-5 w-5 items-center justify-center rounded-[4px] bg-red text-[11px] font-bold text-ink">!</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-[4px] bg-red text-[11px] font-bold text-auf-akzent">!</span>
               <span className="font-semibold">{unbekannt.length} Scoutbericht{unbekannt.length === 1 ? "" : "e"} unbekannt</span>
               <span className="hidden text-label-2 sm:inline">Sterne und Text passen nicht zusammen. Nicht geraten: bitte prüfen.</span>
               <span className="ml-auto text-[12px] font-semibold uppercase tracking-wider text-red group-open:hidden">Prüfen</span>

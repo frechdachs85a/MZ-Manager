@@ -105,7 +105,7 @@ export default async function Uebersicht() {
                     <span
                       aria-label={c.status === "ok" ? "erledigt" : c.status === "warnung" ? "prüfen" : "offen"}
                       className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] text-[11px] font-bold ${
-                        c.status === "ok" ? "bg-tint text-ink" : c.status === "warnung" ? "bg-yellow text-ink" : "border border-label-3 text-label-3"
+                        c.status === "ok" ? "bg-tint text-auf-akzent" : c.status === "warnung" ? "bg-yellow text-ink" : "border border-label-3 text-label-3"
                       }`}
                     >
                       {c.status === "ok" ? "✓" : c.status === "warnung" ? "!" : ""}
