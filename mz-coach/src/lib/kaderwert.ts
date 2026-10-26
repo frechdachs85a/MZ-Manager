@@ -5,6 +5,8 @@ import { ladeKader } from "@/lib/db/kader";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { ladeSpiel } from "@/lib/db/spiele";
 import { letzteLigaspiele } from "@/lib/mz/parser/spielliste";
+import type { StatsSpiel } from "@/lib/mz/parser/stats";
+import { TEAM } from "@/lib/wissen/startbasis";
 
 // Kaderwert-Vergleich (mz-wissen.md, Abschnitt 10: "Immer Kaderwert vergleichen: Startelf-Marktwert eigene
 // Taktik gegen Gegner"). Eigene Startelf aus dem neuesten eigenen Spiel, gegnerische aus seinem neuesten
@@ -48,4 +50,24 @@ export function kaderwertVergleich(db: Database.Database, tid: number): { eigen:
         }
       : null;
   return { eigen, gegner, gegnerKaderStand: gk[0]?.stand };
+}
+
+// Startelf-Wert beider Teams in einem bestimmten Spiel: Startelf aus der Stats-XML, Marktwert aus der eigenen
+// Kaderseite bzw. der gespeicherten Kaderseite des Gegners (heutiger Stand, nicht der Wert am Spieltag).
+export function startelfWerte(db: Database.Database, spiel: StatsSpiel): Record<number, (ElfWert & { stand?: string }) | null> {
+  const eigen = new Map(ladeKader(db).map((s) => [s.pid, s]));
+  const out: Record<number, (ElfWert & { stand?: string }) | null> = {};
+  for (const t of spiel.teams) {
+    const elf = spiel.spieler.filter((p) => p.teamId === t.id && p.origin);
+    if (t.id === TEAM.tid) {
+      out[t.id] = { spiel: { mid: spiel.mid, datum: spiel.datum }, ...auswerten(elf.map((p) => ({ name: p.name, wert: eigen.get(p.id)?.marktwert, alter: eigen.get(p.id)?.alter }))) };
+    } else {
+      const gk = ladeGegnerKader(db, t.id);
+      const nachPid = new Map(gk.map((s) => [s.pid, s]));
+      out[t.id] = gk.length
+        ? { spiel: { mid: spiel.mid, datum: spiel.datum }, stand: gk[0]?.stand, ...auswerten(elf.map((p) => ({ name: p.name, wert: nachPid.get(p.id)?.wert, alter: nachPid.get(p.id)?.alter }))) }
+        : null;
+    }
+  }
+  return out;
 }

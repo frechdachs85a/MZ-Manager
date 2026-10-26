@@ -8,6 +8,7 @@ import type { spieltagLage } from "@/lib/spieltag";
 // Gegner, Anstoß, vorgeschlagener Reiter mit Aufstellung auf dem Feld, die Gründe und was dagegen spricht.
 
 type Lage = ReturnType<typeof spieltagLage>;
+const eur = (n: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(n))} €`;
 
 const anstossText = (iso: string) =>
   new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
@@ -34,6 +35,20 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
           </div>
           <div className="display mt-3 text-[15px] font-semibold uppercase text-label-2">{lauf.heim ? "Gegen" : "Bei"}</div>
           <div className="display text-[32px] font-bold uppercase leading-none lg:text-[40px]">{lauf.gegnerName}</div>
+          {l.kaderwert?.gegner && l.kaderwert.eigen ? (
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[13.5px] tabular-nums">
+              <span>
+                <span className="text-label-3">Startelf-Wert </span>
+                <span className="font-bold text-label">{eur(l.kaderwert.gegner.summe)}</span>
+              </span>
+              <span>
+                <span className="text-label-3">deine Startelf </span>
+                <span className="font-bold text-label">{eur(l.kaderwert.eigen.summe)}</span>
+              </span>
+            </div>
+          ) : (
+            <div className="mt-2 text-[12.5px] text-label-3">Startelf-Wert n. v. (Kaderseite des Gegners noch nicht gelesen)</div>
+          )}
 
           <div className="mt-6 border-t border-separator pt-5">
             <div className="kapitaelchen">Unser Taktikvorschlag</div>

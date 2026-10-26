@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
+import { ElfWertZeile } from "@/components/elf-wert";
 import { SpielberichtTeile } from "@/components/spielbericht";
+import { startelfWerte } from "@/lib/kaderwert";
 import { Spielfeld } from "@/components/spielfeld";
 import { StatVergleich } from "@/components/stat-vergleich";
 import { VerlaufAnsicht } from "@/components/verlauf-ansicht";
@@ -68,6 +70,7 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
           })(),
   }));
   const heim = s.teams.find((t) => t.heim) ?? s.teams[0];
+  const elfWerte = startelfWerte(getDb(), s);
   const gast = s.teams.find((t) => t !== heim)!;
   const name = (id?: number) => s.spieler.find((p) => p.id === id)?.name ?? (id ? `id ${id}` : "");
   const teamName = (id: number) => s.teams.find((t) => t.id === id)?.name ?? "";
@@ -88,6 +91,7 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
               {heim.name}
               {heim.id === TEAM.tid && <span className="block text-[12px] font-medium text-white/70">du · Heim</span>}
               {heim.id !== TEAM.tid && <span className="block text-[12px] font-medium text-white/70">Heim</span>}
+              <ElfWertZeile w={elfWerte[heim.id]} />
             </div>
             <div className="display text-[56px] font-semibold leading-none tracking-tight tabular-nums lg:text-[76px]">
               {heim.statistik.goals ?? "?"}
@@ -97,6 +101,7 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
             <div className="display min-w-0 text-right text-[18px] font-semibold leading-tight lg:text-[26px]">
               {gast.name}
               <span className="block text-[12px] font-medium text-white/70">{gast.id === TEAM.tid ? "du · Gast" : "Gast"}</span>
+              <ElfWertZeile w={elfWerte[gast.id]} rechts />
             </div>
           </div>
         </Hero>
