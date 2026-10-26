@@ -51,3 +51,12 @@ export function gebotErlaubt(betrag: number, kurs: number | undefined, maximumEu
   if (eur > maximumEur) return { ok: false, grund: `Endpreis erreicht: nächste Stufe ${eur} EUR liegt über deinem Endpreis ${maximumEur} EUR.` };
   return { ok: true, eur };
 }
+
+// Endpreis prüfen (Marcus, 26.10.2026): nicht unter dem Startgebot und, wenn schon geboten wurde, über dem aktuellen
+// Gebot, sonst kann der Bietomat nie bieten. Beides in Euro wie in der Marktliste. null = in Ordnung.
+export function endpreisFehler(maximumEur: number, markt?: { gefordert?: number; hoechstgebot?: number }): string | null {
+  const f = (n: number) => `${new Intl.NumberFormat("de-DE").format(n)} €`;
+  if (markt?.gefordert !== undefined && maximumEur < markt.gefordert) return `Endpreis ${f(maximumEur)} liegt unter dem Startgebot ${f(markt.gefordert)}.`;
+  if (markt?.hoechstgebot && maximumEur <= markt.hoechstgebot) return `Endpreis ${f(maximumEur)} liegt nicht über dem aktuellen Gebot ${f(markt.hoechstgebot)}.`;
+  return null;
+}
