@@ -14,6 +14,7 @@ import { kaderwertVergleich, startelfWerte } from "@/lib/kaderwert";
 import { ladeGegnerKader } from "@/lib/db/gegner-kader";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { wertbereich, wertverlauf, type Wertverlauf } from "@/lib/mz/analyse/wertverlauf";
+import { quotenJeBereich } from "@/lib/db/wertspiel";
 import { topGegenKlasse } from "@/lib/portfolio";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
 import { ladeKader } from "@/lib/db/kader";
@@ -336,7 +337,13 @@ export function spieltagLage(db: Database.Database) {
     belege.push({
       quelle: "Kaderwert über 90 Minuten",
       text:
-        `Verhältnis je Zeitfenster ${verlauf.fenster.map((x) => `${x.von}.–${x.bis}. ${f(x.verhaeltnis)}`).join(", ")}; nach Minuten gewichtet ${f(v)}. Wertbereich ${wertbereich(v)}.` +
+        `Verhältnis je Zeitfenster ${verlauf.fenster.map((x) => `${x.von}.–${x.bis}. ${f(x.verhaeltnis)}`).join(", ")}; nach Minuten gewichtet ${f(v)}. ` +
+        (() => {
+          const q = quotenJeBereich(db, "feld").find((x) => v >= x.von && v < x.bis);
+          return q && q.spiele >= 30
+            ? `In den gescannten Spielen mit Feld-Wert-Verhältnis ${q.bereich}: ${Math.round((q.S / q.spiele) * 100)} % Siege, ${Math.round((q.U / q.spiele) * 100)} % Remis, ${Math.round((q.N / q.spiele) * 100)} % Niederlagen (${q.spiele} Sichten).`
+            : `Wertbereich ${wertbereich(v)}.`;
+        })() +
         (scout ? " Deine Scoutspiele gegen ihn haben Vorrang vor dieser allgemeinen Statistik (Abschnitt 14)." : ""),
     });
     const kf = kurzfassung.find((k) => k.titel === "Kaderwert der Startelf");

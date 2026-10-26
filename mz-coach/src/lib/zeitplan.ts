@@ -4,6 +4,7 @@ import { aufraeumen, sichereDatenbank } from "@/lib/archiv";
 import { marktAbrufen, marktFaellig } from "@/lib/mz/abruf/markt";
 import { spieltagAbrufen, spieltagFaellig } from "@/lib/mz/abruf/spieltag";
 import { topAbrufen, topFaellig } from "@/lib/mz/abruf/top";
+import { wertScanAbrufen, wertScanFaellig } from "@/lib/mz/abruf/wertscan";
 import type Database from "better-sqlite3";
 
 // Prüft alle 15 Minuten, was fällig ist. Abrufe laufen nie parallel (mitMzSitzung).
@@ -55,6 +56,10 @@ async function takt() {
     }
     if (topFaellig(db)) {
       const r = await topAbrufen(db);
+      console.log(`[zeitplan] ${r.meldung.slice(0, 300)}`);
+    }
+    if (wertScanFaellig(db) && !topFaellig(db)) {
+      const r = await wertScanAbrufen(db);
       console.log(`[zeitplan] ${r.meldung.slice(0, 300)}`);
     }
     if (marktFaellig(db)) {

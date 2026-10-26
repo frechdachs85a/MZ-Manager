@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { parse } from "node-html-parser";
 import { spieltagLage } from "@/lib/spieltag";
+import { quotenJeBereich } from "@/lib/db/wertspiel";
 import { ladeKader } from "@/lib/db/kader";
 import { schwaerzen } from "@/lib/schwaerzen";
 import { ladeKombis, scoutEinstufung } from "@/lib/scout";
@@ -51,6 +52,7 @@ export function diagnose(db: Database.Database) {
     spiele: zahl("SELECT COUNT(*) AS n FROM spiel"),
     topSpiele: zahl("SELECT COUNT(*) AS n FROM top_spiel"),
     marktSuchen: zahl("SELECT COUNT(*) AS n FROM markt_suche"),
+    wertSpiele: zahl("SELECT COUNT(*) AS n FROM wert_spiel"),
   };
   // Spieltag-Automatik: die letzten Läufe ohne Spielplan-JSON
   const spieltag = db
@@ -65,6 +67,7 @@ export function diagnose(db: Database.Database) {
       anpassungen: l.anpassungen,
       taktikCode: l.taktikCode ? { art: l.taktikCode.art, geaendert: l.taktikCode.geaendert } : null,
       kurzfassung: l.kurzfassung,
+      quoten: { elf: quotenJeBereich(db, "elf"), feld: quotenJeBereich(db, "feld") },
       verlauf: l.verlauf ? { fenster: l.verlauf.fenster, gewichtet: l.verlauf.gewichtet, fehlend: l.verlauf.fehlend, quelleEigen: l.verlauf.quelleEigen } : null,
       elfWerte: l.elfWerte,
       formationen: l.gegner?.analyse?.spiele.map((x) => ({ mid: x.mid, datum: x.datum, formation: x.formation.text })),
