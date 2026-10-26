@@ -61,19 +61,23 @@ export async function gebotsformularLesen(db: Database.Database): Promise<{ ok: 
     const meldung = await mitMzSitzung(
       db,
       async (s) => {
-        const seite = await s.holeSeite(MARKT_PFAD);
+        // mz.js/main.js enthalten form_confirm_transfer (Bestätigung "Bist Du sicher??" beim Gebot): mitlesen
+        const seite = await s.holeSeite(MARKT_PFAD, { skripte: /\/(mz|main)\.js/ });
+        const sk = seite.skripte ?? [];
+        if (sk.length) speichereRohseite(db, { art: "skript-mz", url: sk.map((x) => x.url).join(" "), status: null, htmlRoh: sk.map((x) => `/* ==== ${x.url} ==== */\n${x.text}`).join("\n"), htmlDom: null });
         const a = await s.holeText(`/ajax.php?p=transfer&sub=transfer-search&sport=soccer${suchParameter(seite.htmlDom ?? seite.htmlRoh ?? "")}&o=0`);
         speichereRohseite(db, { art: "gebot-suche", url: a.url, status: a.status, htmlRoh: a.text, htmlDom: null });
         const liste = parseTransferSuche(a.text).spieler;
-        const bald = Date.now() + 60 * 60_000;
-        const k = liste.find((x) => {
+        // Möglichst eine Auktion mit bestehendem Gebot (zeigt die Mindeststeigerung), die noch mindestens 10 Minuten läuft
+        const laeuft = (x: (typeof liste)[number]) => {
           const e = endeUtc(x.markt.ende);
-          return e !== undefined && new Date(e).getTime() > bald;
-        }) ?? liste[0];
+          return e !== undefined && new Date(e).getTime() > Date.now() + 10 * 60_000;
+        };
+        const k = liste.find((x) => laeuft(x) && (x.markt.hoechstgebot ?? 0) > 0) ?? liste.find(laeuft) ?? liste[0];
         if (!k) throw new Error("Marktsuche ohne Spieler.");
         const f = await s.holeText(`/ajax.php?p=transfer&sub=bid-form&pid=${k.pid}&sport=soccer`);
         speichereRohseite(db, { art: "gebotsformular", url: f.url, status: f.status, htmlRoh: f.text, htmlDom: null });
-        return `Gebotsformular von Spieler ${k.pid} gelesen (Ende laut Liste: ${k.markt.ende ?? "unbekannt"}, nicht geboten).`;
+        return `Gebotsformular von Spieler ${k.pid} gelesen (Ende ${k.markt.ende ?? "unbekannt"}, Höchstgebot ${k.markt.hoechstgebot ?? "?"} EUR, nicht geboten).`;
       },
       { manuell: true },
     );

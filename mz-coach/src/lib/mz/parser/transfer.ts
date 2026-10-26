@@ -26,20 +26,21 @@ export function istNichtEingeloggt(antwort: string): boolean {
   return /You need to be logged in/i.test(antwort);
 }
 
-const kinder = (el: HTMLElement | undefined, tag: string) =>
-  (el?.childNodes ?? []).filter((n): n is HTMLElement => (n as HTMLElement).tagName === tag);
 
-// Zeilen der ersten Tabelle einer Spalte. tbody steht im Quelltext eventuell nicht (Mazyar liest
-// das vom Browser ergänzte DOM), deshalb alle tr der Tabelle.
-const zeilen = (spalte?: HTMLElement) => spalte?.querySelector("table")?.querySelectorAll("tr") ?? [];
 
 function marktFelder(block: HTMLElement): MarktSpieler["markt"] {
   const kasten = block.querySelector(".transfer-control-area");
   if (!kasten) throw new KaderSeiteUnbekannt("Spieler in der Marktsuche ohne Transferkasten (.transfer-control-area).");
-  const spalten = kinder(kinder(kasten, "DIV")[0], "DIV");
-  const ende = text(zeilen(spalten[0])[2]?.querySelector("strong")) || undefined;
-  const gefordert = text(zeilen(spalten[0]).at(-1)?.querySelector("strong"));
-  const gebot = text(zeilen(spalten[1]).at(-1)?.querySelector("strong"));
+  // Nach Beschriftung, nicht nach Position (26.10.2026 an echter Antwort geprüft: Zeilen "Verein", "Angebot endet",
+  // "Startgebot", "Letztes Gebot:"; die Position verschob sich durch die Zeile "Verein")
+  const wert = (beschriftung: RegExp) => {
+    const td = kasten.querySelectorAll("td").find((x) => beschriftung.test(text(x)) && text(x).length < 30);
+    const nb = td?.nextElementSibling as HTMLElement | null | undefined;
+    return text(nb?.querySelector("strong") ?? nb) || undefined;
+  };
+  const ende = wert(/^Angebot endet:?$/i);
+  const gefordert = wert(/^Startgebot:?$/i);
+  const gebot = wert(/^Letztes Gebot:?$/i);
   const tid = kasten
     .querySelectorAll("a")
     .map((a) => (a.getAttribute("href") ?? "").match(/[?&]tid=(\d+)/)?.[1])
