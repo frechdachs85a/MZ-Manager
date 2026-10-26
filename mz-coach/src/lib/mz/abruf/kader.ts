@@ -16,7 +16,8 @@ import {
 } from "@/lib/mz/parser/status";
 import { speichereSpielliste } from "@/lib/db/gegner";
 import { speichereSpiel } from "@/lib/db/spiele";
-import { istSpielliste, ligaspieleDieserSaison, parseSpielliste } from "@/lib/mz/parser/spielliste";
+import { istSpielliste, ligaspieleDieserSaison, parseSpielliste, spiellisteHtmlAus } from "@/lib/mz/parser/spielliste";
+import { TEAM } from "@/lib/wissen/startbasis";
 import { istStatsXml, parseStatsXml, statsXmlAus, StatsXmlFehler } from "@/lib/mz/parser/stats";
 import { mitMzSitzung, MZ_BASIS, MzFehler } from "./sitzung";
 import {
@@ -142,6 +143,25 @@ export async function kaderAbrufen(db: Database.Database, opt = { manuell: false
             allesOk = false;
             teile.push(`${pfad}: ${meldungAus(e)}`);
           }
+        }
+        // Spielplan (anstehende Spiele) für die Automatik nach dem Ligaspiel. Ob die Listen-Anfrage mit type=scheduled
+        // die Spieltermine liefert, ist noch nicht belegt (26.10.2026): Antwort roh speichern und Lesen versuchen.
+        try {
+          const a = await s.sendeForm("/ajax.php?p=matches&sub=list&sport=soccer", {
+            type: "scheduled",
+            hidescore: "false",
+            tid1: String(TEAM.tid),
+            tid2: "",
+            offset: "",
+            selectType: "all",
+            limit: "default",
+          });
+          speichereRohseite(db, { art: "spielplan", url: a.url, status: a.status, htmlRoh: a.text, htmlDom: null });
+          const html = spiellisteHtmlAus(a.text);
+          const l = html ? parseSpielliste(html, TEAM.tid) : null;
+          teile.push(l ? `Spielplan: ${l.spiele.length} Spiele gelesen.` : "Spielplan: Antwort gespeichert, Aufbau noch unbekannt.");
+        } catch (e) {
+          teile.push(`Spielplan: ${meldungAus(e)}`);
         }
       },
       opt,
