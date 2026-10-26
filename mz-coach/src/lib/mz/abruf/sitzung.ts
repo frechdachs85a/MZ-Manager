@@ -202,10 +202,13 @@ let laeuft = false;
 
 // Markierung auf dem Datenlaufwerk, solange ein Abruf läuft. Das automatische Update (deploy/server/aktualisieren.sh)
 // wartet dann, statt den Abruf durch den Neustart abzubrechen (passiert am 26.10.2026 mit dem Top-10-Abruf).
+// Gezählt, damit ein ganzer Abruf (mit Stats-XML nach der Sitzung) die Markierung über die Sitzung hinaus halten kann.
 export const ABRUF_MARKE = join(dirname(process.env.DATABASE_PATH ?? "./data/mz-coach.db"), "abruf.laeuft");
-function marke(an: boolean) {
+let marken = 0;
+export function marke(an: boolean) {
+  marken = Math.max(0, marken + (an ? 1 : -1));
   try {
-    if (an) writeFileSync(ABRUF_MARKE, new Date().toISOString());
+    if (marken > 0) writeFileSync(ABRUF_MARKE, new Date().toISOString());
     else rmSync(ABRUF_MARKE, { force: true });
   } catch {
     // nur ein Hinweis für das Update, darf den Abruf nie stören

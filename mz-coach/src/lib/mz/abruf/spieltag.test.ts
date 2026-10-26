@@ -5,7 +5,7 @@ import { laufBeenden, laufBeginnen } from "@/lib/db/spieltag";
 import type { ListenSpiel } from "@/lib/mz/parser/spielliste";
 
 vi.mock("server-only", () => ({}));
-vi.mock("./sitzung", () => ({ mitMzSitzung: vi.fn(), MzFehler: class extends Error {} }));
+vi.mock("./sitzung", () => ({ marke: vi.fn(), mitMzSitzung: vi.fn(), MzFehler: class extends Error {} }));
 
 const { naechstesLigaspiel, spieltagFaellig } = await import("./spieltag");
 

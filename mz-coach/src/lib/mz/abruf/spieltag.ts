@@ -10,7 +10,7 @@ import { anstoss, istLigaspiel, letzteLigaspiele, parseSpielliste, spiellisteHtm
 import { TEAM } from "@/lib/wissen/startbasis";
 import { meldungAus, spielXmlEinlesen, type Ergebnis } from "./kader";
 import { holeStatsXml } from "./spiele";
-import { mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
+import { marke, mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
 
 // Spieltag-Automatik (Auftrag Marcus, 26.10.2026): 5 Stunden nach jedem Ligaspiel
 // 1. Spielplan, eigene Spielliste und die Spielliste des nächsten Ligagegners eingeloggt holen,
@@ -44,6 +44,7 @@ export function naechstesLigaspiel(plan: ListenSpiel[], jetzt = new Date()): Lis
 // eigenen Liste, gilt der Lauf als nicht gelungen und wird später wiederholt.
 export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boolean; ziel?: number } = { manuell: false }): Promise<Ergebnis> {
   const lauf = laufBeginnen(db);
+  marke(true); // auch während der Stats-XML nach der Sitzung kein automatisches Update
   const teile: string[] = [];
   const daten: LaufDaten = {};
   let ok = true;
@@ -104,6 +105,7 @@ export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boo
     teile.push(meldungAus(e));
   }
   const meldung = `Spieltag: ${teile.join(" ")}`;
+  marke(false);
   laufBeenden(db, lauf, ok, meldung, daten);
   return { ok, meldung };
 }
