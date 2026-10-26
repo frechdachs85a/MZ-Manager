@@ -12,7 +12,7 @@ const block = `<div class="playerContainer"><h2><span class="player_name">Test S
 <tr><td>Verein</td><td><strong><a href="/?p=team&tid=4711">X</a></strong></td></tr>
 <tr><td>Angebot endet</td><td><strong>27-10-2026 18:30</strong></td></tr>
 <tr><td>Startgebot</td><td title="1 500 000 EUR"><strong>1&nbsp;500&nbsp;000 EUR</strong></td></tr></table></div>
-<div class="box_dark"><table><tr><td><table><tr><td width="80">Letztes Gebot:</td><td><strong> 1&nbsp;750&nbsp;000 EUR </strong></td></tr></table></td></tr></table></div></div></div>`;
+<div class="box_dark"><table><tr><td><table><tr><td width="80">Letztes Gebot:</td><td><strong> 1&nbsp;750&nbsp;000 EUR </strong></td></tr><tr><td><a href="/?p=team&tid=999">Bieter</a><br>(999)</td></tr></table></td></tr></table></div></div></div>`;
 
 describe("Transfermarktsuche (Nachbau)", () => {
   it("liest Treffer, Spieler und Transferkasten", () => {
@@ -24,7 +24,7 @@ describe("Transfermarktsuche (Nachbau)", () => {
       alter: 25,
       nationalitaet: "Deutschland",
       skills: { sprint: { wert: 9, gemaxt: true } },
-      markt: { gefordert: 1_500_000, hoechstgebot: 1_750_000, ende: "27-10-2026 18:30", verkaeuferTid: 4711 },
+      markt: { gefordert: 1_500_000, hoechstgebot: 1_750_000, ende: "27-10-2026 18:30", verkaeuferTid: 4711, bieterTid: 999 },
     });
     expect(endeAlsDatum("27-10-2026 18:30")).toBe("2026-10-27T18:30");
   });

@@ -15,7 +15,8 @@ export type MarktSpieler = SpielerBlock & {
     gefordert?: number; // EUR, erstes Feld im Transferkasten (Mazyar: "fee")
     hoechstgebot?: number; // EUR, zweites Feld (Mazyar: "latestBid")
     ende?: string; // Auktionsende wie auf der Seite
-    verkaeuferTid?: number; // Link ?p=team&tid=… im Transferkasten (Gebotsfenster zeigt "Verein: …")
+    verkaeuferTid?: number; // Link ?p=team&tid=… in der Zeile "Verein"
+    bieterTid?: number; // Verein des Höchstbietenden (Link unter "Letztes Gebot", gesehen 26.10.2026)
     kasten: string; // gesamter Text des Transferkastens, zur Kontrolle
   };
 };
@@ -41,12 +42,19 @@ function marktFelder(block: HTMLElement): MarktSpieler["markt"] {
   const ende = wert(/^Angebot endet:?$/i);
   const gefordert = wert(/^Startgebot:?$/i);
   const gebot = wert(/^Letztes Gebot:?$/i);
-  const tid = kasten
-    .querySelectorAll("a")
-    .map((a) => (a.getAttribute("href") ?? "").match(/[?&]tid=(\d+)/)?.[1])
-    .find(Boolean);
+  const tidAus = (el?: HTMLElement | null) => {
+    const t = el
+      ?.querySelectorAll("a")
+      .map((a) => (a.getAttribute("href") ?? "").match(/[?&]tid=(\d+)/)?.[1])
+      .find(Boolean);
+    return t ? Number(t) : undefined;
+  };
+  const zeileVon = (beschriftung: RegExp) => kasten.querySelectorAll("td").find((x) => beschriftung.test(text(x)) && text(x).length < 30)?.parentNode as HTMLElement | undefined;
+  // Höchstbietender: Vereinslink in der Tabelle mit "Letztes Gebot:" (Zeile danach)
+  const gebotTabelle = zeileVon(/^Letztes Gebot:?$/i)?.parentNode as HTMLElement | undefined;
   return {
-    verkaeuferTid: tid ? Number(tid) : undefined,
+    verkaeuferTid: tidAus(zeileVon(/^Verein:?$/i)),
+    bieterTid: tidAus(gebotTabelle),
     gefordert: gefordert ? euro(gefordert) : undefined,
     hoechstgebot: gebot ? euro(gebot) : undefined,
     ende,

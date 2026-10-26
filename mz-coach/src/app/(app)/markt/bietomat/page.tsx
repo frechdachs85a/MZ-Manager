@@ -30,7 +30,8 @@ export default async function BietomatSeite() {
           </Section>
           <Section title="Automatisches Bieten">
             <List>
-              <Row title={<Badge>noch nicht freigeschaltet</Badge>} detail="Aufträge werden gespeichert, aber noch nicht geboten. Erst wird das Gebotsfenster von ManagerZone geprüft, dann folgt ein Testgebot mit deiner Zustimmung." />
+              <Row title={<Badge tone="green">aktiv</Badge>} detail="Ab 3 Minuten vor Ende: nur wenn ein anderer vorne liegt, immer nur die kleinste zulässige Stufe (Vorschlag von ManagerZone), nie über deinem Endpreis (in Euro umgerechnet, aufgerundet). Verlängerungen werden verfolgt, bis die Auktion vorbei ist." />
+              <Row title="Vorrang" detail="45 Minuten vor bis 60 Minuten nach einem Auktionsende starten keine anderen Abrufe." />
             </List>
           </Section>
         </div>
@@ -42,7 +43,11 @@ export default async function BietomatSeite() {
                   <Row
                     key={a.pid}
                     title={`${a.name ?? "?"} (${a.pid})`}
-                    detail={`max. ${euro(a.maximum)} · bis ${a.bietenBis ? datumZeit(a.bietenBis) : a.auktionEnde ? `Auktionsende ${datumZeit(a.auktionEnde)}` : "Auktionsende"}`}
+                    detail={
+                      a.auktionEnde
+                        ? `Endpreis ${euro(a.maximum)} · Auktionsende ${datumZeit(a.auktionEnde)}${a.bietenBis ? ` · bieten bis ${datumZeit(a.bietenBis)}` : ""}`
+                        : `Endpreis ${euro(a.maximum)} · Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten`
+                    }
                     value={<Badge tone={STATUS_TON[a.status]}>{a.status}</Badge>}
                     accessory={
                       <form action={auftragLoeschen}>
