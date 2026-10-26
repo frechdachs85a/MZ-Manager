@@ -35,7 +35,7 @@ export type SpielAuswertung = {
   playstyle: string;
   aggression: string;
   formation: Formation;
-  feld: { name: string; p: Punkt }[]; // Startelf ohne Torwart, Editor-Koordinaten
+  feld: { name: string; pid: number; p: Punkt }[]; // Startelf ohne Torwart, Editor-Koordinaten
   torwart?: Punkt;
   mittelfeldX?: { min: number; max: number }; // x-Spanne aller Spieler oberhalb der Abwehr
   engeMitte: boolean;
@@ -71,7 +71,7 @@ export function werteSpielAus(s: StatsSpiel, tid: number): SpielAuswertung {
   if (!team || !gegner) throw new Error(`Team ${tid} spielt nicht in Spiel ${s.mid}.`);
   const name = new Map(s.spieler.map((p) => [p.id, p.name]));
   const eigene = s.spieler.filter((p) => p.teamId === tid);
-  const feld = eigene.filter((p) => p.editor && !p.torwart).map((p) => ({ name: p.name, p: p.editor! }));
+  const feld = eigene.filter((p) => p.editor && !p.torwart).map((p) => ({ name: p.name, pid: p.id, p: p.editor! }));
   const { engeMitte, mittelfeldX } = engeMitteAus(feld.map((f) => f.p));
   return {
     mid: s.mid,

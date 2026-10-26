@@ -4,7 +4,8 @@ import { PageHeader } from "@/components/page-header";
 import { ElfWertZeile, WertDiff } from "@/components/elf-wert";
 import { SpielberichtTeile } from "@/components/spielbericht";
 import { startelfWerte } from "@/lib/kaderwert";
-import { Spielfeld } from "@/components/spielfeld";
+import { skalaAus, Spielfeld } from "@/components/spielfeld";
+import { alleMarktwerte } from "@/lib/marktwerte";
 import { StatVergleich } from "@/components/stat-vergleich";
 import { VerlaufAnsicht } from "@/components/verlauf-ansicht";
 import { eigenerVerlauf, gegnerVerlauf } from "@/lib/mz/analyse/verlauf";
@@ -71,6 +72,9 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
   }));
   const heim = s.teams.find((t) => t.heim) ?? s.teams[0];
   const elfWerte = startelfWerte(getDb(), s);
+  // Heatmap: gleiche Skala für beide Teams dieses Spiels
+  const werte = alleMarktwerte(getDb());
+  const skala = skalaAus(s.spieler.filter((p) => p.origin && !p.torwart).map((p) => werte[p.id]));
   const gast = s.teams.find((t) => t !== heim)!;
   const name = (id?: number) => s.spieler.find((p) => p.id === id)?.name ?? (id ? `id ${id}` : "");
   const teamName = (id: number) => s.teams.find((t) => t.id === id)?.name ?? "";
@@ -128,7 +132,8 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
                 <Spielfeld
                   spieler={s.spieler
                     .filter((p) => p.teamId === t.id && p.editor)
-                    .map((p) => ({ x: p.editor!.x, y: p.editor!.y, label: kurz(p.name), torwart: p.torwart }))}
+                    .map((p) => ({ x: p.editor!.x, y: p.editor!.y, label: kurz(p.name), wert: werte[p.id], torwart: p.torwart }))}
+                  skala={skala}
                 />
                 <div className="mt-2 text-[13px] text-label-2">
                   {t.tactic} / {t.playstyle} / {t.aggression}
@@ -163,7 +168,7 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
                 : "Start aus der XML. Grau = Eingewechselter auf dem Platz des Ausgewechselten (abgeleitet, nicht gemessen)."
             }
           >
-            <VerlaufAnsicht phasen={v.phasen} hinweise={v.hinweise} />
+            <VerlaufAnsicht phasen={v.phasen} hinweise={v.hinweise} werte={werte} skala={skala} />
           </Section>
         ))}
 

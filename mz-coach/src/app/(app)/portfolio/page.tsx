@@ -20,6 +20,19 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
 type Umfeld = { kader: SpielerDaten[]; spieltag: Date; kapitaenPid?: number };
 
+// Plätze des Topteams, besetzt mit deiner besten aufstellbaren Elf (Heatmap = Marktwert); ohne genug Spieler die Koordinaten
+function besetzt(s: StilEintrag, u: Umfeld) {
+  try {
+    const e = erzeugeTaktik({ feld: s.beispiel.feld, torwart: s.beispiel.torwart, kader: u.kader, spieltag: u.spieltag });
+    return e.elf.map((b) => ({ x: b.platz.x, y: b.platz.y, label: b.spieler.name.split(" ").at(-1)!, wert: b.spieler.marktwert, torwart: b.platz.torwart }));
+  } catch {
+    return [
+      ...s.beispiel.feld.map((p) => ({ x: p.x, y: p.y, label: `${p.x}/${p.y}` })),
+      ...(s.beispiel.torwart ? [{ ...s.beispiel.torwart, label: "TW", torwart: true }] : []),
+    ];
+  }
+}
+
 // Taktik-Code des Stils mit deiner besten Besetzung (lib/mz/taktik/erzeugen.ts), geprüft nach der Prüfliste
 function TaktikCode({ s, u }: { s: StilEintrag; u: Umfeld }) {
   const m = s.schluessel.match(/^\S+ (\S+)\/(\S+)$/);
@@ -115,16 +128,11 @@ function Vorschlag({ klasse, s, u }: { klasse?: string; s: StilEintrag; u: Umfel
         {s.imArchiv.length ? <Badge tone="green">hast du: {s.imArchiv.join(", ")}</Badge> : <Badge tone="orange">fehlt</Badge>}
       </div>
       <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,220px)_1fr]">
-        <Spielfeld
-          spieler={[
-            ...s.beispiel.feld.map((p) => ({ x: p.x, y: p.y, label: `${p.x}/${p.y}` })),
-            ...(s.beispiel.torwart ? [{ ...s.beispiel.torwart, label: "TW", torwart: true }] : []),
-          ]}
-        />
+        <Spielfeld spieler={besetzt(s, u)} />
         <div className="text-[13px] leading-relaxed">
           <div>
             Beispiel: <Link href={`/spiele/${s.beispiel.mid}`} className="text-tint hover:underline">{s.beispiel.team} {s.beispiel.tore} gegen {s.beispiel.gegner}</Link> ({spielDatum(s.beispiel.datum)}).
-            Koordinaten = Editor-Koordinaten der Startaufstellung, aus der Stats-XML umgerechnet (±1 Punkt).
+            Plätze = Startaufstellung des Topteams (aus der Stats-XML, ±1 Punkt), besetzt mit deiner besten Elf.
           </div>
           <div className="mt-2">
             Regel-Kurzcheck: {s.beispiel.check.stuermer} Stürmer, vorderster y {s.beispiel.check.minY}, kleinster Abstand {s.beispiel.check.minAbstand}

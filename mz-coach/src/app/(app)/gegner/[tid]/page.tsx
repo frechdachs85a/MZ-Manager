@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { LinkZeile } from "@/components/link-zeile";
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
+import { alleMarktwerte } from "@/lib/marktwerte";
 import { Card, List, Row, Section, Unavailable } from "@/components/ui";
 import { RegelSaetze } from "@/components/regel-saetze";
 import { getDb } from "@/lib/db";
@@ -48,6 +49,7 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   const { tid: tidText } = await props.params;
   const tid = Number(tidText);
   const { spiele, name, liga, stats, analyse: a, regeln } = gegnerAnalyseLaden(getDb(), tid);
+  const werte = alleMarktwerte(getDb());
   if (spiele.length === 0) notFound();
   const alleLiga = spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
   const fehlen = liga.filter((s) => !s.xml);
@@ -163,7 +165,7 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
                 <Card key={s.mid} className="p-2">
                   <Spielfeld
                     spieler={[
-                      ...s.feld.map((f) => ({ x: f.p.x, y: f.p.y, label: kurz(f.name) })),
+                      ...s.feld.map((f) => ({ x: f.p.x, y: f.p.y, label: kurz(f.name), wert: werte[f.pid] })),
                       ...(s.torwart ? [{ x: s.torwart.x, y: s.torwart.y, label: "TW", torwart: true }] : []),
                     ]}
                   />
