@@ -8,43 +8,42 @@ import { mitFiltern } from "./markt-ziel";
 import { meldungAus } from "./kader";
 import { mitMzSitzung } from "./sitzung";
 
-// Bietomat, Stufe 1: einen Spieler per Spielernummer vom Transfermarkt laden (Suche über das Feld Name/ID des
-// Suchformulars, sonst Standardwerte des Formulars). Dazu das Gebotsfenster (transfer.js: buy() öffnet
-// ajax.php?p=transfer&sub=bid-form&pid=…) NUR LESEN und speichern, damit das Abschicken eines Gebots erst nach
-// Prüfung gebaut wird. Es wird hier nichts geboten.
-export type Geladen = { ok: true; spieler: MarktSpieler; endeUtc?: string } | { ok: false; meldung: string };
+// Bietomat: Spieler per Spielernummer ODER Name vom Transfermarkt laden (Feld "Name/ID" des Suchformulars, Marcus
+// 26.10.2026; sonst die Standardfilter der Marktseite). Mehrere Treffer beim Namen: Auswahlliste. Es wird nicht geboten.
+export type MitEnde = MarktSpieler & { endeUtc?: string };
+export type Geladen = { ok: true; spieler: MitEnde } | { ok: false; meldung: string; auswahl?: MitEnde[] };
 
 export function endeUtc(ende?: string): string | undefined {
   const m = endeAlsDatum(ende)?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   return m ? berlinZuUtc(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).toISOString() : undefined;
 }
 
-export async function spielerLaden(db: Database.Database, pid: number): Promise<Geladen> {
+export async function spielerLaden(db: Database.Database, eingabe: string): Promise<Geladen> {
+  const suche = eingabe.trim();
+  const pid = /^\d+$/.test(suche) ? Number(suche) : undefined;
   const log = abrufBeginnen(db, "bietomat-laden");
   try {
-    const spieler = await mitMzSitzung(
+    const liste = await mitMzSitzung(
       db,
       async (s) => {
         const seite = await s.holeSeite(MARKT_PFAD);
-        const params = mitFiltern(suchParameter(seite.htmlDom ?? seite.htmlRoh ?? ""), { u: pid });
+        const params = mitFiltern(suchParameter(seite.htmlDom ?? seite.htmlRoh ?? ""), { u: suche });
         const a = await s.holeText(`/ajax.php?p=transfer&sub=transfer-search&sport=soccer${params}&o=0`);
         speichereRohseite(db, { art: "gebot-suche", url: a.url, status: a.status, htmlRoh: a.text, htmlDom: null });
-        const treffer = parseTransferSuche(a.text).spieler.find((x) => x.pid === pid);
-        if (treffer) {
-          const f = await s.holeText(`/ajax.php?p=transfer&sub=bid-form&pid=${pid}&sport=soccer`);
-          speichereRohseite(db, { art: "gebotsformular", url: f.url, status: f.status, htmlRoh: f.text, htmlDom: null });
-        }
-        return treffer;
+        return parseTransferSuche(a.text).spieler.map((x) => ({ ...x, endeUtc: endeUtc(x.markt.ende) }));
       },
       { manuell: true },
     );
-    if (!spieler) {
-      const meldung = `Spieler ${pid} nicht auf dem Transfermarkt gefunden (Suche mit den Standardfiltern der Marktseite, z. B. Alter 19 bis 37).`;
-      abrufBeenden(db, log, false, meldung);
-      return { ok: false, meldung };
+    const treffer = pid !== undefined ? liste.filter((x) => x.pid === pid) : liste;
+    if (treffer.length === 1) {
+      abrufBeenden(db, log, true, `Bietomat: ${treffer[0].name} (${treffer[0].pid}) geladen.`);
+      return { ok: true, spieler: treffer[0] };
     }
-    abrufBeenden(db, log, true, `Bietomat: ${spieler.name} (${pid}) geladen.`);
-    return { ok: true, spieler, endeUtc: endeUtc(spieler.markt.ende) };
+    const meldung = treffer.length
+      ? `${treffer.length} Spieler für „${suche}“ gefunden: bitte einen auswählen.`
+      : `„${suche}“ nicht auf dem Transfermarkt gefunden (Suche mit den Standardfiltern der Marktseite, z. B. Alter 19 bis 37).`;
+    abrufBeenden(db, log, treffer.length > 0, `Bietomat: ${meldung}`);
+    return { ok: false, meldung, auswahl: treffer.length ? treffer : undefined };
   } catch (e) {
     const meldung = `Bietomat: ${meldungAus(e)}`;
     abrufBeenden(db, log, false, meldung);

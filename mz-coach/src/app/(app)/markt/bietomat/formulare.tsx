@@ -27,15 +27,33 @@ export function Bietomat({ saldo }: { saldo?: number }) {
     <div className="space-y-4">
       <form action={laden}>
         <div className="karte overflow-hidden rounded-[10px] bg-card">
-          <Feld label="Spielernummer">
-            <input name="pid" inputMode="numeric" required placeholder="z. B. 229906765" className={EINGABE} />
+          <Feld label="Nummer oder Name">
+            <input name="suche" required placeholder="z. B. 234751241 oder Arhenius" className={EINGABE} />
           </Feld>
         </div>
         <button type="submit" disabled={laedt} className={`${KNOPF} mt-3`}>
           {laedt ? "Lädt vom Transfermarkt (bis ca. 1 Minute) …" : "Spieler laden"}
         </button>
-        {geladen.meldung && <p role="status" className="mt-2 px-1 text-[13px] text-red">{geladen.meldung}</p>}
+        {geladen.meldung && <p role="status" className={`mt-2 px-1 text-[13px] ${geladen.auswahl ? "text-label-2" : "text-red"}`}>{geladen.meldung}</p>}
       </form>
+      {geladen.auswahl && (
+        <div className="karte overflow-hidden rounded-[10px] bg-card">
+          {geladen.auswahl.map((x) => (
+            <form key={x.pid} action={laden} className="border-b border-separator last:border-b-0">
+              <input type="hidden" name="gewaehlt" value={JSON.stringify(x)} />
+              <button type="submit" className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left">
+                <span>
+                  <span className="text-[14.5px] font-semibold">{x.name}</span>
+                  <span className="block text-[12px] text-label-2">
+                    {x.pid} · {x.alter ?? "?"} Jahre · Wert {zahl(x.wert)} · Ende {x.markt.ende ?? "?"}
+                  </span>
+                </span>
+                <span className="text-[13px] font-semibold text-tint">Wählen</span>
+              </button>
+            </form>
+          ))}
+        </div>
+      )}
 
       {s && (
         <form action={speichern} key={s.pid}>
