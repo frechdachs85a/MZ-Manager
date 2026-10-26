@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { SpielerProfil } from "@/components/spieler-profil";
-import { auftragSpeichern, spielerLadenAktion, type AuftragState, type LadeState } from "./actions";
+import { auftragAendern, auftragSpeichern, spielerLadenAktion, type AuftragState, type LadeState } from "./actions";
 
 const KNOPF = "pressable min-h-[46px] w-full knopf text-[16px] font-bold disabled:opacity-50";
 const zahl = (n?: number) => (n === undefined ? "–" : `${new Intl.NumberFormat("de-DE").format(n)} EUR`);
@@ -131,6 +131,61 @@ export function Bietomat({ saldo }: { saldo?: number }) {
               {auftrag.meldung}
             </p>
           )}
+        </form>
+      )}
+    </div>
+  );
+}
+
+// Gebot eines Auftrags groß anzeigen und bearbeiten (Marcus, 26.10.2026: "präsenter und bearbeitbar")
+export function GebotKarte(p: {
+  pid: number;
+  maximum: number;
+  bietenBis?: string;
+  auktionEnde?: string;
+  startgebot?: number;
+  letztesGebot?: number;
+  eigenesGebot?: number;
+}) {
+  const [state, action, pending] = useActionState<AuftragState, FormData>(auftragAendern, {});
+  const [offen, setOffen] = useState(false);
+  const zeit = (iso?: string) =>
+    iso ? new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", dateStyle: "short", timeStyle: "short" }).format(new Date(iso)) : "–";
+  return (
+    <div className="mt-2 rounded-[8px] border border-separator bg-fill/40 p-3">
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">Dein Endpreis</div>
+          <div className="text-[22px] font-bold tabular-nums leading-tight">{zahl(p.maximum)}</div>
+        </div>
+        <div className="text-[12.5px] tabular-nums text-label-2">
+          <div>Startgebot {zahl(p.startgebot)}</div>
+          <div>Letztes Gebot beim Laden {zahl(p.letztesGebot)}</div>
+          {p.eigenesGebot !== undefined && <div className="font-semibold text-label">Dein letztes Gebot {zahl(p.eigenesGebot)}</div>}
+        </div>
+        <div className="text-[12.5px] text-label-2">
+          <div>Ende {zeit(p.auktionEnde)}</div>
+          <div>Bieten bis {p.bietenBis ? zeit(p.bietenBis) : "Auktionsende"}</div>
+        </div>
+        <button type="button" onClick={() => setOffen(!offen)} className="ml-auto rounded-md bg-fill px-3 py-1.5 text-[13px] font-semibold">
+          {offen ? "Schließen" : "Bearbeiten"}
+        </button>
+      </div>
+      {offen && (
+        <form action={action} className="mt-3">
+          <input type="hidden" name="pid" value={p.pid} />
+          <div className="karte overflow-hidden rounded-[10px] bg-card">
+            <Feld label="Endpreis (EUR)">
+              <input name="maximum" inputMode="numeric" required defaultValue={p.maximum} className={EINGABE} />
+            </Feld>
+            <Feld label="Bieten bis">
+              <input name="bis" type="datetime-local" defaultValue={alsLokal(p.bietenBis)} className={EINGABE} />
+            </Feld>
+          </div>
+          <button type="submit" disabled={pending} className={`${KNOPF} mt-2`}>
+            {pending ? "Speichern …" : "Änderung speichern"}
+          </button>
+          {state.meldung && <p className={`mt-1 text-[13px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</p>}
         </form>
       )}
     </div>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { loescheAuftrag, protokolliere, speichereAuftrag } from "@/lib/db/gebot";
+import { aendereAuftrag, ladeAuftraege, loescheAuftrag, protokolliere, speichereAuftrag } from "@/lib/db/gebot";
 import type { MarktSpieler } from "@/lib/mz/parser/transfer";
 import { berlinZuUtc } from "@/lib/mz/parser/kader";
 
@@ -60,4 +60,21 @@ export async function auftragLoeschen(formData: FormData) {
   loescheAuftrag(db, pid);
   protokolliere(db, pid, "Auftrag gelöscht.");
   revalidatePath("/markt/bietomat");
+}
+
+export async function auftragAendern(_prev: AuftragState, formData: FormData): Promise<AuftragState> {
+  const pid = ganzzahl(formData.get("pid"));
+  const maximum = ganzzahl(formData.get("maximum"));
+  if (!pid) return { meldung: "Spielernummer fehlt." };
+  if (!maximum) return { meldung: "Bitte den Endpreis als ganze Zahl (EUR) eintragen." };
+  const db = getDb();
+  const a = ladeAuftraege(db).find((x) => x.pid === pid);
+  if (!a) return { meldung: "Auftrag nicht gefunden." };
+  const bisText = String(formData.get("bis") ?? "");
+  const bietenBis = bisText ? berlinIso(bisText) : undefined;
+  if (bisText && !bietenBis) return { meldung: "„Bieten bis“ ist kein gültiger Zeitpunkt." };
+  aendereAuftrag(db, pid, maximum, bietenBis ?? null);
+  protokolliere(db, pid, `Auftrag geändert: Endpreis ${a.maximum} → ${maximum} EUR${bietenBis ? `, bieten bis ${bietenBis}` : ""}.`, maximum);
+  revalidatePath("/markt/bietomat");
+  return { ok: true, meldung: "Gespeichert." };
 }
