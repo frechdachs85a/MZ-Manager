@@ -42,6 +42,7 @@ export async function taktikPruefen(_prev: PruefState, formData: FormData): Prom
             x: s.p!.x,
             y: s.p!.y,
             label: kurz(s.pid),
+            wert: nach.get(s.pid)?.marktwert,
             torwart: s.pos === "goalie",
             ton: st?.aufstellbar === false || st?.verletzt ? ("rot" as const) : ("normal" as const),
           };

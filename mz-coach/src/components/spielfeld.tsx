@@ -37,8 +37,10 @@ const mioText = (n: number) => `${(n / 1_000_000).toFixed(2).replace(".", ",")} 
 
 const STREIFEN = 10;
 
-export function Spielfeld({ spieler, titel, heatmap = false, skala }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean; skala?: Skala }) {
-  const sk = heatmap ? (skala ?? skalaAus(spieler.filter((p) => !p.torwart).map((p) => p.wert))) : undefined;
+// Heatmap erscheint automatisch, sobald Marktwerte da sind (Marcus, 26.10.2026: überall, immer)
+export function Spielfeld({ spieler, titel, heatmap, skala }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean; skala?: Skala }) {
+  const zeigen = heatmap ?? spieler.some((p) => p.wert !== undefined && !p.torwart);
+  const sk = zeigen ? (skala ?? skalaAus(spieler.filter((p) => !p.torwart).map((p) => p.wert))) : undefined;
   const id = useId().replace(/:/g, "");
   const rand = 24; // Platz für Namen am Rand (Eckstürmer x 200)
   const randUnten = spieler.some((p) => p.zusatz) ? 34 : rand; // zweite Zeile unter dem Torwart

@@ -1,5 +1,9 @@
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
+import { ladeKader } from "@/lib/db/kader";
+import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
+import { heuteInBerlin } from "@/lib/format";
+import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 import { PruefForm } from "./pruef-form";
 import { Badge, Card, List, Row, Section, Unavailable } from "@/components/ui";
 import { QUELLE_TAKTIKEN, TAKTIKEN } from "@/lib/wissen/startbasis";
@@ -11,6 +15,16 @@ import { archivLaden, spieleJeTaktik } from "@/lib/taktik-archiv";
 import { ArchivForm } from "./archiv-form";
 
 export default async function Taktik() {
+  const kaderListe = ladeKader(getDb());
+  // Vorlage mit deiner besten aufstellbaren Elf füllen (lib/mz/taktik/erzeugen.ts), sonst Rollen ohne Spieler
+  const besteBesetzung = (feld: { x: number; y: number; label: string }[]) => {
+    try {
+      const e = erzeugeTaktik({ feld, kader: kaderListe, spieltag: naechsterLigaspieltag(heuteInBerlin()) });
+      return e.elf.map((b) => ({ x: b.platz.x, y: b.platz.y, label: b.spieler.name.split(" ").at(-1)!, wert: b.spieler.marktwert, torwart: b.platz.torwart }));
+    } catch {
+      return feld;
+    }
+  };
   await connection();
   const db = getDb();
   const archiv = archivLaden(db);
@@ -61,10 +75,10 @@ export default async function Taktik() {
           </Section>
         </div>
         <div>
-        <Section title="Vorlagen auf dem Feld" footer={`Feldspieler-Koordinaten aus ${QUELLE_TAKTIKEN} (ohne Torwart, dort nicht angegeben). Gestrichelt: Sturm-Grenze y 110 und vorderste Linie y 63.`}>
+        <Section title="Vorlagen auf dem Feld" footer={`Feldspieler-Koordinaten aus ${QUELLE_TAKTIKEN} (ohne Torwart, dort nicht angegeben). Besetzt mit deiner besten aufstellbaren Elf (MZ-Wert je Rolle), Heatmap = Marktwert.`}>
           <Card className="grid grid-cols-2 gap-3 p-3">
             {TAKTIKEN.filter((t) => t.koordinaten).map((t) => (
-              <Spielfeld key={t.name} titel={t.name} spieler={t.koordinaten!.map((k) => ({ x: k.x, y: k.y, label: k.rolle }))} />
+              <Spielfeld key={t.name} titel={t.name} spieler={besteBesetzung(t.koordinaten!.map((k) => ({ x: k.x, y: k.y, label: k.rolle })))} />
             ))}
           </Card>
         </Section>

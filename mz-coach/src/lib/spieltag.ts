@@ -77,6 +77,7 @@ export function spieltagLage(db: Database.Database) {
   }
 
   // Seine Startaufstellung im neuesten ausgewerteten Ligaspiel (Bild) und der Kaderwert-Vergleich der Startelf
+  const gkWerte = new Map(gegner ? ladeGegnerKader(db, gegner.tid).map((k) => [k.pid, k.wert ?? undefined]) : []);
   const gegnerAufstellung =
     neuestes && gegner
       ? {
@@ -85,7 +86,7 @@ export function spieltagLage(db: Database.Database) {
           gegen: neuestes.teams.find((t) => t.id !== gegner.tid)?.name ?? "",
           feld: neuestes.spieler
             .filter((p) => p.teamId === gegner.tid && p.editor)
-            .map((p) => ({ x: p.editor!.x, y: p.editor!.y, label: p.name.split(" ").at(-1)!, torwart: p.torwart })),
+            .map((p) => ({ x: p.editor!.x, y: p.editor!.y, label: p.name.split(" ").at(-1)!, wert: gkWerte.get(p.id), torwart: p.torwart })),
           formation: gegner.analyse?.spiele.find((x) => x.mid === neuestes.mid)?.formation.text,
           einstellung: (() => {
             const t = neuestes.teams.find((x) => x.id === gegner.tid)!;
@@ -203,13 +204,26 @@ export function spieltagLage(db: Database.Database) {
       };
     } else {
       const t = TAKTIKEN.find((x) => x.name === vorschlag.taktik);
-      if (t?.koordinaten)
+      if (t?.koordinaten) {
+        // Nicht im Archiv: Plätze aus mz-wissen.md, besetzt mit deiner besten aufstellbaren Elf (für die Heatmap)
+        let feld: FeldSpieler[] = t.koordinaten.map((k) => ({ x: k.x, y: k.y, label: k.rolle }));
+        try {
+          const e = erzeugeTaktik({
+            feld: t.koordinaten.map((k) => ({ x: k.x, y: k.y })),
+            kader: ladeKader(db),
+            spieltag: lauf?.anstoss ? new Date(new Date(lauf.anstoss).toLocaleString("en-US", { timeZone: "Europe/Berlin" })) : new Date(),
+          });
+          feld = e.elf.map((b) => ({ x: b.platz.x, y: b.platz.y, label: b.spieler.name.split(" ").at(-1)!, wert: b.spieler.marktwert, torwart: b.platz.torwart }));
+        } catch {
+          // zu wenige aufstellbare Spieler: Rollen ohne Namen
+        }
         aufstellung = {
-          quelle: `mz-wissen.md, Abschnitt 8 (${t.inhalt}); Reiter nicht im Taktik-Archiv, daher ohne Namen und ohne Prüfung`,
-          feld: t.koordinaten.map((k) => ({ x: k.x, y: k.y, label: k.rolle })),
+          quelle: `Plätze aus mz-wissen.md (${t.inhalt}), besetzt mit deiner besten aufstellbaren Elf. Reiter nicht im Archiv.`,
+          feld,
           fehler: [],
           hinweise: [],
         };
+      }
     }
   }
 
