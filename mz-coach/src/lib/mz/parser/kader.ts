@@ -80,7 +80,7 @@ export function berlinZuUtc(j: number, mo: number, t: number, h: number, mi: num
   return new Date(alsUtc - (berlinAlsUtc - alsUtc));
 }
 
-export function parseKaderSeite(html: string): KaderSeite {
+export function parseKaderSeite(html: string, opt: { ohneSkills?: boolean } = {}): KaderSeite {
   const doc = parse(html);
   const tabelle = doc.querySelector("table#playerAltViewTable");
   if (!tabelle) throw new KaderSeiteUnbekannt("Spielertabelle (#playerAltViewTable) nicht gefunden.");
@@ -98,7 +98,8 @@ export function parseKaderSeite(html: string): KaderSeite {
     if (!spalte.has(p)) throw new KaderSeiteUnbekannt(`Spalte "${p}" fehlt in der Spielertabelle.`);
   }
   const fehlend = Object.keys(SKILL_SPALTEN).filter((t) => ![...skillSpalte.values()].includes(SKILL_SPALTEN[t]));
-  if (fehlend.length) throw new KaderSeiteUnbekannt(`Skill-Spalten fehlen: ${fehlend.join(", ")}.`);
+  // Fremde Teams zeigen keine Skills (Kaderseite anderer Teams, Wertbereich-Scan 26.10.2026): dann nur Nr, Name, Wert, Alter
+  if (fehlend.length && !opt.ohneSkills) throw new KaderSeiteUnbekannt(`Skill-Spalten fehlen: ${fehlend.join(", ")}.`);
 
   const spieler: SpielerDaten[] = [];
   for (const tr of tabelle.querySelectorAll("tbody tr")) {
@@ -120,7 +121,9 @@ export function parseKaderSeite(html: string): KaderSeite {
     }
 
     const nr = ganzzahl(text(zellen[spalte.get("Nr")!]));
-    const alter = ganzzahl(text(zellen[spalte.get("Alter")!]));
+    // Bei fremden Teams steht Alter und Geburtssaison zusammen ("2872" = 28 Jahre, Hinweis Marcus 26.10.2026)
+    const alterRoh = ganzzahl(text(zellen[spalte.get("Alter")!]).replace(/\D/g, ""));
+    const alter = alterRoh !== undefined && alterRoh > 99 ? Number(String(alterRoh).slice(0, 2)) : alterRoh;
     const marktwert = euro(text(zellen[spalte.get("Wert")!]));
     spieler.push({
       pid,

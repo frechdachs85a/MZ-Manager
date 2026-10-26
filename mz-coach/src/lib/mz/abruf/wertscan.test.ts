@@ -76,3 +76,21 @@ describe("Quoten je Wertbereich", () => {
     expect(b("unter 0,85")).toMatchObject({ spiele: 3, S: 0, U: 1, N: 2 }); // 0,5 sowie 1/1,2 = 0,83 und 1/1,25 = 0,8
   });
 });
+
+describe("Neu berechnen aus gespeicherter Aufstellung", async () => {
+  const { berechneWerte } = await import("./wertscan");
+  it("rechnet Startelf- und Feld-Wert ohne Abruf aus Aufstellung und Wechseln", () => {
+    const w = berechneWerte(
+      {
+        mid: 1, wettbewerb: "liga", tidA: 1, tidB: 2, toreA: 1, toreB: 0, ergebnisA: "S", fehlendeWerte: 0,
+        aufstellung: { a: { elf: [11, 12], wechsel: [{ minute: 45, raus: 12, rein: 13 }] }, b: { elf: [21, 22], wechsel: [] } },
+      },
+      (_t, pid) => ({ 11: 100, 12: 100, 13: 300, 21: 100, 22: 100 } as Record<number, number>)[pid],
+    );
+    expect(w).toMatchObject({ elfA: 200, elfB: 200, verhaeltnisElf: 1, fehlendeWerte: 0 });
+    expect(w.feldA).toBe(300); // 45 min 200, 45 min 400
+    expect(w.verhaeltnisFeld).toBe(1.5);
+    const ohne = berechneWerte({ ...w, fehlendeWerte: 0 }, () => undefined);
+    expect(ohne.fehlendeWerte).toBe(5);
+  });
+});

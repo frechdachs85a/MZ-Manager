@@ -10,24 +10,25 @@ export const FELD = { x0: 8.4, x1: 200, y0: 8, y1: 318, mitte: 163 } as const;
 // zusatz: zweite Zeile unter dem Namen. wert: Marktwert für die Heatmap und den Tooltip
 export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; wert?: number; ton?: "normal" | "rot" | "grau"; torwart?: boolean };
 
-// Farbe der Heatmap: rot (niedrigster Wert der Elf) über gelb zu blau (höchster); blau statt grün, weil es sich
-// vom Rasen abhebt
-const STOPS: [number, number, number][] = [
-  [239, 68, 68],
-  [250, 204, 21],
-  [59, 130, 246],
-];
-export function heatFarbe(t: number): string {
-  const k = Math.max(0, Math.min(1, t)) * 2;
-  const i = Math.min(1, Math.floor(k));
-  const f = k - i;
-  const [a, b] = [STOPS[i], STOPS[i + 1]];
-  return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * f)).join(" ")})`;
+// Heatmap (Marcus, 26.10.2026): eine neutrale Farbe für beide Teams, blass = niedriger, kräftig = hoher Marktwert.
+// Keine Ampelfarben, damit ein starker Gegenspieler nicht "gut" aussieht. Gleiche Skala für alle Felder einer Seite.
+export type Skala = { min: number; max: number };
+export function skalaAus(werte: (number | undefined)[]): Skala | undefined {
+  const w = werte.filter((x): x is number => x !== undefined);
+  return w.length ? { min: Math.min(...w), max: Math.max(...w) } : undefined;
 }
+const HEAT_RGB = "251 146 60"; // Orange, hebt sich vom Rasen ab
+const heatAlpha = (wert: number, sk: Skala) => {
+  const t = sk.max > sk.min ? (wert - sk.min) / (sk.max - sk.min) : 0.5;
+  return 0.12 + Math.max(0, Math.min(1, t)) * 0.68;
+};
+export const heatFarbe = (alpha: number) => `rgb(${HEAT_RGB} / ${alpha.toFixed(2)})`;
+const mioText = (n: number) => `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`;
 
 const STREIFEN = 10;
 
-export function Spielfeld({ spieler, titel, heatmap = false }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean }) {
+export function Spielfeld({ spieler, titel, heatmap = false, skala }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean; skala?: Skala }) {
+  const sk = heatmap ? (skala ?? skalaAus(spieler.filter((p) => !p.torwart).map((p) => p.wert))) : undefined;
   const id = useId().replace(/:/g, "");
   const rand = 24; // Platz für Namen am Rand (Eckstürmer x 200)
   const randUnten = spieler.some((p) => p.zusatz) ? 34 : rand; // zweite Zeile unter dem Torwart
@@ -82,24 +83,20 @@ export function Spielfeld({ spieler, titel, heatmap = false }: { spieler: FeldSp
           <text x={FELD.x1 - 2} y={ABWEHR_Y + 7} textAnchor="end">ABWEHR ab y {ABWEHR_Y}</text>
         </g>
         {/* Heatmap der Marktwerte: weiche Farbflächen unter den Spielern, relativ zur gezeigten Elf */}
-        {heatmap &&
-          (() => {
-            const mit = spieler.filter((p) => p.wert !== undefined && !p.torwart);
-            const min = Math.min(...mit.map((p) => p.wert!));
-            const max = Math.max(...mit.map((p) => p.wert!));
-            return (
-              <g>
-                <defs>
-                  <filter id={`weich-${id}`} x="-100%" y="-100%" width="300%" height="300%">
-                    <feGaussianBlur stdDeviation="9" />
-                  </filter>
-                </defs>
-                {mit.map((p, i) => (
-                  <circle key={i} cx={p.x} cy={p.y} r={24} fill={heatFarbe(max > min ? (p.wert! - min) / (max - min) : 0.5)} opacity={0.75} filter={`url(#weich-${id})`} />
-                ))}
-              </g>
-            );
-          })()}
+        {sk && (
+          <g>
+            <defs>
+              <filter id={`weich-${id}`} x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="6" />
+              </filter>
+            </defs>
+            {spieler
+              .filter((p) => p.wert !== undefined && !p.torwart)
+              .map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r={20} fill={heatFarbe(heatAlpha(p.wert!, sk))} filter={`url(#weich-${id})`} />
+              ))}
+          </g>
+        )}
         {spieler.map((s, i) => {
           const farbe = s.ton === "rot" ? "var(--red)" : s.ton === "grau" ? "rgba(255,255,255,.4)" : s.torwart ? "var(--yellow)" : "#fff";
           const breite = Math.max(14, Math.max(s.label.length * 4.6, (s.zusatz?.length ?? 0) * 4.2) + 6);
@@ -121,11 +118,12 @@ export function Spielfeld({ spieler, titel, heatmap = false }: { spieler: FeldSp
           );
         })}
       </svg>
-      {heatmap && (
-        <div className="mt-2 flex items-center justify-center gap-2 text-[11.5px] text-label-2">
-          <span>Marktwert niedrig</span>
-          <span className="h-2 w-24 rounded-full" style={{ background: `linear-gradient(90deg, ${heatFarbe(0)}, ${heatFarbe(0.5)}, ${heatFarbe(1)})` }} />
-          <span>hoch</span>
+      {sk && (
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-label-2">
+          <span className="whitespace-nowrap">Marktwert</span>
+          <span className="whitespace-nowrap">{mioText(sk.min)}</span>
+          <span className="h-2 w-20 rounded-full" style={{ background: `linear-gradient(90deg, ${heatFarbe(0.12)}, ${heatFarbe(0.8)})` }} />
+          <span className="whitespace-nowrap">{mioText(sk.max)}</span>
         </div>
       )}
       {titel && <figcaption className="mt-2 text-center text-[13px] font-medium text-label-2">{titel}</figcaption>}

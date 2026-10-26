@@ -20,21 +20,49 @@ export type WertSpiel = {
   einstellungA?: string;
   einstellungB?: string;
   fehlendeWerte: number; // Spieler ohne Marktwert (beide Teams zusammen)
+  aufstellung?: WertAufstellung;
+};
+
+// Startelf (pids) und Wechsel beider Teams, Grundlage für das Neuberechnen
+export type WertAufstellung = {
+  a: { elf: number[]; wechsel: { minute: number; raus: number; rein: number }[] };
+  b: { elf: number[]; wechsel: { minute: number; raus: number; rein: number }[] };
 };
 
 export function wertSpielVorhanden(db: Database.Database, mid: number): boolean {
-  return !!db.prepare("SELECT 1 FROM wert_spiel WHERE mid = ?").get(mid);
+  return !!db.prepare("SELECT 1 FROM wert_spiel WHERE mid = ? AND aufstellung_json IS NOT NULL").get(mid);
+}
+
+export function ladeWertSpiele(db: Database.Database): WertSpiel[] {
+  const rows = db.prepare("SELECT * FROM wert_spiel WHERE aufstellung_json IS NOT NULL").all() as Record<string, unknown>[];
+  return rows.map((r) => ({
+    mid: r.mid as number,
+    datum: (r.datum as string) ?? undefined,
+    wettbewerb: r.wettbewerb as "liga" | "weltliga",
+    tidA: r.tid_a as number,
+    tidB: r.tid_b as number,
+    nameA: (r.name_a as string) ?? undefined,
+    nameB: (r.name_b as string) ?? undefined,
+    toreA: r.tore_a as number,
+    toreB: r.tore_b as number,
+    ergebnisA: r.ergebnis_a as "S" | "U" | "N",
+    einstellungA: (r.einstellung_a as string) ?? undefined,
+    einstellungB: (r.einstellung_b as string) ?? undefined,
+    fehlendeWerte: r.fehlende_werte as number,
+    aufstellung: JSON.parse(r.aufstellung_json as string) as WertAufstellung,
+  }));
 }
 
 export function speichereWertSpiel(db: Database.Database, w: WertSpiel, zeit = new Date().toISOString()) {
   db.prepare(
     `INSERT OR REPLACE INTO wert_spiel (mid, datum, wettbewerb, tid_a, tid_b, name_a, name_b, elf_a, elf_b, feld_a, feld_b,
-       verhaeltnis_elf, verhaeltnis_feld, tore_a, tore_b, ergebnis_a, einstellung_a, einstellung_b, fehlende_werte, gespeichert)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       verhaeltnis_elf, verhaeltnis_feld, tore_a, tore_b, ergebnis_a, einstellung_a, einstellung_b, fehlende_werte, gespeichert, aufstellung_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     w.mid, w.datum ?? null, w.wettbewerb, w.tidA, w.tidB, w.nameA ?? null, w.nameB ?? null,
     w.elfA ?? null, w.elfB ?? null, w.feldA ?? null, w.feldB ?? null, w.verhaeltnisElf ?? null, w.verhaeltnisFeld ?? null,
     w.toreA, w.toreB, w.ergebnisA, w.einstellungA ?? null, w.einstellungB ?? null, w.fehlendeWerte, zeit,
+    w.aufstellung ? JSON.stringify(w.aufstellung) : null,
   );
 }
 
