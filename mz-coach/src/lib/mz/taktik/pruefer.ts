@@ -27,6 +27,7 @@ const ja = (v?: string) => v === "true";
 const istWechsel = (r: Record<string, string>) =>
   !!r.in_player_id && r.in_player_id !== "NULL" && !!r.out_player && r.out_player !== "no_change";
 
+// Taktik prüfen (Prüfliste)
 export function pruefeTaktik(t: Taktik, kader: SpielerDaten[] = []): Pruefung {
   const fehler: Befund[] = [];
   const hinweise: Befund[] = [];

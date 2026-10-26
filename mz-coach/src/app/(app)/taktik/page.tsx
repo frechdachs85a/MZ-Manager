@@ -1,3 +1,5 @@
+// Taktikseite: Prüfung einer Taktik-XML und das Taktik-Archiv.
+
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld } from "@/components/spielfeld";
 import { ladeKader } from "@/lib/db/kader";
@@ -14,6 +16,7 @@ import { datumZeit } from "@/lib/format";
 import { archivLaden, spieleJeTaktik } from "@/lib/taktik-archiv";
 import { ArchivForm } from "./archiv-form";
 
+// Seite Taktik
 export default async function Taktik() {
   const kaderListe = ladeKader(getDb());
   // Vorlage mit deiner besten aufstellbaren Elf füllen (lib/mz/taktik/erzeugen.ts), sonst Rollen ohne Spieler

@@ -1,8 +1,11 @@
 "use client";
 
+// Formular zum Einfügen einer Stats-XML.
+
 import { useActionState } from "react";
 import { spielEinfuegen, type EinfuegenState } from "./actions";
 
+// Formular: Stats-XML einfügen
 export function EinfuegenForm() {
   const [state, action, pending] = useActionState<EinfuegenState, FormData>(spielEinfuegen, {});
   return (

@@ -1,3 +1,5 @@
+// Spielerseite: Skills, Scoutbericht, Status (verletzt, gesperrt, Trainingslager) und Verlauf eines eigenen Spielers.
+
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -14,6 +16,7 @@ import type { SpielerDaten } from "@/lib/mz/spieler";
 import { ScoutAbzeichen } from "@/components/scout-abzeichen";
 import { ladeKombis, scoutEinstufung, skillPrognose, type ScoutEinstufung } from "@/lib/scout";
 
+// Seite eines eigenen Spielers
 export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
   await connection();
   const { pid } = await props.params;

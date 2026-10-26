@@ -6,6 +6,7 @@ import { text } from "./spielerblock";
 // mit Kopfzeile und allen Zeilen so, wie ManagerZone sie zeigt.
 export type Tabelle = { kopf: string[]; zeilen: { zellen: string[]; eigen: boolean }[] };
 
+// Ligatabelle lesen (Zeile des eigenen Teams markiert)
 export function tabelleAus(html: string, teamName: string): Tabelle | null {
   const doc = parse(html);
   for (const t of doc.querySelectorAll("table")) {

@@ -1,5 +1,7 @@
 "use server";
 
+// Server-Aktionen der Taktikseite: XML prüfen, im Archiv speichern, entfernen.
+
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
 import { pruefeTaktik, type Befund } from "@/lib/mz/taktik/pruefer";
@@ -18,6 +20,7 @@ export type PruefState = {
   };
 };
 
+// Taktik-XML prüfen (Befunde je Aufstellung)
 export async function taktikPruefen(_prev: PruefState, formData: FormData): Promise<PruefState> {
   const xml = String(formData.get("xml") ?? "");
   if (!xml.trim()) return { fehlerXml: "Bitte den XML-Code der Taktik einfügen." };
@@ -57,6 +60,7 @@ export async function taktikPruefen(_prev: PruefState, formData: FormData): Prom
 
 export type ArchivState = { ok?: boolean; meldung?: string };
 
+// Geprüfte Taktik im Archiv speichern
 export async function taktikArchivieren(_prev: ArchivState, formData: FormData): Promise<ArchivState> {
   const reiter = String(formData.get("reiter") ?? "").trim();
   const xml = String(formData.get("xml") ?? "");
@@ -73,6 +77,7 @@ export async function taktikArchivieren(_prev: ArchivState, formData: FormData):
   return { ok: true, meldung: `${reiter} gespeichert.` };
 }
 
+// Taktik aus dem Archiv entfernen
 export async function taktikEntfernen(formData: FormData) {
   const reiter = String(formData.get("reiter") ?? "");
   const { loescheTaktik } = await import("@/lib/db/taktik");

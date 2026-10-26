@@ -132,6 +132,7 @@ function staerken(k: MarktSpieler, alt: SpielerDaten, r: Position): string[] {
     .map((x) => `${SKILL_LABEL[x.s]} ${x.neu} statt ${x.alt} (Gewicht ${String(g[x.s]).replace(".", ",")})`);
 }
 
+// Kandidaten gegen deine Schwachstellen bewerten (mit Rahmen)
 export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[], rahmen: MarktRahmen): MarktErgebnis {
   const ausgeschlossen: Partial<Record<Grund, number>> = {};
   const raus = (g: Grund) => {

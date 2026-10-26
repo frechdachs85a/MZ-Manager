@@ -48,6 +48,7 @@ export type StilEintrag = {
 
 export type KlassenPortfolio = { klasse: string; spiele: number; stile: StilEintrag[] };
 
+// Portfolio: bewährte Stile je Gegnerklasse
 export function portfolioAnalyse(db: Database.Database) {
   const { teams } = topAuswertung(db);
   const alle: (SpielMuster & { team: string })[] = teams.flatMap((t) => [...t.liga.spiele, ...t.weltliga.spiele].map((s) => ({ ...s, team: t.name })));

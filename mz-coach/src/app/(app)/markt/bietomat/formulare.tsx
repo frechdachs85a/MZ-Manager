@@ -1,5 +1,7 @@
 "use client";
 
+// Formulare des Bietomats: Spieler laden und Auftrag anlegen, Gebotskarte (bearbeitbar), Knopf „In den Bietomat“.
+
 import { useActionState, useState } from "react";
 import { SpielerProfil } from "@/components/spieler-profil";
 import { auftragAendern, auftragSpeichern, empfehlungInBietomat, spielerLadenAktion, type AuftragState, type LadeState } from "./actions";
@@ -28,6 +30,7 @@ function Feld({ label, children }: { label: string; children: React.ReactNode })
 }
 const EINGABE = "min-w-0 flex-1 bg-transparent py-3 text-right text-[16px] tabular-nums outline-none placeholder:text-label-3";
 
+// Formular: Spieler laden, Daten prüfen, Auftrag anlegen
 export function Bietomat({ saldo }: { saldo?: number }) {
   const [geladen, laden, laedt] = useActionState<LadeState, FormData>(spielerLadenAktion, {});
   const [auftrag, speichern, speichert] = useActionState<AuftragState, FormData>(auftragSpeichern, {});

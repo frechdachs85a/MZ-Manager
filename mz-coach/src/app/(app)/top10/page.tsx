@@ -1,3 +1,5 @@
+// Top 10: Spielweise, Regelmuster und Ablauf der besten Teams, Wertbereich-Statistik.
+
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Card, Section, Unavailable } from "@/components/ui";
@@ -96,6 +98,7 @@ function Muster({ m, titel, regeln }: { m: TeamMuster | null; titel: string; reg
   );
 }
 
+// Seite Top 10
 export default async function Top10() {
   await connection();
   const db = getDb();

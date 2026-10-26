@@ -102,6 +102,7 @@ const attr = (a: Record<string, string | number>) =>
     .map(([k, v]) => `${k}="${String(v).replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`)
     .join(" ");
 
+// Taktik-XML mit der besten Besetzung erzeugen
 export function erzeugeTaktik(opt: {
   feld: { x: number; y: number }[]; // 10 Feldspieler
   torwart?: { x: number; y: number };

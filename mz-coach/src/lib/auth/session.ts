@@ -14,6 +14,7 @@ function sign(payload: string, secret: string): string {
 
 // Aus der Umgebungsvariable SESSION_SECRET, sonst aus geheimnisse.json auf dem Laufwerk (beim ersten Start erzeugt)
 let ausDatei: string | null = null;
+// Sitzungs-Schlüssel aus Umgebung oder Datei
 export function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET || (ausDatei ??= sessionSecretAusDatei());
   if (secret.length < 32) {
@@ -22,12 +23,14 @@ export function getSessionSecret(): string {
   return secret;
 }
 
+// Signiertes Sitzungs-Token mit Ablaufzeit
 export function createSessionToken(secret: string, now = Date.now()): string {
   const exp = Math.floor(now / 1000) + SESSION_MAX_AGE;
   const payload = `v1.${exp}`;
   return `${payload}.${sign(payload, secret)}`;
 }
 
+// Sitzungs-Token prüfen (Signatur und Ablauf)
 export function verifySessionToken(
   token: string | undefined,
   secret: string,

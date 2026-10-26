@@ -121,6 +121,7 @@ export function aktualisiereSpieler(
 
 export type KaderEintrag = SpielerDaten & { quelle: string; abgerufen: string };
 
+// Aktiver eigener Kader
 export function ladeKader(db: Database.Database): KaderEintrag[] {
   const rows = db
     .prepare("SELECT daten_json, quelle, abgerufen FROM spieler WHERE aktiv = 1 ORDER BY nr, name")
@@ -137,6 +138,7 @@ export type AenderungEintrag = {
   neu: string | null;
 };
 
+// Letzte Änderungen im Kader, neueste zuerst
 export function letzteAenderungen(db: Database.Database, limit = 50): AenderungEintrag[] {
   return db
     .prepare(

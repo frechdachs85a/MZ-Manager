@@ -1,6 +1,9 @@
+// Rahmen aller App-Seiten: Spielleiste oben, Inhalt, Navigation.
+
 import { Navigation } from "@/components/navigation";
 import { Spielleiste } from "@/components/spielleiste";
 
+// Gemeinsamer Rahmen der App-Seiten
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>

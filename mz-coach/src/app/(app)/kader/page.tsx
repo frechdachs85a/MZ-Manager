@@ -27,6 +27,7 @@ function sortiere(kader: Zeile[], sort: Sortierung): Zeile[] {
   return [...kader].sort((a, b) => wert(b) - wert(a));
 }
 
+// Seite Kader
 export default async function Kader(props: PageProps<"/kader">) {
   await connection();
   const db = getDb();

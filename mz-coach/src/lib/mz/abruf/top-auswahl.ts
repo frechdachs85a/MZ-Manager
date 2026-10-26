@@ -8,6 +8,7 @@ export const JE_ART = 10;
 export const istWeltliga = (s: ListenSpiel) => /welt|world/i.test(`${s.art} ${s.wettbewerb ?? ""}`);
 export const istLiga = (s: ListenSpiel) => s.art === "Ligaspiel" && !istWeltliga(s);
 
+// Welche Spiele der Topteams geladen werden (Liga und Weltliga)
 export function auswahlLernspiele(spiele: ListenSpiel[]): { liga: ListenSpiel[]; weltliga: ListenSpiel[] } {
   const neueste = (l: ListenSpiel[]) =>
     l

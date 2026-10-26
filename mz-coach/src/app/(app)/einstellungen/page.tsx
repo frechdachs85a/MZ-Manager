@@ -1,3 +1,5 @@
+// Einstellungsseite: ManagerZone-Zugang, Abrufe von Hand, Hochladen, Freundteam, Abrufprotokoll.
+
 import { connection } from "next/server";
 import { logout } from "@/app/login/actions";
 import { PageHeader } from "@/components/page-header";
@@ -14,6 +16,7 @@ import { ZugangForm } from "./zugang-form";
 import { FreundForm } from "./freund-form";
 import { ladeFreundTeam } from "@/lib/db/freunde";
 
+// Seite Einstellungen
 export default async function Einstellungen() {
   await connection();
   const db = getDb();

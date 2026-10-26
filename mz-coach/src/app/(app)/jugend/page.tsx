@@ -1,3 +1,5 @@
+// Jugend-Scouting: eigene Jugendspieler mit Einstufung und Vorschlag (behalten, beobachten, abgeben).
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -60,6 +62,7 @@ function Tabelle({ liste, rang = false }: { liste: JugendSpieler[]; rang?: boole
   );
 }
 
+// Seite Jugend
 export default async function Jugend() {
   await connection();
   const db = getDb();

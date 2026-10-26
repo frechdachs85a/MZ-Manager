@@ -13,6 +13,7 @@ export function tresorSchluessel(): Buffer {
   return key;
 }
 
+// AES-GCM-Verschlüsselung (IV, Tag, Text)
 export function verschluesseln(klartext: string, key: Buffer): string {
   const iv = randomBytes(12);
   const c = createCipheriv("aes-256-gcm", key, iv);
@@ -20,6 +21,7 @@ export function verschluesseln(klartext: string, key: Buffer): string {
   return ["v1", iv, c.getAuthTag(), daten].map((t) => (typeof t === "string" ? t : t.toString("base64url"))).join(".");
 }
 
+// AES-GCM-Entschlüsselung
 export function entschluesseln(geheim: string, key: Buffer): string {
   const [v, iv, tag, daten] = geheim.split(".");
   if (v !== "v1" || !iv || !tag || daten === undefined) throw new Error("Unbekanntes Tresor-Format");

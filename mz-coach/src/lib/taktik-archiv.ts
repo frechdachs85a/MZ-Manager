@@ -1,3 +1,5 @@
+// Taktik-Archiv auswerten: Reiter laden, gespielte Spiele einem Reiter zuordnen.
+
 import type Database from "better-sqlite3";
 import { ladeKader } from "@/lib/db/kader";
 import { ladeTaktiken } from "@/lib/db/taktik";

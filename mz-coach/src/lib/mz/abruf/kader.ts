@@ -77,6 +77,7 @@ export function spielXmlEinlesen(db: Database.Database, text: string): string {
   return `${titel}: gespeichert.${s.hinweise.length ? ` Hinweise: ${s.hinweise.join(" ")}` : ""}`;
 }
 
+// Gespeicherte oder abgerufene Seite erkennen und einlesen
 export function seiteEinlesen(db: Database.Database, html: string, herkunft: { url: string; quelle: string; htmlDom?: string | null }): string {
   if (istStatsXml(html)) return spielXmlEinlesen(db, html);
   if (istSpielliste(html)) {
@@ -108,6 +109,7 @@ export function seiteEinlesen(db: Database.Database, html: string, herkunft: { u
   );
 }
 
+// Lesbare Fehlermeldung (erste Zeile)
 export function meldungAus(e: unknown): string {
   if (e instanceof MzFehler || e instanceof KaderSeiteUnbekannt || e instanceof StatusFehler || e instanceof StatsXmlFehler) {
     return e.message;

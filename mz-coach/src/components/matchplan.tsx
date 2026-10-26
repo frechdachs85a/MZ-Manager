@@ -14,8 +14,9 @@ const eur = (n: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(n
 const anstossText = (iso: string) =>
   new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
+// Matchplan des nächsten Spiels: Taktikvorschlag, Belege, Formation Liga
 export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
-  const { lauf, vorschlag, aufstellung, gegner, anpassungen, taktikCode, liga, ligaStatus } = l;
+  const { lauf, vorschlag, aufstellung, anpassungen, taktikCode, liga, ligaStatus } = l;
   if (!lauf?.anstoss || !lauf.gegnerTid) {
     return (
       <Hero>

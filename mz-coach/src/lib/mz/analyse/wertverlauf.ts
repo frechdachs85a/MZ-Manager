@@ -11,6 +11,7 @@ export type Wertverlauf = {
 
 export const SPIELMINUTEN = 90;
 
+// Kaderwert beider Teams je Zeitfenster zwischen den Wechseln
 export function wertverlauf(opt: {
   eigeneElf: number[];
   gegnerElf: number[];

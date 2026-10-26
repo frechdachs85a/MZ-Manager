@@ -1,8 +1,11 @@
 "use client";
 
+// Formular für das befreundete Team (Einladungen für Freundschaftsspiele, gesperrt für Transfers).
+
 import { useActionState } from "react";
 import { freundTeamSpeichern, type FreundState } from "./actions";
 
+// Formular: befreundetes Team
 export function FreundForm({ tid, taktik }: { tid?: number; taktik?: string }) {
   const [state, action, pending] = useActionState<FreundState, FormData>(freundTeamSpeichern, {});
   return (

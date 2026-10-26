@@ -11,6 +11,7 @@ import { dirname, join } from "node:path";
 
 export type Geheimnisse = { sessionSecret: string; tresorKey: string; passwortHash?: string; einrichtungscode?: string };
 
+// Pfad der Geheimnis-Datei neben der Datenbank
 export function geheimnisPfad(): string {
   return join(dirname(process.env.DATABASE_PATH ?? "./data/mz-coach.db"), "geheimnisse.json");
 }
@@ -49,10 +50,12 @@ export function ladeGeheimnisse(pfad = geheimnisPfad()): Geheimnisse {
   return lies(pfad)!;
 }
 
+// Sitzungs-Schlüssel aus der Geheimnis-Datei
 export function sessionSecretAusDatei(pfad?: string): string {
   return ladeGeheimnisse(pfad).sessionSecret;
 }
 
+// Tresor-Schlüssel aus der Geheimnis-Datei
 export function tresorKeyAusDatei(pfad?: string): string {
   return ladeGeheimnisse(pfad).tresorKey;
 }
@@ -62,6 +65,7 @@ export function passwortHash(pfad?: string): string | undefined {
   return process.env.APP_PASSWORD_HASH || ladeGeheimnisse(pfad).passwortHash || undefined;
 }
 
+// Ist ein App-Passwort gesetzt?
 export function istEingerichtet(pfad?: string): boolean {
   return !!passwortHash(pfad);
 }
@@ -80,6 +84,7 @@ export function einrichtungscode(pfad = geheimnisPfad()): string | undefined {
   return code;
 }
 
+// Passwort-Hash in der Geheimnis-Datei speichern
 export function speicherePasswortHash(hash: string, pfad = geheimnisPfad()) {
   const g: Geheimnisse = { ...ladeGeheimnisse(pfad), passwortHash: hash };
   delete g.einrichtungscode;

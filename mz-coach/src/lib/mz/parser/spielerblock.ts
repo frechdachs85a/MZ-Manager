@@ -22,6 +22,7 @@ export type SpielerBlock = {
 
 const OHNE_MAXED: Skill[] = ["erfahrung", "form"];
 
+// Text eines Elements ohne Mehrfach-Leerzeichen
 export function text(el: HTMLElement | null | undefined): string {
   return (el?.text ?? "").replace(/&nbsp;| /g, " ").replace(/\s+/g, " ").trim();
 }
@@ -31,6 +32,7 @@ function zelle(block: HTMLElement, beschriftung: RegExp): HTMLElement | undefine
   return block.querySelectorAll("td").find((td) => beschriftung.test(text(td)));
 }
 
+// Einen Spielerblock lesen (Spieleransicht und Marktsuche)
 export function parseSpielerBlock(block: HTMLElement): SpielerBlock {
   const pid = Number(text(block.querySelector(".player_id_span")));
   const name = text(block.querySelector(".player_name"));

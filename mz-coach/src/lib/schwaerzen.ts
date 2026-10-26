@@ -3,6 +3,7 @@
 // ajax.php?p=start&sub=Login&logindata_md5=…&logindata_username=…). Gilt für Adressen und für beliebigen Text.
 const PARAMETER = /([?&;]|\b)((?:logindata[_[][a-z0-9_]*\]?)|[a-z_]*(?:md5|pass(?:word|wort)?|token|secret|sid))=([^&#\s"'<>]*)/gi;
 
+// Zugangsdaten, Schlüssel, sid und md5-Werte im Text unkenntlich machen
 export function schwaerzen(text: string): string {
   return text
     .replace(PARAMETER, (_g, vor: string, name: string) => `${vor}${name}=***`)

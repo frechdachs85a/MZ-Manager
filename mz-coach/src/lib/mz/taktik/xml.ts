@@ -46,6 +46,7 @@ function punkt(a: Record<string, string>, kx: string, ky: string, wo: string): P
   return { x: zahl(a, kx, wo), y: zahl(a, ky, wo) };
 }
 
+// Taktik-XML lesen
 export function parseTaktikXml(xml: string): Taktik {
   if (!/<SoccerTactics[\s>]/.test(xml)) throw new TaktikXmlFehler("Kein <SoccerTactics> gefunden. Bitte den kompletten XML-Code einfügen.");
   const t: Taktik = { team: {}, pos: [], subs: [], regeln: [] };

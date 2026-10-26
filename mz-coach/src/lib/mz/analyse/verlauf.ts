@@ -56,6 +56,7 @@ const regelText = (r: TaktikRegel) => {
   return b.join(", ") || "ohne Bedingung";
 };
 
+// Deine Aufstellungen je Phase eines Spiels
 export function eigenerVerlauf(spiel: StatsSpiel, taktik: Taktik, tid: number): { phasen: Phase[]; hinweise: string[] } {
   const name = new Map(spiel.spieler.map((p) => [p.id, p.name]));
   const hinweise: string[] = [];

@@ -22,6 +22,7 @@ export function brauchtText(alt: SpielerDaten | undefined, sterne: string): bool
   return !alt?.scoutText || !alt.scoutText.includes("Scoutbericht") || alt.scoutTextSterne !== sterne;
 }
 
+// Klickt die Scoutberichte auf der Spieleransicht an (nur fehlende oder geänderte)
 export function scoutKlicker(gespeichert: Map<number, SpielerDaten>) {
   return async (page: Page, html: string): Promise<{ antworten: ScoutAntwort[]; fehler: string[] }> => {
     const antworten: ScoutAntwort[] = [];
@@ -61,6 +62,7 @@ export function scoutKlicker(gespeichert: Map<number, SpielerDaten>) {
   };
 }
 
+// Texte der Scoutberichte speichern
 export function speichereScoutTexte(db: Database.Database, antworten: ScoutAntwort[], stand: string, quelle: string) {
   if (!antworten.length) return 0;
   // Erste Antwort roh sichern, damit der Aufbau geprüft werden kann

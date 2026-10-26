@@ -1,9 +1,12 @@
 "use client";
 
+// Anmeldeseite der App.
+
 import Image from "next/image";
 import { useActionState } from "react";
 import { login, type LoginState } from "./actions";
 
+// Seite Anmelden
 export default function LoginPage() {
   const [state, action, pending] = useActionState<LoginState, FormData>(login, {});
 

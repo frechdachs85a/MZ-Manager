@@ -195,6 +195,7 @@ export type TeamMuster = {
   gegenKlasse: { klasse: string; bilanz: Bilanz; stile: [string, number][] }[];
 };
 
+// Spielweise eines Teams über alle Spiele
 export function teamMuster(spiele: SpielMuster[]): TeamMuster {
   const regel = spiele.flatMap((s) => s.wechsel.filter((w) => w.grund === "preset").map((w) => w.minute)).sort((a, b) => a - b);
   const tw = spiele.flatMap((s) => s.taktikwechsel.map((t) => ({ ...t, aenderung: `${t.art} → ${t.neu}` })));
@@ -235,6 +236,7 @@ export function teamMuster(spiele: SpielMuster[]): TeamMuster {
 
 // Über alle Topteams: welcher eigene Stil gegen welche Gegnerklasse wie oft gewonnen hat
 export type MatrixZeile = { klasse: string; stil: string; bilanz: Bilanz; spiele: number };
+// Stil gegen Stil: Bilanzen
 export function stilMatrix(spiele: SpielMuster[]): MatrixZeile[] {
   const m = new Map<string, SpielMuster[]>();
   for (const s of spiele) {
@@ -301,6 +303,7 @@ function rollenText(jeSpiel: string[][]): string {
   return `je nach Spiel ${aufzaehlung(zaehl(sortiert.flat()).sort((a, b) => b[1] - a[1]).map(([r, n]) => `${wort(r)} (${n}×)`))}`;
 }
 
+// Wiederkehrende Taktikregeln als Sätze
 export function regelMuster(spiele: SpielMuster[]): RegelSatz[] {
   const n = spiele.length;
   if (!n) return [];

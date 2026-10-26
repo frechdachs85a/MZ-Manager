@@ -1,8 +1,11 @@
 "use client";
 
+// Formular für den ManagerZone-Zugang (wird nur verschlüsselt auf dem Server gespeichert).
+
 import { useActionState } from "react";
 import { zugangSpeichern, type ZugangState } from "./actions";
 
+// Formular: ManagerZone-Zugang
 export function ZugangForm() {
   const [state, action, pending] = useActionState<ZugangState, FormData>(zugangSpeichern, {});
   return (

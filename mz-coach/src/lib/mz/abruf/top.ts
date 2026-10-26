@@ -35,6 +35,7 @@ export function topWocheFaellig(db: Database.Database, jetzt = new Date()): bool
   return seit > 7 * TAG_MS || (montag && berlinTag(new Date(r.z)) !== berlinTag(jetzt));
 }
 
+// Top-10-Abruf: Listen, Spiele, Auswertung
 export async function topAbrufen(db: Database.Database, opt = { manuell: false }): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "top10");
   marke(true); // auch während der Stats-XML nach der Sitzung kein automatisches Update

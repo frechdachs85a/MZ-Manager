@@ -1,3 +1,5 @@
+// Archiv und Wartung: Top-10-Auswertung archivieren, alte Daten aufräumen, Datenbank sichern.
+
 import type Database from "better-sqlite3";
 import { existsSync, mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -18,19 +20,16 @@ export function archiviereTop(db: Database.Database, jetzt = new Date()): boolea
   return true;
 }
 
+// Archivierte Top-10-Auswertungen (Datum, Anzahl Spiele)
 export function ladeTopArchiv(db: Database.Database): { datum: string; spiele: number }[] {
   return db.prepare("SELECT datum, spiele FROM top_archiv ORDER BY datum DESC").all() as { datum: string; spiele: number }[];
-}
-
-export function ladeTopArchivEintrag(db: Database.Database, datum: string): ReturnType<typeof topAuswertung> | null {
-  const r = db.prepare("SELECT auswertung_json FROM top_archiv WHERE datum = ?").get(datum) as { auswertung_json: string } | undefined;
-  return r ? JSON.parse(r.auswertung_json) : null;
 }
 
 // Aufräumen gegen Datenmüll. Spiele, Spiellisten, Kaderverlauf (Änderungen), Taktiken und Archiv bleiben
 // immer erhalten; gekürzt wird nur, was sich ohnehin bei jedem Abruf wiederholt.
 export const BEHALTEN = { rohseitenJeArt: 3, marktSuchen: 7, abrufLog: 2000 };
 
+// Alte Rohseiten, Marktsuchen und Protokolle kürzen
 export function aufraeumen(db: Database.Database): string {
   let roh = 0;
   let suchen = 0;
@@ -68,6 +67,7 @@ export function aufraeumen(db: Database.Database): string {
 
 // Wöchentliche Sicherung der ganzen Datenbank neben die Datenbankdatei (Ordner sicherung), die letzten 8 bleiben
 export const SICHERUNGEN = 8;
+// Datenbank sichern, nur die letzten SICHERUNGEN behalten
 export async function sichereDatenbank(db: Database.Database, pfad: string, jetzt = new Date()): Promise<string> {
   const ordner = join(dirname(pfad), "sicherung");
   if (!existsSync(ordner)) mkdirSync(ordner, { recursive: true });

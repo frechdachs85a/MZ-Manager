@@ -1,3 +1,5 @@
+// Taktikdetail: Aufstellungen (Start, Alternative 1 und 2) eines Reiters aus dem Archiv mit Prüfung.
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -14,6 +16,7 @@ import { taktikEntfernen } from "../actions";
 
 const NAMEN = ["Startaufstellung", "Alternative 1", "Alternative 2"];
 
+// Seite eines Taktik-Reiters
 export default async function TaktikDetail(props: PageProps<"/taktik/[reiter]">) {
   await connection();
   const reiter = decodeURIComponent((await props.params).reiter);

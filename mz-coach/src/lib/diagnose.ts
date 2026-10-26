@@ -12,6 +12,7 @@ import { ladeKombis, scoutEinstufung } from "@/lib/scout";
 // (Tabelle einstellung und geheimnisse.json werden nicht gelesen).
 export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "unbekannt", "spielplan", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche", "kader-fremd", "weltliga", "gebotsformular", "gebot-suche", "weltliga-tabelle", "skript-taktik", "liga-xml", "skript-mz", "gebot-antwort"];
 
+// Diagnose für den Fernzugriff (ohne Zugangsdaten)
 export function diagnose(db: Database.Database) {
   const abrufe = db.prepare("SELECT art, gestartet, beendet, ok, meldung FROM abruf_log ORDER BY id DESC LIMIT 40").all();
   // Unbekannte Seiten: die letzten drei (verschiedene Seiten), sonst je Art die neueste

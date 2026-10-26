@@ -13,6 +13,7 @@ export const STUFEN = [
 
 export const stufe = (w: number) => STUFEN.find((s) => w >= s.ab)!;
 
+// Legende der MZ-Wert-Stufen
 export function WertLegende() {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11.5px]">

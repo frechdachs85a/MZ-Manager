@@ -1,9 +1,12 @@
 "use client";
 
+// Knopf „Jetzt abrufen“ für die Spieltag-Auswertung.
+
 import { useActionState } from "react";
 import { haptic } from "@/lib/haptics";
 import { spieltagJetztAbrufen, type AbrufState } from "../einstellungen/actions";
 
+// Knopf: Spieltag-Auswertung jetzt
 export function SpieltagKnopf() {
   const [state, action, pending] = useActionState<AbrufState>(spieltagJetztAbrufen, {});
   return (

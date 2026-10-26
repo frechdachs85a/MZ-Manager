@@ -1,3 +1,5 @@
+// Zentrale (Startseite): nächstes Spiel, Lage des Kaders, Hinweise und Abkürzungen.
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -16,6 +18,7 @@ import { StatusBadges } from "@/components/status";
 import { datumZeit, heuteInBerlin } from "@/lib/format";
 import { naechsterLigaspieltag, TEAM } from "@/lib/wissen/startbasis";
 
+// Seite Zentrale
 export default async function Uebersicht() {
   await connection(); // Datum pro Anfrage, nicht beim Build
   const spieltag = naechsterLigaspieltag(heuteInBerlin());

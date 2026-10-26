@@ -80,6 +80,7 @@ export function berlinZuUtc(j: number, mo: number, t: number, h: number, mi: num
   return new Date(alsUtc - (berlinAlsUtc - alsUtc));
 }
 
+// Kaderübersicht lesen (wahlweise ohne Skills)
 export function parseKaderSeite(html: string, opt: { ohneSkills?: boolean } = {}): KaderSeite {
   const doc = parse(html);
   const tabelle = doc.querySelector("table#playerAltViewTable");

@@ -18,6 +18,7 @@ const LOCK_MS = 15 * 60 * 1000;
 
 export type LoginState = { error?: string };
 
+// Anmelden: Passwort prüfen, Sitzungs-Cookie setzen
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() ?? "lokal";
   const entry = attempts.get(ip);
@@ -46,6 +47,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   redirect("/");
 }
 
+// Abmelden: Sitzungs-Cookie löschen
 export async function logout() {
   (await cookies()).delete(SESSION_COOKIE);
   redirect("/login");

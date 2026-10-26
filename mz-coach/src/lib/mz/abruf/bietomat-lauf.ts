@@ -65,6 +65,7 @@ function gebotImBrowser(pid: number, maximumEur: number) {
   };
 }
 
+// Einen Auftrag bis zum Ende der Auktion abarbeiten (eigene Sitzung, Vorrang)
 export async function auftragAbarbeiten(db: Database.Database, a: GebotAuftrag): Promise<string> {
   const log = abrufBeginnen(db, "bietomat");
   setzeBietomatLaeuft(true);

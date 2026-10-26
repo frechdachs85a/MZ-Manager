@@ -26,6 +26,7 @@ export type GegnerGewichte = {
 
 const mio = (n: number) => `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`;
 
+// Gewichte je Platz gegen einen Gegner (Kopfball, Drohung, Seite)
 export function gegnerGewichte(opt: {
   feld: { x: number; y: number }[]; // deine 10 Feldspieler-Plätze (Editor)
   gegner: GegnerFeld[];

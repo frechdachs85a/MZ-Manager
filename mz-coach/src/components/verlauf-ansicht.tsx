@@ -1,3 +1,5 @@
+// Aufstellungen eines Spiels je Phase (zwischen den Wechseln) als Spielfelder.
+
 import { Spielfeld } from "@/components/spielfeld";
 import { Badge, Card } from "@/components/ui";
 import type { Phase } from "@/lib/mz/analyse/verlauf";

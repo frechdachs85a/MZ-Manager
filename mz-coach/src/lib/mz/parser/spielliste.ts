@@ -22,6 +22,7 @@ export type Spielliste = { tid: number; teamName?: string; spiele: ListenSpiel[]
 // Ligaspiele der laufenden Saison: mid > 1 620 000 000 (mz-wissen.md, Abschnitt 2, Stand Saison 100).
 export const LIGA_MID_AB = 1_620_000_000;
 
+// Ist das eine Spielliste?
 export function istSpielliste(html: string): boolean {
   return /id="fixtures-results-list"/.test(html);
 }
@@ -67,6 +68,7 @@ function zeilen(html: string, liste: HTMLElement): HTMLElement[] {
   });
 }
 
+// Spielliste lesen
 export function parseSpielliste(html: string, tidVorgabe?: number): Spielliste {
   const doc = parse(html);
   const liste = doc.querySelector("dl#fixtures-results-list");
@@ -120,12 +122,14 @@ export function parseSpielliste(html: string, tidVorgabe?: number): Spielliste {
   return { tid, teamName: eigen?.name, spiele, serverzeit: serverzeit(html) };
 }
 
+// Ligaspiele der laufenden Saison
 export function ligaspieleDieserSaison(l: Spielliste): ListenSpiel[] {
   return l.spiele.filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB);
 }
 
 // Für die Gegneranalyse reichen die letzten 8 Ligaspiele der Saison (Marcus, 25.10.2026).
 export const ANALYSE_SPIELE = 8;
+// Die letzten n Ligaspiele
 export function letzteLigaspiele<T extends ListenSpiel>(spiele: T[], n = ANALYSE_SPIELE): T[] {
   return spiele
     .filter((s) => s.art === "Ligaspiel" && s.mid > LIGA_MID_AB)

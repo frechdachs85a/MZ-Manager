@@ -1,10 +1,13 @@
 "use client";
 
+// Formular der Ersteinrichtung (Einrichtungscode und App-Passwort).
+
 import { useActionState } from "react";
 import { einrichten, type EinrichtungState } from "./actions";
 
 const feld = "min-h-11 w-full bg-transparent px-4 py-3 text-[17px] outline-none placeholder:text-label-3";
 
+// Formular der Ersteinrichtung
 export function EinrichtungFormular() {
   const [state, action, pending] = useActionState<EinrichtungState, FormData>(einrichten, {});
   return (

@@ -1,11 +1,14 @@
 "use server";
 
+// Server-Aktionen der Einstellungsseite: ManagerZone-Zugang speichern/löschen, Abrufe von Hand starten.
+
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { loescheZugang, speichereZugang } from "@/lib/mz/zugang";
 
 export type ZugangState = { fehler?: string; ok?: boolean };
 
+// ManagerZone-Zugang prüfen und verschlüsselt speichern
 export async function zugangSpeichern(_prev: ZugangState, formData: FormData): Promise<ZugangState> {
   const benutzer = String(formData.get("benutzer") ?? "").trim();
   const passwort = String(formData.get("passwort") ?? "");
@@ -20,6 +23,7 @@ export async function zugangSpeichern(_prev: ZugangState, formData: FormData): P
   return { ok: true };
 }
 
+// ManagerZone-Zugang und Sitzung löschen
 export async function zugangLoeschen() {
   loescheZugang(getDb());
   revalidatePath("/einstellungen");
@@ -27,6 +31,7 @@ export async function zugangLoeschen() {
 
 export type AbrufState = { meldung?: string; ok?: boolean };
 
+// Kaderabruf von Hand
 export async function kaderJetztAbrufen(): Promise<AbrufState> {
   const { kaderAbrufen } = await import("@/lib/mz/abruf/kader");
   const r = await kaderAbrufen(getDb(), { manuell: true });
@@ -34,6 +39,7 @@ export async function kaderJetztAbrufen(): Promise<AbrufState> {
   return r;
 }
 
+// Spieltag-Auswertung von Hand
 export async function spieltagJetztAbrufen(): Promise<AbrufState> {
   const { spieltagAbrufen } = await import("@/lib/mz/abruf/spieltag");
   const r = await spieltagAbrufen(getDb(), { manuell: true });
@@ -41,6 +47,7 @@ export async function spieltagJetztAbrufen(): Promise<AbrufState> {
   return r;
 }
 
+// Hochgeladene Seite oder Stats-XML einlesen
 export async function kaderHochladen(_prev: AbrufState, formData: FormData): Promise<AbrufState> {
   const dateien = formData.getAll("datei").filter((d): d is File => d instanceof File && d.size > 0);
   if (dateien.length === 0) return { meldung: "Keine Datei ausgewählt." };
@@ -55,6 +62,7 @@ export async function kaderHochladen(_prev: AbrufState, formData: FormData): Pro
 
 export type FreundState = { meldung?: string; ok?: boolean };
 
+// Befreundetes Team (tid, Taktik) speichern
 export async function freundTeamSpeichern(_prev: FreundState, formData: FormData): Promise<FreundState> {
   const { speichereFreundTeam } = await import("@/lib/db/freunde");
   const tid = String(formData.get("tid") ?? "").trim();

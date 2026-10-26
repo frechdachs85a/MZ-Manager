@@ -30,10 +30,12 @@ export function Section({
   );
 }
 
+// Karte (Panel)
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`karte overflow-hidden rounded-[10px] bg-card ${className}`}>{children}</div>;
 }
 
+// Liste in einer Karte
 export function List({ children }: { children: React.ReactNode }) {
   return (
     <Card>
@@ -42,6 +44,7 @@ export function List({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Listenzeile: Titel, Detail, Wert, Zusatz
 export function Row({
   title,
   detail,
@@ -76,6 +79,7 @@ export function Unavailable({ title, reason }: { title: string; reason: string }
   );
 }
 
+// Kleines Etikett
 export function Badge({
   children,
   tone = "neutral",

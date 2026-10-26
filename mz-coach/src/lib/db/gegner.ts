@@ -1,6 +1,9 @@
+// Datenbank: Spiellisten fremder Teams und Liste der Gegner.
+
 import type Database from "better-sqlite3";
 import type { ListenSpiel, Spielliste } from "@/lib/mz/parser/spielliste";
 
+// Spielliste eines Teams speichern (neue Spiele zählen)
 export function speichereSpielliste(db: Database.Database, l: Spielliste, zeit = new Date().toISOString()): { neu: number } {
   const stand = l.serverzeit ?? zeit;
   const ins = db.prepare(
@@ -24,6 +27,7 @@ export function speichereSpielliste(db: Database.Database, l: Spielliste, zeit =
 
 export type GegnerZeile = { tid: number; name: string | null; liga: number; mitXml: number; stand: string };
 
+// Teams mit Ligaspielen ab einer mid
 export function listeGegner(db: Database.Database, ligaAb: number): GegnerZeile[] {
   return db
     .prepare(
@@ -41,6 +45,7 @@ export function listeEchteGegner(db: Database.Database, ligaAb: number, topTids:
   return listeGegner(db, ligaAb).filter((g) => !topTids.has(g.tid));
 }
 
+// Gespeicherte Spiele eines Teams (mit Kennzeichen, ob die XML da ist)
 export function ladeTeamSpiele(db: Database.Database, tid: number): (ListenSpiel & { xml: boolean })[] {
   const rows = db
     .prepare(
@@ -51,6 +56,7 @@ export function ladeTeamSpiele(db: Database.Database, tid: number): (ListenSpiel
   return rows.map((r) => ({ ...JSON.parse(r.daten_json), xml: r.xml === 1 }));
 }
 
+// Name eines Teams aus den gespeicherten Listen
 export function teamName(db: Database.Database, tid: number): string | null {
   return (db.prepare("SELECT name FROM team WHERE tid = ?").get(tid) as { name: string | null } | undefined)?.name ?? null;
 }

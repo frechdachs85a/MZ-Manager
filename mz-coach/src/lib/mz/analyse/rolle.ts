@@ -8,6 +8,7 @@
 export const ROLLEN = ["Torwart", "Eckstürmer", "Mittelstürmer", "Mittelfeld", "Außenverteidiger", "Innenverteidiger"] as const;
 export type Rolle = (typeof ROLLEN)[number];
 
+// Rolle eines Platzes (TW, VT, MF, Sturm, außen)
 export function musterRolle(p: { x: number; y: number }, torwart = false): Rolle {
   if (torwart) return "Torwart";
   if (p.y <= 80 && (p.x <= 25 || p.x >= 185)) return "Eckstürmer";

@@ -55,6 +55,7 @@ export type StatsSpiel = {
   hinweise: string[];
 };
 
+// Ist das eine Stats-XML?
 export function istStatsXml(text: string): boolean {
   return /<SoccerStatistics[\s>]/.test(text);
 }
@@ -108,6 +109,7 @@ function alle(el: HTMLElement, tag: string): HTMLElement[] {
   return out;
 }
 
+// Stats-XML lesen
 export function parseStatsXml(text: string): StatsSpiel {
   const doc = parse(statsXmlAus(text), { lowerCaseTagName: false });
   const root = kinder(doc, "SoccerStatistics")[0];

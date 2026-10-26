@@ -6,6 +6,7 @@ import type Database from "better-sqlite3";
 export type FreundTeam = { tid: number; taktik: string };
 const KEY = "freund_team";
 
+// Befreundetes Team laden
 export function ladeFreundTeam(db: Database.Database): (FreundTeam & { geaendert: string }) | null {
   const r = db.prepare("SELECT wert, geaendert FROM einstellung WHERE schluessel = ?").get(KEY) as
     | { wert: string; geaendert: string }
@@ -13,6 +14,7 @@ export function ladeFreundTeam(db: Database.Database): (FreundTeam & { geaendert
   return r ? { ...(JSON.parse(r.wert) as FreundTeam), geaendert: r.geaendert } : null;
 }
 
+// Befreundetes Team speichern
 export function speichereFreundTeam(db: Database.Database, t: FreundTeam, zeit = new Date().toISOString()) {
   db.prepare(
     "INSERT INTO einstellung (schluessel, wert, geaendert) VALUES (?, ?, ?) ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert, geaendert = excluded.geaendert",

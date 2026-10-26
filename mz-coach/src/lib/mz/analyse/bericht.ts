@@ -1,8 +1,9 @@
 import type { StatsSpiel, StatsTeam } from "@/lib/mz/parser/stats";
 import { de, formation } from "./gegner";
-
-export const ZEITFENSTER: [number, number][] = [[0, 50], [51, 70], [71, 999]];
 import { musterRolle, type Rolle } from "./rolle";
+
+// Zeitfenster für Auswertungen je Spielabschnitt (Minuten, einschließlich)
+export const ZEITFENSTER: [number, number][] = [[0, 50], [51, 70], [71, 999]];
 
 // Ausführlicher Spielbericht aus der Stats-XML eines Spiels, aus Sicht eines Teams. Alle Werte stammen
 // aus der XML; abgeleitet wird nur, was sich daraus rechnen lässt (2. Halbzeit = Endwert minus 1. Halbzeit,
@@ -159,6 +160,7 @@ function spielerWerte(s: StatsSpiel, teamId: number): SpielerWert[] {
     .sort((a, b) => Number(b.start) - Number(a.start) || Number(b.torwart) - Number(a.torwart) || (a.rein ?? 0) - (b.rein ?? 0));
 }
 
+// Spielbericht aus der Stats-XML aus Sicht eines Teams
 export function spielBericht(s: StatsSpiel, tid: number): SpielBericht {
   const eigen = s.teams.find((t) => t.id === tid);
   const gegner = s.teams.find((t) => t.id !== tid);

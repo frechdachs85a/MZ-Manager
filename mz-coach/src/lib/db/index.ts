@@ -7,6 +7,7 @@ import { migrieren } from "./schema";
 // Eine SQLite-Datei. Pfad über DATABASE_PATH, Standard ./data/mz-coach.db
 let db: Database.Database | null = null;
 
+// Datenbank öffnen (einmal je Prozess) und migrieren
 export function getDb(): Database.Database {
   if (db) return db;
   const pfad = process.env.DATABASE_PATH ?? "./data/mz-coach.db";

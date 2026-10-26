@@ -1,8 +1,11 @@
 "use client";
 
+// Knopf „Kader des Gegners laden“ auf der Gegnerseite.
+
 import { useActionState } from "react";
 import { gegnerKaderHolen, type HolState } from "./actions";
 
+// Knopf: Kader des Gegners laden
 export function KaderKnopf({ tid }: { tid: number }) {
   const [state, action, pending] = useActionState<HolState>(() => gegnerKaderHolen(tid), {});
   return (

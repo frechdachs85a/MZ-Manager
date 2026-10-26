@@ -10,6 +10,7 @@ import { ALLE_SKILLS, SKILL_LABEL, type Skills } from "@/lib/mz/skills";
 const komma = (n: number) => n.toFixed(2).replace(".", ",");
 const sterne = (n?: number) => (n === undefined ? "–" : "★".repeat(n) || "0");
 
+// Profil eines Spielers: MZ-Werte je Rolle, Scout-Sterne, Skills mit Balken
 export function SpielerProfil({ skills, scout }: { skills: Skills; scout?: { hoch?: number; niedrig?: number; training?: number } }) {
   const werte = alleMzWerte(skills);
   const bekannt = POSITIONEN.filter((p) => werte[p].ok).map((p) => ({ p, w: (werte[p] as { wert: number }).wert }));

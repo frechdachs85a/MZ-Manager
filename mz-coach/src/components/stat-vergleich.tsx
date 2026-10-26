@@ -6,6 +6,7 @@ const zahl = (v?: string) => {
   return Number.isFinite(n) ? n : undefined;
 };
 
+// Kennzahl beider Teams nebeneinander
 export function StatVergleich({
   zeilen,
   links,

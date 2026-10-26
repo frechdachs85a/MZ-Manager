@@ -1,3 +1,5 @@
+// Regelmuster eines Teams als kurze Sätze.
+
 import type { RegelSatz } from "@/lib/mz/analyse/muster";
 
 const MARKE: Record<RegelSatz["art"], string> = { wechsel: "Wechsel", taktik: "Taktik", keine: "Keine Regel", info: "Hinweis" };

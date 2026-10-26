@@ -1,3 +1,5 @@
+// Datenbank: Läufe der Spieltag-Automatik (Spielplan, nächster Gegner, Anstoß).
+
 import type Database from "better-sqlite3";
 import type { ListenSpiel } from "@/lib/mz/parser/spielliste";
 
@@ -46,6 +48,7 @@ const aus = (z: Zeile): SpieltagLauf => ({
   meldung: z.meldung,
 });
 
+// Lauf der Spieltag-Automatik beginnen
 export function laufBeginnen(db: Database.Database, zeit = new Date().toISOString()): number {
   return Number(db.prepare("INSERT INTO spieltag_lauf (gestartet) VALUES (?)").run(zeit).lastInsertRowid);
 }
@@ -60,6 +63,7 @@ export type LaufDaten = {
   plan?: ListenSpiel[];
 };
 
+// Lauf abschließen mit Ergebnis und Daten
 export function laufBeenden(db: Database.Database, id: number, ok: boolean, meldung: string, d: LaufDaten, zeit = new Date().toISOString()) {
   db.prepare(
     `UPDATE spieltag_lauf SET beendet = ?, ok = ?, meldung = ?, letztes_mid = ?, naechstes_mid = ?, gegner_tid = ?, gegner_name = ?,
@@ -79,6 +83,7 @@ export function laufBeenden(db: Database.Database, id: number, ok: boolean, meld
   );
 }
 
+// Neuester Lauf (wahlweise nur erfolgreiche)
 export function letzterLauf(db: Database.Database, nurOk = false): SpieltagLauf | null {
   const z = db.prepare(`SELECT * FROM spieltag_lauf ${nurOk ? "WHERE ok = 1" : ""} ORDER BY id DESC LIMIT 1`).get() as Zeile | undefined;
   return z ? aus(z) : null;

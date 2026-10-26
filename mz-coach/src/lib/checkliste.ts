@@ -11,6 +11,7 @@ export type Punkt = { titel: string; status: "ok" | "warnung" | "offen"; text: s
 const STUNDEN = 24;
 const alt = (iso: string, jetzt: Date) => jetzt.getTime() - new Date(iso).getTime() > STUNDEN * 3600_000;
 
+// Checkliste vor dem nächsten Ligaspiel
 export function spieltagCheckliste(db: Database.Database, jetzt = new Date()): Punkt[] {
   const kader = ladeKader(db);
   const punkte: Punkt[] = [];

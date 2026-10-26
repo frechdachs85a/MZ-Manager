@@ -22,6 +22,7 @@ export const KOMBIS: Kombi[] = [
 // Wörter, die in keiner bekannten Kombination stehen und auf eine andere Einstufung hindeuten
 export const WARNWOERTER = ["Weltklasse"];
 
+// Bestätigte Scout-Kombinationen
 export function ladeKombis(db: Database.Database): Kombi[] {
   const rows = db.prepare("SELECT rang, hoch, niedrig, schluessel, abzeichen, bestaetigt FROM scout_kombi").all() as {
     rang: number; hoch: number; niedrig: number; schluessel: string; abzeichen: string; bestaetigt: string;
@@ -29,6 +30,7 @@ export function ladeKombis(db: Database.Database): Kombi[] {
   return [...KOMBIS, ...rows.map((r) => ({ ...r, schluessel: [r.schluessel] }))];
 }
 
+// Scout-Kombination bestätigen
 export function bestaetigeKombi(db: Database.Database, k: { rang: number; hoch: number; niedrig: number; schluessel: string; abzeichen: string }) {
   db.prepare("INSERT OR REPLACE INTO scout_kombi (hoch, niedrig, schluessel, rang, abzeichen, bestaetigt) VALUES (?, ?, ?, ?, ?, ?)").run(
     k.hoch, k.niedrig, k.schluessel.trim(), k.rang, k.abzeichen.trim(), new Date().toISOString(),
@@ -56,6 +58,7 @@ function treffer(text: string, kombis: Kombi[]) {
   return alle.filter((a) => !weg.has(klein(a.s)) && !alle.some((b) => b.s.length > a.s.length && klein(b.s).includes(klein(a.s))));
 }
 
+// Spieler nach Scoutbericht einstufen
 export function scoutEinstufung(sp: SpielerDaten, kombis: Kombi[] = KOMBIS): ScoutEinstufung {
   const st = sp.scoutSterne;
   if (st?.hoch === undefined || st?.niedrig === undefined) {
@@ -89,6 +92,7 @@ export function scoutEinstufung(sp: SpielerDaten, kombis: Kombi[] = KOMBIS): Sco
 // Prognose je Skill nach den Sternen (Vorgabe Marcus): Stärken = Markierung 1 (Hoch), Schwächen = 2 (Niedrig)
 export type SkillPrognose = { skill: Skill; label: string; wert?: number; gemaxt: boolean; art: "Stärke" | "Schwäche" | "offen"; prognose: string };
 
+// Trainierbare Skills und Hinweise laut Scoutbericht
 export function skillPrognose(sp: SpielerDaten): { skills: SkillPrognose[]; hinweise: string[] } {
   const st = sp.scoutSterne;
   const m = sp.scoutMarkierung ?? {};

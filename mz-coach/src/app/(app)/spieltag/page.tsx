@@ -1,3 +1,5 @@
+// Spieltag (Reiter „Nächster Gegner“): Matchplan mit Taktikvorschlag und Formation Liga, Gegneranalyse, Kaderwert über die Spielzeit.
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { Matchplan } from "@/components/matchplan";
@@ -21,6 +23,7 @@ const th = "px-3 py-2 font-semibold first:pl-4 last:pr-4";
 const td = "px-3 py-1.5 tabular-nums first:pl-4 last:pr-4";
 const FARBE = { S: "text-green", U: "text-label-2", N: "text-red" } as const;
 
+// Seite Spieltag (nächster Gegner)
 export default async function Spieltag() {
   await connection();
   const l = spieltagLage(getDb());

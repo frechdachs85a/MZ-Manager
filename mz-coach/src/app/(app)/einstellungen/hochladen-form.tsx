@@ -1,8 +1,11 @@
 "use client";
 
+// Formular zum Hochladen gespeicherter ManagerZone-Seiten oder Stats-XML (Einlesen ohne Login).
+
 import { useActionState } from "react";
 import { kaderHochladen, type AbrufState } from "./actions";
 
+// Formular: Seite oder XML hochladen
 export function HochladenForm() {
   const [state, action, pending] = useActionState<AbrufState, FormData>(kaderHochladen, {});
   return (
