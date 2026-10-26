@@ -3,6 +3,7 @@
 // Formulare des Bietomats: Spieler laden und Auftrag anlegen, Gebotskarte (bearbeitbar), Knopf „In den Bietomat“.
 
 import { useActionState, useState } from "react";
+import { MarktInfo } from "@/components/markt-info";
 import { SpielerProfil } from "@/components/spieler-profil";
 import { auftragAendern, auftragSpeichern, empfehlungInBietomat, spielerLadenAktion, type AuftragState, type LadeState } from "./actions";
 
@@ -61,7 +62,10 @@ export function Bietomat({ saldo }: { saldo?: number }) {
                 <span>
                   <span className="text-[14.5px] font-semibold">{x.name}</span>
                   <span className="block text-[12px] text-label-2">
-                    {x.pid} · {x.alter ?? "?"} Jahre · Wert {zahl(x.wert)} · Ende {x.markt.ende ?? "?"}
+                    {x.pid}
+                  </span>
+                  <span className="mt-1 block">
+                    <MarktInfo s={x} />
                   </span>
                   <span className="mt-1 block">
                     <SpielerProfil skills={x.skills} scout={x.scout} />
@@ -82,26 +86,9 @@ export function Bietomat({ saldo }: { saldo?: number }) {
           <div className="karte overflow-hidden rounded-[10px] bg-card">
             <div className="border-b border-separator px-4 py-3">
               <div className="text-[16px] font-bold">{s.name}</div>
-              <div className="mt-0.5 text-[12.5px] text-label-2">
-                {s.pid} · {s.alter ?? "?"} Jahre
-                {s.nationalitaet ? ` · ${s.nationalitaet}` : ""} · Wert {zahl(s.wert)}
-              </div>
-              <div className="mt-1 grid grid-cols-3 gap-2 text-[12.5px]">
-                <span>
-                  Gefordert
-                  <br />
-                  <b>{zahl(s.markt.gefordert)}</b>
-                </span>
-                <span>
-                  Höchstgebot
-                  <br />
-                  <b>{zahl(s.markt.hoechstgebot)}</b>
-                </span>
-                <span>
-                  Ende
-                  <br />
-                  <b>{s.markt.ende ?? "–"}</b>
-                </span>
+              <div className="mt-0.5 text-[12.5px] text-label-2">{s.pid}</div>
+              <div className="mt-2">
+                <MarktInfo s={s} stand="Stand: gerade geladen" />
               </div>
               <div className="mt-3">
                 <SpielerProfil skills={s.skills} scout={s.scout} />
@@ -146,8 +133,6 @@ export function GebotKarte(p: {
   maximum: number;
   bietenBis?: string;
   auktionEnde?: string;
-  startgebot?: number;
-  letztesGebot?: number;
   eigenesGebot?: number;
 }) {
   const [state, action, pending] = useActionState<AuftragState, FormData>(auftragAendern, {});
@@ -162,9 +147,7 @@ export function GebotKarte(p: {
           <div className="text-[22px] font-bold tabular-nums leading-tight">{zahl(p.maximum)}</div>
         </div>
         <div className="text-[12.5px] tabular-nums text-label-2">
-          <div>Startgebot {zahl(p.startgebot)}</div>
-          <div>Letztes Gebot beim Laden {zahl(p.letztesGebot)}</div>
-          {p.eigenesGebot !== undefined && <div className="font-semibold text-label">Dein letztes Gebot {zahl(p.eigenesGebot)}</div>}
+          <div className="font-semibold text-label">Dein letztes Gebot {p.eigenesGebot !== undefined ? zahl(p.eigenesGebot) : "noch keins"}</div>
         </div>
         <div className="text-[12.5px] text-label-2">
           <div>Ende {zeit(p.auktionEnde)}</div>

@@ -78,6 +78,11 @@ export async function gebotsformularLesen(db: Database.Database): Promise<{ ok: 
         if (!k) throw new Error("Marktsuche ohne Spieler.");
         const f = await s.holeText(`/ajax.php?p=transfer&sub=bid-form&pid=${k.pid}&sport=soccer`);
         speichereRohseite(db, { art: "gebotsformular", url: f.url, status: f.status, htmlRoh: f.text, htmlDom: null });
+        // Spielerseite (Verkaufshistorie, Marcus 26.10.2026) des ältesten Spielers der Liste: der wurde am ehesten schon
+        // verkauft. Nur lesen, Aufbau erst prüfen, dann auswerten.
+        const alt = [...liste].sort((x, y) => (y.alter ?? 0) - (x.alter ?? 0))[0] ?? k;
+        const sp = await s.holeSeite(`/?p=players&pid=${alt.pid}`);
+        speichereRohseite(db, { art: "spieler-fremd", url: sp.url, status: sp.status, htmlRoh: sp.htmlRoh, htmlDom: sp.htmlDom });
         return `Gebotsformular von Spieler ${k.pid} gelesen (Ende ${k.markt.ende ?? "unbekannt"}, Höchstgebot ${k.markt.hoechstgebot ?? "?"} EUR, nicht geboten).`;
       },
       { manuell: true },

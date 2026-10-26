@@ -10,7 +10,7 @@ import { ladeKombis, scoutEinstufung } from "@/lib/scout";
 // (Login-Ergebnis mit Bildschirmfoto und Antwortverlauf, Scoutbericht, transfer.js, challenges.js, Marktsuche), und
 // je Spieler Scout-Sterne, wörtlicher Text und Einstufung. Enthält KEINE Zugangsdaten, Cookies oder Schlüssel
 // (Tabelle einstellung und geheimnisse.json werden nicht gelesen).
-export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "unbekannt", "spielplan", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche", "kader-fremd", "weltliga", "gebotsformular", "gebot-suche", "weltliga-tabelle", "skript-taktik", "liga-xml", "skript-mz", "gebot-antwort"];
+export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "unbekannt", "spielplan", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche", "kader-fremd", "weltliga", "gebotsformular", "gebot-suche", "weltliga-tabelle", "skript-taktik", "liga-xml", "skript-mz", "gebot-antwort", "spieler-fremd"];
 
 // Diagnose für den Fernzugriff (ohne Zugangsdaten)
 export function diagnose(db: Database.Database) {
@@ -20,7 +20,8 @@ export function diagnose(db: Database.Database) {
   const rohseiten = ARTEN.flatMap((art): { art: string; id?: number }[] => (art === "unbekannt" && unbekannte.length > 1 ? unbekannte.map((u) => ({ art, id: u.id })) : [{ art, id: undefined }])).map(({ art, id }) => {
     const r = (id !== undefined
       ? db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE id = ?").get(id)
-      : db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE art = ? ORDER BY id DESC LIMIT 1").get(art)) as
+      : // Fremde Spielerseite: das DOM nach den Skripten (Verkaufshistorie wird eventuell nachgeladen)
+        db.prepare(`SELECT art, url, abgerufen, status, ${art === "spieler-fremd" ? "coalesce(html_dom, html_roh)" : "html_roh"} AS inhalt FROM rohseite WHERE art = ? ORDER BY id DESC LIMIT 1`).get(art)) as
       | { art: string; url: string; abgerufen: string; status: number | null; inhalt: string | null }
       | undefined;
     if (!r) return { art, fehlt: "noch nicht gespeichert" };
