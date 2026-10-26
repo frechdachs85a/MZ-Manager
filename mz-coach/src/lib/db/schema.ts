@@ -214,6 +214,33 @@ const MIGRATIONEN: string[] = [
     meldung TEXT
   );
   `,
+  `
+  -- Wertbereich-Statistik (Marcus, 26.10.2026): je Spiel Startelf- und gewichteter Feld-Wert beider Teams,
+  -- Verhältnis und Ergebnis aus Sicht von Team A, Einstellungen. Quoten je Wertbereich = Abfrage darauf.
+  CREATE TABLE wert_spiel (
+    mid INTEGER PRIMARY KEY,
+    datum TEXT,
+    wettbewerb TEXT NOT NULL,
+    tid_a INTEGER NOT NULL,
+    tid_b INTEGER NOT NULL,
+    name_a TEXT,
+    name_b TEXT,
+    elf_a INTEGER,
+    elf_b INTEGER,
+    feld_a INTEGER,
+    feld_b INTEGER,
+    verhaeltnis_elf REAL,
+    verhaeltnis_feld REAL,
+    tore_a INTEGER,
+    tore_b INTEGER,
+    ergebnis_a TEXT,
+    einstellung_a TEXT,
+    einstellung_b TEXT,
+    fehlende_werte INTEGER NOT NULL DEFAULT 0,
+    gespeichert TEXT NOT NULL
+  );
+  CREATE INDEX wert_spiel_v ON wert_spiel(verhaeltnis_elf);
+  `,
 ];
 
 export function migrieren(db: Database.Database) {

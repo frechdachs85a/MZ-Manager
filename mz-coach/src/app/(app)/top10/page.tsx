@@ -10,6 +10,8 @@ import { RegelSaetze } from "@/components/regel-saetze";
 import { topAuswertung } from "@/lib/top-auswertung";
 import { ladeTopArchiv } from "@/lib/archiv";
 import { TopAbrufKnopf } from "./abruf-knopf";
+import { WertQuoten } from "@/components/wert-quoten";
+import { anzahlWertSpiele, quotenJeBereich } from "@/lib/db/wertspiel";
 
 const bil = (b: Bilanz) => `${b.S} S · ${b.U} U · ${b.N} N`;
 const stilDe = (s: string) => s.replace(/(\w+)\/(\w+)\/(\w+)/, (_, t, p, a) => `${de(t)}/${de(p)}/${de(a)}`);
@@ -101,10 +103,23 @@ export default async function Top10() {
   const abruf = letzterAbruf(db, "top10");
   const listen = letzterAbruf(db, "top10-listen");
   const archiv = ladeTopArchiv(db);
+  const wertscan = letzterAbruf(db, "wertscan");
+  const wertSpiele = anzahlWertSpiele(db);
   return (
     <>
       <PageHeader title="Top 10" subtitle={`Lernmaterial aus der Managerwertung · ${spiele} Spiele ausgewertet`} />
       <div className="seite">
+        <Section
+          title="Siegchance nach Kaderwert"
+          footer={`Verhältnis = Kaderwert des Teams ÷ Kaderwert des Gegners (Startelf bzw. nach Minuten gewichteter Feld-Wert mit Wechseln). Liga- und Weltligaspiele der Top 10 und der Weltliga-Teams. ${wertscan ? `Letzter Scan ${datumZeit(wertscan.gestartet)}: ${wertscan.meldung ?? "läuft"}` : "Noch kein Scan: läuft wöchentlich automatisch."}`}
+        >
+          {wertSpiele ? (
+            <WertQuoten elf={quotenJeBereich(db, "elf")} feld={quotenJeBereich(db, "feld")} spiele={wertSpiele} />
+          ) : (
+            <Unavailable title="Wertbereiche" reason="Noch keine Spiele gescannt." />
+          )}
+        </Section>
+
         <Section
           title="Abruf"
           footer={`${abruf ? `Letzter Abruf ${datumZeit(abruf.gestartet)}: ${abruf.meldung ?? "läuft"} ` : ""}${listen ? `Spiellisten zuletzt ${datumZeit(listen.gestartet)}. ` : ""}Spiellisten der Top 10 einmal pro Woche (montags ab 4 Uhr), fehlende Spiele werden täglich nachgeholt: je Team die letzten 10 Liga- und 10 Weltligaspiele, jedes Spiel nur einmal gespeichert. Die Auswertung wird wöchentlich archiviert. Teams: ${teams[0]?.quelle ?? ""}.`}
