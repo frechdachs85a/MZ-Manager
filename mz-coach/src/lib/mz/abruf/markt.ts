@@ -81,16 +81,19 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
           return parseTransferSuche(a.text);
         };
         // Gezielt (Marcus, 26.10.2026): je schwächster Rolle der Startelf mit den Filtern von ManagerZone suchen,
-        // Hauptskill der Rolle von 10 abwärts, bis genug Kandidaten da sind; sonst wie bisher den Markt durchgehen
+        // Hauptskill der Rolle Stufe für Stufe von 10 abwärts, bis genug Kandidaten da sind; sonst wie bisher den Markt durchgehen
         const start = startelfAusLetztemSpiel(db);
         const ziele = start ? suchZiele(schwachstellen(start.elf, ladeKader(db)).liste) : [];
         if (ziele.length) {
+          // Seiten gleichmäßig auf die Rollen verteilen
+          const jeZielSeiten = Math.floor(MAX_SEITEN / ziele.length);
           for (const z of ziele) {
             const vorher = spieler.size;
+            const grenze = seiten + jeZielSeiten;
             for (const stufe of z.stufen) {
-              if (seiten >= MAX_SEITEN || spieler.size - vorher >= JE_ZIEL) break;
+              if (seiten >= grenze || spieler.size - vorher >= JE_ZIEL) break;
               const p = mitFiltern(params, z.filter(stufe));
-              for (let o = 0; seiten < MAX_SEITEN && o < SEITEN_JE_STUFE * JE_SEITE; o += JE_SEITE) {
+              for (let o = 0; seiten < grenze && spieler.size - vorher < JE_ZIEL && o < SEITEN_JE_STUFE * JE_SEITE; o += JE_SEITE) {
                 const suche = await lies(p, o);
                 for (const x of suche.spieler) spieler.set(x.pid, x);
                 if (o === 0) treffer += suche.treffer;
