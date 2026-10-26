@@ -61,7 +61,7 @@ export function Bietomat({ saldo }: { saldo?: number }) {
                     {x.pid} · {x.alter ?? "?"} Jahre · Wert {zahl(x.wert)} · Ende {x.markt.ende ?? "?"}
                   </span>
                   <span className="mt-1 block">
-                    <SpielerProfil skills={x.skills} />
+                    <SpielerProfil skills={x.skills} scout={x.scout} />
                   </span>
                 </span>
                 <span className="text-[13px] font-semibold text-tint">Wählen</span>
@@ -101,7 +101,7 @@ export function Bietomat({ saldo }: { saldo?: number }) {
                 </span>
               </div>
               <div className="mt-3">
-                <SpielerProfil skills={s.skills} />
+                <SpielerProfil skills={s.skills} scout={s.scout} />
               </div>
             </div>
             <Feld label="Maximalgebot (EUR)">
