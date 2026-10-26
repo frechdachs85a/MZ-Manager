@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Badge, Card, Hero, List, Row, Section, Unavailable } from "@/components/ui";
@@ -93,6 +94,12 @@ export default async function Markt() {
               </List>
             </Section>
           )}
+
+          <Section title="Bietomat">
+            <Link href="/markt/bietomat" className="pressable flex min-h-[46px] w-full items-center justify-center knopf text-[16px] font-bold">
+              Spieler per Nummer laden und Gebot planen
+            </Link>
+          </Section>
 
           <Section title="Suche" footer={abruf ? `Letzter Abruf ${datumZeit(abruf.gestartet)}: ${abruf.meldung ?? "läuft"}` : "Läuft täglich ab 6 Uhr (Berlin), wenn der ManagerZone-Zugang eingerichtet ist."}>
             <SuchKnopf />

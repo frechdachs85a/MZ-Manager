@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { skalaAus, Spielfeld } from "@/components/spielfeld";
+import { Spielfeld } from "@/components/spielfeld";
 import { Card, List, Row, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
@@ -29,7 +29,6 @@ export default async function TaktikDetail(props: PageProps<"/taktik/[reiter]">)
   const spiele = spieleJeTaktik(db, archiv).get(reiter) ?? [];
   const t = a.taktik;
 
-  const skala = t ? skalaAus(t.pos.filter((p) => p.pos === "normal").map((p) => kader.get(p.pid)?.marktwert)) : undefined;
   return (
     <>
       <PageHeader
@@ -38,7 +37,7 @@ export default async function TaktikDetail(props: PageProps<"/taktik/[reiter]">)
       />
       <div className="seite">
         {t && (
-          <Section title="Aufstellungen" footer="Rot = laut Taktikseite nicht aufstellbar (Kegel) oder verletzt. Heatmap = Marktwert (blass niedrig, kräftig hoch), Skala aus deinen Feldspielern dieser Taktik.">
+          <Section title="Aufstellungen" footer="Rot = laut Taktikseite nicht aufstellbar (Kegel) oder verletzt. Heatmap = Marktwert, feste Grenzen für alle Teams (Legende unter dem Feld).">
             <div className="grid gap-5 lg:grid-cols-3">
               {([0, 1, 2] as const).map((k) => {
                 const st = aufstellung(t, k).filter((s) => s.p);
@@ -53,7 +52,6 @@ export default async function TaktikDetail(props: PageProps<"/taktik/[reiter]">)
                         return { x: s.p!.x, y: s.p!.y, label: kurz(s.pid), wert: sp?.marktwert, torwart: s.pos === "goalie", ton: rot ? "rot" : "normal" };
                       })}
                       heatmap
-                      skala={skala}
                     />
                   </Card>
                 );

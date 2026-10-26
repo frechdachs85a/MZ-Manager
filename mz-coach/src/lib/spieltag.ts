@@ -16,7 +16,6 @@ import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { wertbereich, wertverlauf, type Wertverlauf } from "@/lib/mz/analyse/wertverlauf";
 import { seitenVergleich } from "@/lib/mz/analyse/seiten";
 import { duelle } from "@/lib/mz/analyse/duelle";
-import { skalaAus } from "@/components/spielfeld";
 import { quotenJeBereich } from "@/lib/db/wertspiel";
 import { topGegenKlasse } from "@/lib/portfolio";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
@@ -421,13 +420,11 @@ export function spieltagLage(db: Database.Database) {
     : letzteElf
       ? { quelle: `Startelf und Plätze aus deinem letzten Ligaspiel (Reiter ${vorschlag?.taktik ?? ""} nicht im Archiv)`, feld: letzteElf.elf.map((p) => ({ x: p.x, y: p.y, label: nameEigen.get(p.pid) ?? "?", wert: mwEigen.get(p.pid), torwart: p.torwart })) }
       : null;
-  const skala = skalaAus([...(eigeneAufstellung?.feld ?? []), ...(erwartet?.feld ?? [])].filter((p) => !p.torwart).map((p) => p.wert));
   const duellListe = eigeneAufstellung && erwartet ? { ...duelle(eigeneAufstellung.feld.map((p) => ({ ...p, name: p.label })), erwartet.feld.map((p) => ({ ...p, name: p.label }))), quelle: eigeneAufstellung.quelle } : null;
   if (duellListe?.kurz.length) kurzfassung.splice(3, 0, { titel: "Duelle", punkte: duellListe.kurz });
 
   return {
     eigeneAufstellung,
-    skala,
     duelle: duellListe,
     erwartet,
     verlauf,
