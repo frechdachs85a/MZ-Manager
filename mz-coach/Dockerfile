@@ -11,6 +11,9 @@ RUN npm run build && npm prune --omit=dev
 
 FROM mcr.microsoft.com/playwright:v1.63.0-noble
 WORKDIR /app
+# Stand des Codes (Commit), erscheint in der Diagnose
+ARG GIT_COMMIT=unbekannt
+ENV GIT_COMMIT=$GIT_COMMIT
 ENV NODE_ENV=production \
     PORT=3000 \
     DATABASE_PATH=/data/mz-coach.db
