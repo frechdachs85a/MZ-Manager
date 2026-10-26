@@ -41,7 +41,8 @@ const reiterSuchen = (page: Page, name: string) =>
 
 type Ist = { slot: string; feld: number[]; torwart: number; bank: number[]; tactics?: string; playstyle?: string; aggression?: string } | { fehler: string };
 
-// Gespeicherte (tacticsData) oder lokale (tacticsDataLocal) Belegung eines Reiters
+// Belegung eines Reiters im Editor (tacticsDataLocal; direkt nach dem Laden = gespeicherter Stand. tacticsData enthält
+// die Reiter nicht unter demselben Index, gesehen 26.10.2026)
 const belegung = (page: Page, slot: string, quelle: "tacticsData" | "tacticsDataLocal") =>
   page.evaluate(
     ([s, q]) => {
@@ -120,7 +121,7 @@ export async function ligaHinterlegen(db: Database.Database, opt = { manuell: fa
         if (!/^\[?\s*"?true"?\s*\]?$/.test(x.antwort.trim())) throw new MzFehler(`ManagerZone hat das Speichern nicht bestätigt: ${x.antwort}`);
 
         // 2. Neu laden und vergleichen
-        const neu = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => belegung(page, x.slot, "tacticsData") });
+        const neu = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => belegung(page, x.slot, "tacticsDataLocal") });
         const ab = abweichung(soll, neu.extra as Ist);
         if (ab) throw new MzFehler(`Gespeichert, aber beim Neuladen anders: ${ab}.`);
         return `Formation Liga gegen ${gegner} gespeichert (${liga.reiter}, Reiter ${x.slot.toUpperCase()}) und nach Neuladen geprüft.`;
