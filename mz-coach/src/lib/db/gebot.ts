@@ -40,6 +40,12 @@ export function ladeAuftraege(db: Database.Database): GebotAuftrag[] {
   return (db.prepare("SELECT * FROM gebot_auftrag ORDER BY status = 'aktiv' DESC, auktion_ende").all() as Zeile[]).map(aus);
 }
 
+// Endpreis und "bieten bis" ändern (Marcus, 26.10.2026: Gebot bearbeitbar). Ein wegen Endpreis beendeter Auftrag wird
+// wieder aktiv, solange die Auktion nicht vorbei ist; ob sie vorbei ist, prüft der Bietomat selbst.
+export function aendereAuftrag(db: Database.Database, pid: number, maximum: number, bietenBis: string | null, zeit = new Date().toISOString()) {
+  db.prepare("UPDATE gebot_auftrag SET maximum = ?, bieten_bis = ?, status = 'aktiv', geaendert = ? WHERE pid = ?").run(maximum, bietenBis, zeit, pid);
+}
+
 export function setzeStatus(db: Database.Database, pid: number, status: GebotStatus, zeit = new Date().toISOString()) {
   db.prepare("UPDATE gebot_auftrag SET status = ?, geaendert = ? WHERE pid = ?").run(status, zeit, pid);
 }

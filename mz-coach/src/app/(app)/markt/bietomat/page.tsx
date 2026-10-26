@@ -4,9 +4,9 @@ import { Badge, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
 import { ladeMarktRahmen } from "@/lib/db/markt";
-import { datumZeit, euro } from "@/lib/format";
+import { datumZeit } from "@/lib/format";
 import { auftragLoeschen } from "./actions";
-import { Bietomat } from "./formulare";
+import { Bietomat, GebotKarte } from "./formulare";
 import { SpielerProfil } from "@/components/spieler-profil";
 
 const STATUS_TON = {
@@ -52,11 +52,9 @@ export default async function BietomatSeite() {
                     <div className="flex items-start gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="text-[14.5px] font-medium leading-snug">{`${a.name ?? "?"} (${a.pid})`}</div>
-                        <div className="mt-0.5 text-[12.5px] text-label-2">
-                          {a.auktionEnde
-                            ? `Endpreis ${euro(a.maximum)} · Auktionsende ${datumZeit(a.auktionEnde)}${a.bietenBis ? ` · bieten bis ${datumZeit(a.bietenBis)}` : ""}`
-                            : `Endpreis ${euro(a.maximum)} · Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten`}
-                        </div>
+                        {!a.auktionEnde && (
+                          <div className="mt-0.5 text-[12.5px] text-red">Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten.</div>
+                        )}
                       </div>
                       <Badge tone={STATUS_TON[a.status]}>{a.status}</Badge>
                       <form action={auftragLoeschen}>
@@ -66,8 +64,17 @@ export default async function BietomatSeite() {
                         </button>
                       </form>
                     </div>
+                    <GebotKarte
+                      pid={a.pid}
+                      maximum={a.maximum}
+                      bietenBis={a.bietenBis}
+                      auktionEnde={a.auktionEnde}
+                      startgebot={a.spieler?.markt.gefordert}
+                      letztesGebot={a.spieler?.markt.hoechstgebot}
+                      eigenesGebot={ladeProtokoll(db, a.pid, 50).find((l) => l.text.startsWith("Geboten:"))?.betrag ?? undefined}
+                    />
                     {a.spieler && (
-                      <div className="mt-2">
+                      <div className="mt-3">
                         <SpielerProfil skills={a.spieler.skills} scout={a.spieler.scout} />
                       </div>
                     )}

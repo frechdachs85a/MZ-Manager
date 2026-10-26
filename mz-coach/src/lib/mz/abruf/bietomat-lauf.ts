@@ -79,6 +79,12 @@ export async function auftragAbarbeiten(db: Database.Database, a: GebotAuftrag):
         let letzterBieter: number | undefined;
         let gebote = 0;
         while (Date.now() - start < MAX_LAUF_MS) {
+          // Auftrag jedes Mal frisch lesen: Endpreis und "bieten bis" lassen sich während der Auktion ändern
+          const akt = ladeAuftraege(db).find((x) => x.pid === a.pid);
+          if (!akt || akt.status !== "aktiv") {
+            protokolliere(db, a.pid, "Auftrag gelöscht oder beendet: Bietomat hört auf.");
+            return "Auftrag gelöscht oder beendet.";
+          }
           const z = await zustandLesen(s, params, a.pid);
           if (z.endeMs && z.endeMs !== letztesEndeMs) {
             if (letztesEndeMs && z.endeMs > letztesEndeMs) protokolliere(db, a.pid, `Auktion verlängert bis ${z.rohEnde}.`);
@@ -86,7 +92,7 @@ export async function auftragAbarbeiten(db: Database.Database, a: GebotAuftrag):
             db.prepare("UPDATE gebot_auftrag SET auktion_ende = ? WHERE pid = ?").run(new Date(z.endeMs).toISOString(), a.pid);
           }
           if (z.gefunden) letzterBieter = z.bieterTid;
-          const schritt = naechsterSchritt(z, { eigeneTid: TEAM.tid, bietenBisMs: a.bietenBis ? new Date(a.bietenBis).getTime() : undefined, letztesEndeMs, letzterBieter }, Date.now());
+          const schritt = naechsterSchritt(z, { eigeneTid: TEAM.tid, bietenBisMs: akt.bietenBis ? new Date(akt.bietenBis).getTime() : undefined, letztesEndeMs, letzterBieter }, Date.now());
           if (schritt.art === "fertig") {
             setzeStatus(db, a.pid, schritt.status);
             protokolliere(db, a.pid, `${schritt.text} ${gebote} Gebot(e) abgegeben.`);
@@ -96,7 +102,7 @@ export async function auftragAbarbeiten(db: Database.Database, a: GebotAuftrag):
             await schlafen(schritt.ms);
             continue;
           }
-          const seite = await s.holeSeite(MARKT_PFAD, { aufSeite: gebotImBrowser(a.pid, a.maximum) });
+          const seite = await s.holeSeite(MARKT_PFAD, { aufSeite: gebotImBrowser(a.pid, akt.maximum) });
           const g = seite.extra as GebotErgebnis | undefined;
           if (!g) throw new Error("Marktseite nicht eingeloggt geladen.");
           if (!g.geboten) {
