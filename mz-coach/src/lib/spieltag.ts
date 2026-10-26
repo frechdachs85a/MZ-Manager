@@ -29,6 +29,7 @@ import { ladeTaktiken } from "@/lib/db/taktik";
 import { anpassen } from "@/lib/mz/taktik/anpassen";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { gegnerGewichte } from "@/lib/mz/taktik/gegner-gewichte";
+import { ligaAusArchiv } from "@/lib/mz/taktik/liga-anpassen";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 
 // Spieltag (Auftrag Marcus, 26.10.2026): Spielbericht des letzten Ligaspiels und Taktikvorschlag für das nächste,
@@ -452,6 +453,25 @@ export function spieltagLage(db: Database.Database) {
       const st = scout?.taktiken.find((x) => x.reiter === vorschlag.taktik)?.einstellung.split(" / ");
       const rueck: Record<string, string> = { Flügel: "wings", Kurzpass: "shortpass", "lange Bälle": "longball", offensiv: "offensive", normal: "normal", defensiv: "defensive", aggressiv: "aggressive", passiv: "passive" };
       if (st) team = { tactics: rueck[st[0]], playstyle: rueck[st[1]], aggression: rueck[st[2]] };
+    }
+    // Taktik aus deinem Archiv: getestete Elf, Bank und Regeln behalten, nur Abwehr und Seite anpassen
+    if (taktikCode?.xml && erwartet) {
+      try {
+        const a = ligaAusArchiv({ xml: taktikCode.xml, kader: kaderAlle, gegner: erwartet.feld, seinStil: brief?.einstellungen[0]?.[0], angriffUeber: erwartet.seiten.angriff });
+        const t = parseTaktikXml(a.xml);
+        const k = new Map(kaderAlle.map((x) => [x.pid, x]));
+        const kurzName = (pid: number) => k.get(pid)?.name.split(" ").at(-1) ?? "?";
+        return {
+          reiter: vorschlag.taktik,
+          xml: a.xml,
+          feld: t.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: kurzName(p.pid), wert: k.get(p.pid)?.marktwert, torwart: p.pos === "goalie" })) as FeldSpieler[],
+          bank: t.subs.map((x) => kurzName(x.pid)),
+          kurz: [`Grundlage: dein Reiter ${vorschlag.taktik} aus dem Archiv${taktikCode.geaendert.length ? ` mit ${taktikCode.geaendert.join(", ")}` : ""}`, ...a.kurz],
+          hinweise: [] as string[],
+        };
+      } catch {
+        // unlesbar: unten neu erzeugen
+      }
     }
     const g = erwartet
       ? gegnerGewichte({ feld: plaetze, gegner: erwartet.feld, seinStil: brief?.einstellungen[0]?.[0], angriffUeber: erwartet.seiten.angriff })
