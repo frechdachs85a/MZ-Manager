@@ -8,7 +8,8 @@ import { ABWEHR_Y } from "@/lib/mz/analyse/gegner";
 export const FELD = { x0: 8.4, x1: 200, y0: 8, y1: 318, mitte: 163 } as const;
 
 // zusatz: zweite Zeile unter dem Namen. wert: Marktwert für die Heatmap und den Tooltip
-export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; wert?: number; ton?: "normal" | "rot" | "grau"; torwart?: boolean };
+// gegner: Spieler des anderen Teams im Vergleichsfeld (dunkler Punkt, rötliches Namensschild)
+export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; wert?: number; ton?: "normal" | "rot" | "grau"; torwart?: boolean; gegner?: boolean };
 
 // Heatmap (Marcus, 26.10.2026): Ampel-Verlauf mit FESTEN Wertgrenzen, für alle Teams gleich. Damit ist jedes Feld
 // mit jedem vergleichbar: nur Grün = leichter Gegner, viel Dunkelrot = heftiger Gegner. Grenzen: ab 1,5 Mio maximal
@@ -111,7 +112,7 @@ export function Spielfeld({ spieler, titel, heatmap }: { spieler: FeldSpieler[];
           </g>
         )}
         {spieler.map((s, i) => {
-          const farbe = s.ton === "rot" ? "var(--red)" : s.ton === "grau" ? "rgba(255,255,255,.4)" : s.torwart ? "var(--yellow)" : "#fff";
+          const farbe = s.gegner ? "#111827" : s.ton === "rot" ? "var(--red)" : s.ton === "grau" ? "rgba(255,255,255,.4)" : s.torwart ? "var(--yellow)" : "#fff";
           const breite = Math.max(14, Math.max(s.label.length * 4.6, (s.zusatz?.length ?? 0) * 4.2) + 6);
           return (
             <g key={i} transform={`translate(${s.x} ${s.y})`}>
@@ -124,7 +125,7 @@ export function Spielfeld({ spieler, titel, heatmap }: { spieler: FeldSpieler[];
                   <circle r={10.2} fill="none" stroke={heatFarbe(s.wert)} strokeWidth="3" />
                 </>
               )}
-              <rect x={-breite / 2} y={10.5} width={breite} height={s.zusatz ? 18 : 10} rx={5} fill="rgba(0,0,0,.5)" />
+              <rect x={-breite / 2} y={10.5} width={breite} height={s.zusatz ? 18 : 10} rx={5} fill={s.gegner ? "rgba(127,29,29,.85)" : "rgba(0,0,0,.5)"} />
               <text y={17.8} textAnchor="middle" fontSize="7.2" fill="#fff" fontWeight="600">
                 {s.label}
               </text>
