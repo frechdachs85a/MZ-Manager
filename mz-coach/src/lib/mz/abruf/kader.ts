@@ -1,6 +1,7 @@
 import "server-only";
 import type Database from "better-sqlite3";
-import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
+import { abrufBeenden, abrufBeginnen, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
+import { zugangStatus } from "@/lib/mz/zugang";
 import { ladeKader, speichereKader } from "@/lib/db/kader";
 import { scoutKlicker, speichereScoutTexte, type ScoutAntwort } from "./scout";
 import { KaderSeiteUnbekannt, parseKaderSeite } from "@/lib/mz/parser/kader";
@@ -204,4 +205,17 @@ export function dateienEinlesen(db: Database.Database, dateien: { name: string; 
   const meldung = teile.join(" ");
   abrufBeenden(db, log, allesOk, meldung);
   return { ok: allesOk, meldung };
+}
+
+// Täglicher Kaderabruf (Marcus, 30.10.2026: morgens soll alles aktuell sein): einmal am Tag ab KADER_STUNDE Uhr
+// (Berlin), nur mit eingerichtetem Zugang. Wie beim Markt zählt ein fehlgeschlagener Versuch (keine Login-Wiederholung).
+export const KADER_STUNDE = 5;
+const berlinTag = (d: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(d);
+const berlinStunde = (d: Date) => Number(new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" }).format(d));
+// Ist der tägliche Kaderabruf fällig?
+export function kaderFaellig(db: Database.Database, jetzt = new Date()): boolean {
+  if (!zugangStatus(db).eingerichtet) return false;
+  if (berlinStunde(jetzt) < KADER_STUNDE) return false;
+  const letzter = letzterAbruf(db, "kader");
+  return !letzter || berlinTag(new Date(letzter.gestartet)) !== berlinTag(jetzt);
 }

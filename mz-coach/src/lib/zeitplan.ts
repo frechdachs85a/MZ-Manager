@@ -3,6 +3,7 @@ import { abrufBeenden, abrufBeginnen } from "@/lib/db/abruf";
 import { aufraeumen, sichereDatenbank } from "@/lib/archiv";
 import { marktAbrufen, marktFaellig } from "@/lib/mz/abruf/markt";
 import { ligaHinterlegen } from "@/lib/mz/abruf/liga";
+import { kaderAbrufen, kaderFaellig } from "@/lib/mz/abruf/kader";
 import { spieltagAbrufen, spieltagFaellig } from "@/lib/mz/abruf/spieltag";
 import { topAbrufen, topFaellig } from "@/lib/mz/abruf/top";
 import { wertScanAbrufen, wertScanFaellig } from "@/lib/mz/abruf/wertscan";
@@ -11,6 +12,7 @@ import { bietomatSperrt } from "@/lib/db/gebot";
 import { bietomatTakt } from "@/lib/mz/abruf/bietomat-lauf";
 
 // Prüft alle 15 Minuten, was fällig ist. Abrufe laufen nie parallel (mitMzSitzung).
+// 5 Uhr: Kader (Spieler, Jugend, Status, Taktikseite)
 // 4 Uhr: Top 10 (Listen wöchentlich, Nachholen täglich), eigene Spiele, Tabelle
 // 6 Uhr: Transfermarkt
 // 5 Stunden nach jedem Ligaspiel: Spieltag (Spielbericht, nächster Gegner, Taktikvorschlag), sonst täglich der Spielplan
@@ -57,6 +59,11 @@ async function takt() {
     if (sperre) {
       console.log(`[zeitplan] ausgesetzt: ${sperre}`);
       return;
+    }
+    // Kader (Spieler, Jugend, Status, Trainingslager, Taktikseite, Scoutberichte) täglich ab 5 Uhr
+    if (kaderFaellig(db)) {
+      const r = await kaderAbrufen(db);
+      console.log(`[zeitplan] ${r.meldung.slice(0, 300)}`);
     }
     const spieltag = spieltagFaellig(db);
     if (spieltag) {
