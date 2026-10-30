@@ -54,6 +54,9 @@ export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boo
     await mitMzSitzung(
       db,
       async (s) => {
+        // Erst eine Seite laden: nur holeSeite meldet bei abgelaufener Sitzung neu an; die Spielliste (ajax) allein
+        // antwortete dann "You need to be logged in" (beobachtet 27. bis 30.10.2026)
+        await s.holeSeite("/?p=clubhouse");
         const plan = await holeListe(db, s, TEAM.tid, "scheduled", "spielplan");
         daten.plan = plan.spiele;
         const eigene = await holeListe(db, s, TEAM.tid, "played", "spielliste-eigen");
