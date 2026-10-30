@@ -10,13 +10,19 @@ import { getDb } from "@/lib/db";
 import { spielDatum } from "@/lib/format";
 import { spieltagLage } from "@/lib/spieltag";
 import { SpieltagReiter } from "../reiter";
+import { AufstellungVergleich } from "@/components/aufstellung-vergleich";
+import { ladeSpiel } from "@/lib/db/spiele";
+import { alleMarktwerte } from "@/lib/marktwerte";
+import { TEAM } from "@/lib/wissen/startbasis";
 
 const ERG = { S: "Sieg", U: "Unentschieden", N: "Niederlage" } as const;
 
 // Seite letztes Ligaspiel
 export default async function LetztesLigaspiel() {
   await connection();
-  const { bericht: b, lauf, elfWerte } = spieltagLage(getDb());
+  const db = getDb();
+  const { bericht: b, lauf, elfWerte } = spieltagLage(db);
+  const spiel = b ? ladeSpiel(db, b.mid) : null;
   return (
     <>
       <PageHeader title="Spieltag" subtitle="Ausführlicher Bericht deines letzten Ligaspiels" />
@@ -51,6 +57,11 @@ export default async function LetztesLigaspiel() {
                 Aufstellungen und Spielverlauf →
               </Link>
             </Hero>
+            {spiel && (
+              <Section title="Aufstellung im Vergleich">
+                <AufstellungVergleich spiel={spiel} eigeneTid={TEAM.tid} werte={alleMarktwerte(db)} />
+              </Section>
+            )}
             <SpielberichtTeile b={b} />
           </>
         ) : (
