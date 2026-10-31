@@ -317,7 +317,7 @@ Taktik-Portfolio (Hauptaufgabe, 30./31.10.2026)
 - Sinnhaftigkeit prüfen, nicht nur Duplikate: Name und Inhalt müssen zusammenpassen. Spielt ein Reiter etwas anderes, als der Name sagt (Beispiel Marcus: „532de“, aber keine 5-3-2), wird er umbenannt (Vorschlag mit Knopf, nur auf Klick).
 - Namensschema der Seite: Formation + Taktik + Spielweise, höchstens 6 Zeichen, z. B. 532flo = 5-3-2 Flügel offensiv, 343kp = 3-4-3 Kurzpass normal (fl Flügel, kp Kurzpass, lb lange Bälle, o offensiv, d defensiv, nichts = normal).
 - Umbenennen im Editor (tactics.js, gelesen 31.10.2026): Reiter wählen, „Umbenennen“ (#rename_tactics_button), Name ins Feld #tactic_name (maxlength 6), Speichern (POST ajax.php?p=tactics&sub=rename mit tactic_name und key). Ohne Clubmitgliedschaft nur Reiter A.
-- Stand Archiv 31.10.2026: 7 Reiter enthalten dieselbe Elf, dieselbe Bank und dieselben 8 Regeln (außenR gespiegelt), alle eingefügt am 26.10.2026 zwischen 12:26 und 12:31 UTC. Wahrscheinlich beim Einfügen jedes Mal dieselbe XML erwischt: jeden Reiter einzeln exportieren und neu einfügen, bevor Portfolio-Vorschläge übernommen werden.
+- Stand Archiv 31.10.2026: 7 Reiter enthalten dieselbe Elf, dieselbe Bank und dieselben 8 Regeln; außenL, Kupass, 3313of, 532de, U18 und freund sind identisch, außenR hat teils andere Plätze (zum Teil gespiegelt, aber keine vollständige Spiegelung von außenL). Alle eingefügt am 26.10.2026 zwischen 12:26 und 12:31 UTC. Wahrscheinlich beim Einfügen jedes Mal dieselbe XML erwischt: jeden Reiter einzeln exportieren und neu einfügen, bevor Portfolio-Vorschläge übernommen werden.
 
 Arbeitsweise
 - Alles, was besprochen wird, in dieser Datei festhalten und vor neuen Aufgaben hier nachsehen, damit nichts doppelt besprochen werden muss.
