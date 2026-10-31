@@ -49,7 +49,7 @@ export const ARTEN = [
   "taktik-geloescht",
   "tabelle",
   "team-seite",
-  "rangliste-manager",
+  "scoutspiele-liste",
 ];
 
 // Diagnose für den Fernzugriff (ohne Zugangsdaten)
