@@ -19,3 +19,9 @@ export function watchlistAktuell(db: Database.Database): { liste: WatchEintrag[]
   );
   return { liste: ladeWatchlist(db).filter((w) => !imGebot.has(w.pid)), entfernt };
 }
+
+// Anzahl der Vorschläge wie im Reiter Vorschläge: Top 30 ohne Watchlist und ohne aktive Gebote
+export function vorschlagAnzahl(db: Database.Database, alle: { kandidat: { pid: number } }[]): number {
+  const raus = new Set([...ladeWatchlist(db).map((w) => w.pid), ...ladeAuftraege(db).filter((a) => a.status === "aktiv").map((a) => a.pid)]);
+  return alle.filter((b) => !raus.has(b.kandidat.pid)).slice(0, 30).length;
+}

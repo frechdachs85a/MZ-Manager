@@ -4,21 +4,15 @@
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { MarktReiter } from "@/components/markt-reiter";
-import { MarktInfo } from "@/components/markt-info";
 import { Card, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeAuftraege } from "@/lib/db/gebot";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
-import { datumZeit } from "@/lib/format";
-import { mzMarktLink, posDe } from "@/lib/mz/formel";
 import { marktErgebnis, verbesserungFuer } from "@/lib/markt-ergebnis";
-import { SpielerProfil } from "@/components/spieler-profil";
-import { VerbesserungZeile } from "@/components/verbesserung-zeile";
-import { watchlistAktuell } from "@/lib/watchlist";
+import { SpielerKarte } from "@/components/vorschlag-karte";
+import { vorschlagAnzahl, watchlistAktuell } from "@/lib/watchlist";
 import { vonWatchlist } from "../actions";
 import { InBietomat } from "../bietomat/formulare";
-
-const komma = (n: number) => n.toFixed(2).replace(".", ",");
 
 export default async function Watchlist() {
   await connection();
@@ -27,8 +21,7 @@ export default async function Watchlist() {
   const verkaeufe = ladeVerkaeufe(db);
   const aktiv = ladeAuftraege(db).filter((a) => a.status === "aktiv");
   const imBietomat = new Map(aktiv.map((a) => [a.pid, a.maximum]));
-  const aufWatch = new Set(watch.map((w) => w.pid));
-  const vorschlaege = (marktErgebnis(db).ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid)).length;
+  const vorschlaege = vorschlagAnzahl(db, marktErgebnis(db).ergebnis?.alle ?? []);
   return (
     <>
       <PageHeader title="Transfermarkt" subtitle={`Watchlist · ${watch.length} Spieler`} />
@@ -39,38 +32,25 @@ export default async function Watchlist() {
         )}
         <Section title="Watchlist" footer="Angenommene Vorschläge. Mit einem Endpreis kommt der Spieler in den Bietomat; entfernen geht jederzeit.">
           {watch.length ? (
-            <div className="grid gap-3">
+            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
               {watch.map((w) => (
-                <Card key={w.pid} className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <a href={mzMarktLink(w.pid)} title="Auf dem Transfermarkt von ManagerZone öffnen" target="_blank" rel="noreferrer" className="text-[17px] font-bold hover:underline">
-                        {w.name}
-                      </a>
-                      {w.bewertung && (
-                        <div className="text-[12.5px] text-label-2">
-                          als {posDe(w.bewertung.rolle)} statt {w.bewertung.statt}: +{komma(w.bewertung.gewinn)} MZ-Wert (beim Annehmen)
-                        </div>
-                      )}
+                <SpielerKarte
+                  key={w.pid}
+                  k={w.spieler}
+                  v={verbesserungFuer(db, w.spieler)}
+                  verkauf={verkaeufe.get(w.pid)}
+                  fuss={
+                    <div className="space-y-2">
+                      <InBietomat pid={w.pid} imBietomat={imBietomat.get(w.pid)} />
+                      <form action={vonWatchlist}>
+                        <input type="hidden" name="pid" value={w.pid} />
+                        <button className="pressable min-h-[40px] w-full rounded-[10px] border border-red/40 text-[14px] font-semibold text-red">
+                          Von der Watchlist entfernen
+                        </button>
+                      </form>
                     </div>
-                    <form action={vonWatchlist}>
-                      <input type="hidden" name="pid" value={w.pid} />
-                      <button className="pressable rounded-md border border-separator px-2.5 py-1 text-[12.5px] font-semibold text-red">Entfernen</button>
-                    </form>
-                  </div>
-                  <div className="mt-2">
-                    <VerbesserungZeile v={verbesserungFuer(db, w.spieler)} />
-                    <div className="mt-2">
-                      <MarktInfo s={w.spieler} verkauf={verkaeufe.get(w.pid)} stand={`Stand der letzten Marktsuche oder beim Annehmen (${datumZeit(w.aufgenommen)})`} />
-                    </div>
-                    <div className="mt-3">
-                      <SpielerProfil skills={w.spieler.skills} scout={w.spieler.scout} />
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <InBietomat pid={w.pid} imBietomat={imBietomat.get(w.pid)} />
-                  </div>
-                </Card>
+                  }
+                />
               ))}
             </div>
           ) : (

@@ -41,7 +41,9 @@ export default async function Markt(props: PageProps<"/markt">) {
   const sp = await props.searchParams;
   const sortPreis = sp.sort === "preis";
   const pl = (b: { gewinn: number; preis: number }) => b.gewinn / Math.max(1, b.preis / 1_000_000);
-  const top = (ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid)).slice(0, TOP);
+  // Wer auf der Watchlist steht oder ein aktives Gebot hat, ist kein Vorschlag mehr (Marcus, 31.10.2026)
+  const imGebot = new Set(auftraege.map((a) => a.pid));
+  const top = (ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid) && !imGebot.has(b.kandidat.pid)).slice(0, TOP);
   const alleVorschlaege = sortPreis ? [...top].sort((a, b) => pl(b) - pl(a)) : top;
   const JE_SEITE = 4;
   const seiten = Math.max(1, Math.ceil(alleVorschlaege.length / JE_SEITE));
