@@ -6,10 +6,12 @@ für Desktop und Handy optimiert: ab 1024 px Breite Seitenleiste links und mehrs
 
 ## Abweichungen vom Auftrag (Entscheidung von Marcus, 24.10.2026)
 
-- Reine Webseite, keine installierbare App: kein Manifest, kein Service Worker, keine Splash-Bilder,
-  kein eigenes Pull-to-Refresh (der Browser lädt beim Herunterziehen selbst neu).
-- Keine Push-Benachrichtigungen. Die Automatik nach Ligaspielen (Etappe 7) zeigt ihre Ergebnisse
-  auf der Übersicht.
+- Webseite ohne Offline-Betrieb: kein Zwischenspeicher, keine Splash-Bilder, kein eigenes Pull-to-Refresh.
+  Seit 31.10.2026 ein Manifest (iPhone: zum Home-Bildschirm hinzufügen, nur so erlaubt iOS Push) und ein
+  Service Worker nur für Push (`public/push-sw.js`).
+- Push-Nachrichten (31.10.2026): Auktionsbericht des Bietomats (Spieler bekommen oder nicht) an alle unter
+  Einstellungen eingeschalteten Geräte, zusätzlich als Pop-up beim nächsten Besuch. VAPID-Schlüssel entstehen
+  beim ersten Bedarf in der Datenbank. Die Automatik nach Ligaspielen zeigt ihre Ergebnisse weiter auf der Übersicht.
 - Automatik (25.10.2026): frühestens 12 Stunden nach Anstoß des eigenen Ligaspiels, damit alle Daten
   fertig sind (Anstoß 18:15 -> 6:15 Uhr am nächsten Morgen). Dann voll automatisch: eigenes Spiel
   auswerten, nächsten Ligagegner ermitteln, alle seine Ligaspiele der Saison holen und analysieren,

@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { logout } from "@/app/login/actions";
 import { PageHeader } from "@/components/page-header";
 import { Card, List, Row, Section } from "@/components/ui";
+import { PushSchalter } from "@/components/push-schalter";
 import { getDb } from "@/lib/db";
 import { datumZeit } from "@/lib/format";
 import { zugangStatus } from "@/lib/mz/zugang";
@@ -35,6 +36,14 @@ export default async function Einstellungen() {
             <Row title="Team-ID" value={TEAM.tid} />
             <Row title="Liga" value={<span className="text-[15px]">div1.1</span>} />
           </List>
+        </Section>
+        <Section
+          title="Push-Nachrichten"
+          footer="Am Ende jeder Auktion des Bietomats kommt ein Bericht (Spieler bekommen oder nicht). Er erscheint als Push auf jedem hier eingeschalteten Gerät und zusätzlich als Pop-up, wenn du die Seite das nächste Mal öffnest. Pro Gerät einmal einschalten."
+        >
+          <Card className="p-4">
+            <PushSchalter />
+          </Card>
         </Section>
         <Section
           title="Freundschaftsspiele"
