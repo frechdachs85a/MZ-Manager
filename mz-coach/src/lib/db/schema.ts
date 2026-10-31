@@ -300,6 +300,17 @@ const MIGRATIONEN: string[] = [
     geaendert TEXT NOT NULL
   );
   `,
+  // 22: Scoutspiele gegen kommende Gegner, automatisch geholt (Marcus, 31.10.2026: mit einem Klick auswerten)
+  `
+  CREATE TABLE scout_spiel (
+    mid INTEGER PRIMARY KEY,
+    gegner_tid INTEGER NOT NULL,
+    gegner_name TEXT,
+    datum TEXT,
+    auswertung_json TEXT NOT NULL, -- StatsSpiel
+    abgerufen TEXT NOT NULL
+  );
+  `,
 ];
 
 // Schema auf den neuesten Stand bringen (Migrationen der Reihe nach)

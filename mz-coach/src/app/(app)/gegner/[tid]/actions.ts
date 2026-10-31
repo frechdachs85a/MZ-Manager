@@ -44,3 +44,22 @@ export async function gegnerKaderHolen(tid: number): Promise<HolState> {
   revalidatePath(`/gegner/${tid}`);
   return r;
 }
+
+// Alle Scoutspiele gegen diesen Gegner holen und auswerten (Marcus, 31.10.2026: ein Klick). Ist er der nächste Ligagegner,
+// danach die Formation Liga prüfen und bei Änderung neu schreiben.
+export async function scoutspieleAuswerten(tid: number): Promise<HolState> {
+  const db = getDb();
+  const { scoutspieleAbrufen } = await import("@/lib/mz/abruf/scoutspiele");
+  const r = await scoutspieleAbrufen(db, { manuell: true, gegnerTid: tid });
+  let meldung = r.meldung;
+  const { letzterLauf } = await import("@/lib/db/spieltag");
+  if (r.ok && letzterLauf(db, true)?.gegnerTid === tid) {
+    const { ligaKontrolle } = await import("@/lib/mz/abruf/liga");
+    const l = await ligaKontrolle(db);
+    meldung += ` ${l.meldung}`;
+  }
+  revalidatePath(`/gegner/${tid}`);
+  revalidatePath("/taktik");
+  revalidatePath("/spieltag");
+  return { ok: r.ok, meldung };
+}

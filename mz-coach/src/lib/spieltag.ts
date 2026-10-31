@@ -30,6 +30,7 @@ import { anpassen } from "@/lib/mz/taktik/anpassen";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { gegnerGewichte } from "@/lib/mz/taktik/gegner-gewichte";
 import { ligaAusArchiv } from "@/lib/mz/taktik/liga-anpassen";
+import { scoutAuswertung } from "@/lib/scout-auswertung";
 import { checkKurz, pruefeTaktikGegenKader } from "@/lib/taktik-check";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 
@@ -111,7 +112,8 @@ export function spieltagLage(db: Database.Database) {
     : undefined;
   // Vorschlag: Liegen eigene Scoutspiele gegen genau diesen Gegner vor (mz-wissen.md, Abschnitt 12), entscheiden sie
   // (direkte Spiele wiegen schwerer als die allgemeine Faustregel); sonst die Faustregel aus Abschnitt 10.
-  const scout = gegner ? scoutBericht(gegner.tid) : undefined;
+  // Scoutspiele: automatisch geholte (scout-auswertung.ts) haben Vorrang vor den von Marcus gelieferten Berichten
+  const scout = gegner ? (scoutAuswertung(db, gegner.tid)?.bericht ?? scoutBericht(gegner.tid)) : undefined;
   const scoutWahl = scout ? scoutEntscheidung(scout) : null;
   // Kurze Gründe der Faustregel (Abschnitt 10) für den Matchplan
   const regelKurz = (): string[] => {

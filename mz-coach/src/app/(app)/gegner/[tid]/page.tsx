@@ -14,6 +14,9 @@ import { ANALYSE_SPIELE, LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { HolKnopf } from "./hol-knopf";
 import { KaderKnopf } from "./kader-knopf";
+import { ScoutKnopf } from "./scout-knopf";
+import { scoutAuswertung } from "@/lib/scout-auswertung";
+import { scoutEntscheidung } from "@/lib/wissen/scoutspiele";
 import { kaderwertVergleich, type ElfWert } from "@/lib/kaderwert";
 import { topGegenKlasse } from "@/lib/portfolio";
 import { gegnerKlasse } from "@/lib/mz/analyse/muster";
@@ -58,19 +61,84 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
   const fehlen = liga.filter((s) => !s.xml);
   const kw = kaderwertVergleich(getDb(), tid);
   const neuestes = a?.spiele[0];
-  const klasse = neuestes ? gegnerKlasse({ engeMitte: neuestes.engeMitte, fuenferkette: neuestes.formation.abwehr >= 5 } as Parameters<typeof gegnerKlasse>[0]) : undefined;
+  const klasse = neuestes
+    ? gegnerKlasse({ engeMitte: neuestes.engeMitte, fuenferkette: neuestes.formation.abwehr >= 5 } as Parameters<typeof gegnerKlasse>[0])
+    : undefined;
   const topStile = klasse ? topGegenKlasse(getDb(), klasse).slice(0, 4) : [];
   const begr = new Map(a?.begruendung.map((b) => [b.mid, b.text]));
+  const scout = scoutAuswertung(getDb(), tid);
+  const scoutWahl = scout ? scoutEntscheidung(scout.bericht) : null;
 
   return (
     <>
-      <PageHeader title={name} subtitle={`tid ${tid} · ${alleLiga.length} Ligaspiele dieser Saison, davon die letzten ${liga.length} (höchstens ${ANALYSE_SPIELE}) betrachtet, ${stats.length} ausgewertet`} />
+      <PageHeader
+        title={name}
+        subtitle={`tid ${tid} · ${alleLiga.length} Ligaspiele dieser Saison, davon die letzten ${liga.length} (höchstens ${ANALYSE_SPIELE}) betrachtet, ${stats.length} ausgewertet`}
+      />
       <div className="seite">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
           <div>
+            <Section
+              title="Scoutspiele gegen ihn"
+              footer="Holt alle deine Scoutspiele gegen dieses Team aus ManagerZone (nur lesen), ordnet jedem Spiel über die Startaufstellung deine Taktik zu und wertet je Taktik aus. Ist er dein nächster Ligagegner, prüft die Seite danach die Formation Liga und passt sie bei Bedarf an. Im Scoutspiel spielt er mit der Aufstellung seines letzten Ligaspiels und reagiert nicht."
+            >
+              {scout && (
+                <Card className="mb-3 p-4 text-[14px]">
+                  <div className="text-[15px] font-semibold">{scout.spiele.length} Scoutspiele ausgewertet</div>
+                  <table className="mt-2 w-full text-[13.5px]">
+                    <thead>
+                      <tr className="text-left text-[11px] uppercase tracking-wider text-label-3">
+                        <th className="py-1">Taktik</th>
+                        <th className="py-1 text-right">Spiele</th>
+                        <th className="py-1 text-right">S / U / N</th>
+                        <th className="py-1 text-right">Tore</th>
+                        <th className="py-1 text-right">Punkte/Spiel</th>
+                        <th className="py-1 text-right">Ballbesitz</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-separator">
+                      {scout.bericht.taktiken.map((t) => (
+                        <tr key={t.reiter}>
+                          <td className="py-1 font-semibold">{t.reiter}</td>
+                          <td className="py-1 text-right tabular-nums">{t.spiele}</td>
+                          <td className="py-1 text-right tabular-nums">
+                            {t.S} / {t.U} / {t.N}
+                          </td>
+                          <td className="py-1 text-right tabular-nums">
+                            {t.tore}:{t.gegentore}
+                          </td>
+                          <td className="py-1 text-right tabular-nums">{((3 * t.S + t.U) / t.spiele).toFixed(2).replace(".", ",")}</td>
+                          <td className="py-1 text-right tabular-nums">{t.ballbesitz !== undefined ? `${t.ballbesitz} %` : "–"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="mt-2 text-label-2">
+                    {scoutWahl
+                      ? `Daraus: ${scoutWahl.reiter}. ${scoutWahl.begruendung}`
+                      : "Für eine Entscheidung braucht es mindestens 2 Taktiken mit je 8 Scoutspielen; bis dahin gilt die Faustregel."}
+                  </div>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[12.5px] font-semibold text-tint">Einzelne Spiele</summary>
+                    <ul className="mt-1 space-y-0.5 text-[12.5px] text-label-2">
+                      {scout.spiele.map((x) => (
+                        <li key={x.mid}>
+                          {datumDe(x.datum ?? undefined)} · {x.reiter} · {x.tore} ({x.ergebnis})
+                          {x.ballbesitz !== undefined ? ` · Ballbesitz ${x.ballbesitz} %` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </Card>
+              )}
+              <ScoutKnopf tid={tid} />
+            </Section>
             {a ? (
               <>
-                <Section title="Spielt er immer gleich?" footer="Vergleich jedes Spiels mit dem neuesten: Formation, Einstellungen und Aufstellung zu Spielbeginn (gleich = jeder Feldspieler höchstens 2 Punkte daneben). Wechsel und Taktikwechsel im Verlauf stehen im Spielbericht; ob er im Spiel die Formation umstellt, ist aus der XML nicht erkennbar.">
+                <Section
+                  title="Spielt er immer gleich?"
+                  footer="Vergleich jedes Spiels mit dem neuesten: Formation, Einstellungen und Aufstellung zu Spielbeginn (gleich = jeder Feldspieler höchstens 2 Punkte daneben). Wechsel und Taktikwechsel im Verlauf stehen im Spielbericht; ob er im Spiel die Formation umstellt, ist aus der XML nicht erkennbar."
+                >
                   <Card className="p-4">
                     <div className="text-[17px] font-semibold">{a.urteilText}</div>
                     {a.konstant.length > 0 && <div className="mt-2 text-[15px] text-label-2">Immer: {a.konstant.join(" · ")}</div>}
@@ -79,22 +147,32 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
                     </div>
                   </Card>
                 </Section>
-                <Section title="Wechsel- und Taktikregeln" footer={`Aus allen ${stats.length} ausgewerteten Ligaspielen: jeder Substitution- und Tactic-Eintrag der Stats-XML mit Minute und Spielstand.`}>
+                <Section
+                  title="Wechsel- und Taktikregeln"
+                  footer={`Aus allen ${stats.length} ausgewerteten Ligaspielen: jeder Substitution- und Tactic-Eintrag der Stats-XML mit Minute und Spielstand.`}
+                >
                   <Card className="p-4 text-[14px]">
                     <RegelSaetze regeln={regeln} />
                   </Card>
                 </Section>
-                <Section title="Taktikvorschlag" footer="Nach den Faustregeln aus mz-wissen.md, Abschnitt 10. Vor dem Einsatz den XML-Code der Taktik unter „Taktik“ prüfen lassen.">
+                <Section
+                  title="Taktikvorschlag"
+                  footer="Nach den Faustregeln aus mz-wissen.md, Abschnitt 10. Vor dem Einsatz den XML-Code der Taktik unter „Taktik“ prüfen lassen."
+                >
                   <Card className="p-4">
                     <div className="text-[13px] font-semibold uppercase tracking-wide text-tint">Empfehlung</div>
                     <div className="mt-1 text-[22px] font-bold">{a.empfehlung.taktik}</div>
                     <div className="mt-1 text-[15px]">{a.empfehlung.regel}</div>
                     <ul className="mt-2 list-disc pl-5 text-[15px]">
-                      {a.empfehlung.gruende.map((g, i) => <li key={i}>{g}</li>)}
+                      {a.empfehlung.gruende.map((g, i) => (
+                        <li key={i}>{g}</li>
+                      ))}
                     </ul>
                     <div className="mt-3 text-[13px] font-semibold text-orange">Vorbehalte</div>
                     <ul className="list-disc pl-5 text-[15px] text-label-2">
-                      {a.empfehlung.vorbehalte.map((g, i) => <li key={i}>{g}</li>)}
+                      {a.empfehlung.vorbehalte.map((g, i) => (
+                        <li key={i}>{g}</li>
+                      ))}
                     </ul>
                   </Card>
                 </Section>
@@ -114,12 +192,19 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
                 <HolKnopf tid={tid} anzahl={fehlen.length} />
               </Section>
             )}
-            <Section title="Ligaspiele dieser Saison" footer={`Saison erkannt an mid > ${LIGA_MID_AB} (mz-wissen.md, Stand Saison 100). ${spiele.length - liga.length} weitere Spiele (Pokal, Freundschaft, Scout) nicht gewertet.`}>
+            <Section
+              title="Ligaspiele dieser Saison"
+              footer={`Saison erkannt an mid > ${LIGA_MID_AB} (mz-wissen.md, Stand Saison 100). ${spiele.length - liga.length} weitere Spiele (Pokal, Freundschaft, Scout) nicht gewertet.`}
+            >
               <List>
                 {liga.map((s) => {
                   const titel = `${datumDe(s.datum)} ${s.heim.name} ${s.tore ? `${s.tore.heim}:${s.tore.gast}` : "–"} ${s.gast.name}`;
                   return s.xml ? (
-                    <LinkZeile key={s.mid} href={`/spiele/${s.mid}`} detail={`mid ${s.mid} · ${begr.get(s.mid) ?? (a?.spiele[0].mid === s.mid ? "neuestes Spiel, Vergleichsbasis" : "")}`}>
+                    <LinkZeile
+                      key={s.mid}
+                      href={`/spiele/${s.mid}`}
+                      detail={`mid ${s.mid} · ${begr.get(s.mid) ?? (a?.spiele[0].mid === s.mid ? "neuestes Spiel, Vergleichsbasis" : "")}`}
+                    >
                       {titel}
                     </LinkZeile>
                   ) : (
@@ -162,7 +247,10 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
           </List>
         </Section>
         {a && (
-          <Section title="Aufstellung je Ligaspiel" footer="Startelf aus der Stats-XML in Editor-Koordinaten (mz-wissen.md, Abschnitt 3), aus Sicht seines Tors.">
+          <Section
+            title="Aufstellung je Ligaspiel"
+            footer="Startelf aus der Stats-XML in Editor-Koordinaten (mz-wissen.md, Abschnitt 3), aus Sicht seines Tors."
+          >
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {a.spiele.map((s) => (
                 <Card key={s.mid} className="p-2">
