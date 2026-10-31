@@ -11,7 +11,9 @@ import { ladeAuftraege } from "@/lib/db/gebot";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
 import { datumZeit } from "@/lib/format";
 import { posDe } from "@/lib/mz/formel";
-import { marktErgebnis } from "@/lib/markt-ergebnis";
+import { marktErgebnis, verbesserungFuer } from "@/lib/markt-ergebnis";
+import { SpielerProfil } from "@/components/spieler-profil";
+import { VerbesserungZeile } from "@/components/verbesserung-zeile";
 import { watchlistAktuell } from "@/lib/watchlist";
 import { vonWatchlist } from "../actions";
 import { InBietomat } from "../bietomat/formulare";
@@ -58,7 +60,13 @@ export default async function Watchlist() {
                     </form>
                   </div>
                   <div className="mt-2">
-                    <MarktInfo s={w.spieler} verkauf={verkaeufe.get(w.pid)} stand={`Stand beim Annehmen (${datumZeit(w.aufgenommen)})`} />
+                    <VerbesserungZeile v={verbesserungFuer(db, w.spieler)} />
+                    <div className="mt-2">
+                      <MarktInfo s={w.spieler} verkauf={verkaeufe.get(w.pid)} stand={`Stand der letzten Marktsuche oder beim Annehmen (${datumZeit(w.aufgenommen)})`} />
+                    </div>
+                    <div className="mt-3">
+                      <SpielerProfil skills={w.spieler.skills} scout={w.spieler.scout} />
+                    </div>
                   </div>
                   <div className="mt-3">
                     <InBietomat pid={w.pid} imBietomat={imBietomat.get(w.pid)} />

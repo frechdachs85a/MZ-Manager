@@ -1,10 +1,11 @@
 import { parse } from "node-html-parser";
 import { text } from "./spielerblock";
 
-// Ligatabelle von ?p=league&type=senior. Der genaue Aufbau ist noch nicht gesehen, daher keine
+// Ligatabelle (Reiter "Tabelle" der Ligaseite, ajax.php?p=league…&sub=table; Aufbau an der Weltliga-Tabelle vom
+// 30.10.2026 gesehen: Platz, Mannschaft, Sp, G, U, V, +, -, =, Pkt, Letzte 6 Spiele). Keine
 // Deutung einzelner Spalten: übernommen wird die erste HTML-Tabelle, in der das eigene Team steht,
 // mit Kopfzeile und allen Zeilen so, wie ManagerZone sie zeigt.
-export type Tabelle = { kopf: string[]; zeilen: { zellen: string[]; eigen: boolean }[] };
+export type Tabelle = { kopf: string[]; zeilen: { zellen: string[]; eigen: boolean; tid?: number }[] };
 
 // Ligatabelle lesen (Zeile des eigenen Teams markiert)
 export function tabelleAus(html: string, teamName: string): Tabelle | null {
@@ -19,8 +20,10 @@ export function tabelleAus(html: string, teamName: string): Tabelle | null {
     const zeilen = reihen
       .filter((r) => r !== kopfReihe && r.querySelectorAll("td").length > 1)
       .map((r) => {
-        const zellen = r.querySelectorAll("td").map((td) => text(td));
-        return { zellen, eigen: zellen.some((z) => z.includes(teamName)) };
+        // Leere Zellen (z. B. "Letzte 6 Spiele" als Symbole): Titel der Bilder, sonst leer
+        const zellen = r.querySelectorAll("td").map((td) => text(td) || td.querySelectorAll("img, i, span").map((x) => x.getAttribute("title") ?? "").filter(Boolean).join(" "));
+        const tid = Number((r.querySelector("a[href*='tid=']")?.getAttribute("href") ?? "").match(/[?&]tid=(\d+)/)?.[1]) || undefined;
+        return { zellen, eigen: r.classList.contains("highlight_row") || zellen.some((z) => z.includes(teamName)), tid };
       });
     if (zeilen.length > 1) return { kopf, zeilen };
   }
