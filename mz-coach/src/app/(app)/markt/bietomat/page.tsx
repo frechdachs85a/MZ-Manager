@@ -14,7 +14,8 @@ import { MarktInfo } from "@/components/markt-info";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
 import { MarktReiter } from "@/components/markt-reiter";
 import { watchlistAktuell } from "@/lib/watchlist";
-import { marktErgebnis } from "@/lib/markt-ergebnis";
+import { marktErgebnis, verbesserungFuer } from "@/lib/markt-ergebnis";
+import { VerbesserungZeile } from "@/components/verbesserung-zeile";
 
 const STATUS_TON = {
   aktiv: "green",
@@ -87,6 +88,11 @@ export default async function BietomatSeite() {
                       auktionEnde={a.auktionEnde}
                       eigenesGebot={ladeProtokoll(db, a.pid, 50).find((l) => l.text.startsWith("Geboten:"))?.betrag ?? undefined}
                     />
+                    {a.spieler && (
+                      <div className="mt-3">
+                        <VerbesserungZeile v={verbesserungFuer(db, a.spieler)} />
+                      </div>
+                    )}
                     {a.spieler && (
                       <div className="mt-3">
                         <MarktInfo s={a.spieler} verkauf={verkaeufe.get(a.pid)} stand={`Stand beim Laden (${datumZeit(a.erstellt)}); Gebot und Ende verfolgt der Bietomat in der heißen Phase live.`} />

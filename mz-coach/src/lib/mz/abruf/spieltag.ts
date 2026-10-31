@@ -11,6 +11,7 @@ import { TEAM } from "@/lib/wissen/startbasis";
 import { meldungAus, spielXmlEinlesen, type Ergebnis } from "./kader";
 import { liesGegnerKader } from "./fremd";
 import { holeStatsXml } from "./spiele";
+import { ligaTabelleHolen } from "./tabelle";
 import { marke, mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
 
 // Spieltag-Automatik (Auftrag Marcus, 26.10.2026): 5 Stunden nach jedem Ligaspiel
@@ -57,6 +58,12 @@ export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boo
         // Erst eine Seite laden: nur holeSeite meldet bei abgelaufener Sitzung neu an; die Spielliste (ajax) allein
         // antwortete dann "You need to be logged in" (beobachtet 27. bis 30.10.2026)
         await s.holeSeite("/?p=clubhouse");
+        // Ligatabelle nur hier, nach jedem Ligaspiel (Marcus, 31.10.2026)
+        try {
+          teile.push(await ligaTabelleHolen(db, s));
+        } catch (e) {
+          teile.push(`Ligatabelle: ${meldungAus(e)}`);
+        }
         const plan = await holeListe(db, s, TEAM.tid, "scheduled", "spielplan");
         daten.plan = plan.spiele;
         const eigene = await holeListe(db, s, TEAM.tid, "played", "spielliste-eigen");
