@@ -54,7 +54,7 @@ export function AufstellungVergleich({ spiel, eigeneTid, werte }: { spiel: Stats
     if (ergebnis.get(d.du) !== "schlecht") ergebnis.set(d.du, d.farbe === "gruen" ? "gut" : "schlecht");
   }
   // Liegt einer seiner Spieler fast auf einem deiner (direktes Gegenüber), seine Raute leicht nach oben versetzen
-  const versatz = (p: P) => (meine.some((m) => Math.hypot(m.x - p.x, m.y - p.y) < 16) ? { x: p.x, y: p.y - 11 } : { x: p.x, y: p.y });
+  const versatz = (p: P) => (meine.some((m) => Math.hypot(m.x - p.x, m.y - p.y) < 11) ? { x: p.x, y: p.y - 8 } : { x: p.x, y: p.y });
   const feld: FeldSpieler[] = [
     ...meine.map((p) => ({ x: p.x, y: p.y, label: p.name, wert: p.wert, torwart: p.torwart, urteil: ergebnis.get(p) })),
     ...seine.map((p) => ({ ...versatz(p), label: p.name, wert: p.wert, torwart: p.torwart, gegner: true })),

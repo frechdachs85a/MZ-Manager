@@ -108,13 +108,13 @@ export function Spielfeld({ spieler, titel, heatmap, vergleich = false, linien =
           <g>
             <defs>
               <filter id={`weich-${id}`} x="-100%" y="-100%" width="300%" height="300%">
-                <feGaussianBlur stdDeviation="6" />
+                <feGaussianBlur stdDeviation="4" />
               </filter>
             </defs>
             {spieler
               .filter((p) => p.wert !== undefined && !p.torwart)
               .map((p, i) => (
-                <circle key={i} cx={p.x} cy={p.y} r={17} fill={heatFarbe(p.wert!)} opacity={0.55} filter={`url(#weich-${id})`} />
+                <circle key={i} cx={p.x} cy={p.y} r={11} fill={heatFarbe(p.wert!)} opacity={0.5} filter={`url(#weich-${id})`} />
               ))}
           </g>
         )}
@@ -128,25 +128,25 @@ export function Spielfeld({ spieler, titel, heatmap, vergleich = false, linien =
             <g key={i} transform={`translate(${s.x} ${s.y})`}>
               <title>{`${s.label}${s.zusatz ? ` · ${s.zusatz}` : ""}${s.wert !== undefined ? ` · ${new Intl.NumberFormat("de-DE").format(s.wert)} €` : ""}${s.torwart ? " (Torwart)" : ""} · x ${s.x} / y ${s.y}`}</title>
               {vergleich && s.gegner ? (
-                <path d="M0 -7 L7 0 L0 7 L-7 0 Z" fill="#7f1d1d" stroke="#fff" strokeWidth="1.2" filter={`url(#schatten-${id})`} />
+                <path d="M0 -4.8 L4.8 0 L0 4.8 L-4.8 0 Z" fill="#7f1d1d" stroke="#fff" strokeWidth="1" filter={`url(#schatten-${id})`} />
               ) : (
                 <>
-                  <circle r={6.2} fill={farbe} stroke="rgba(0,0,0,.18)" strokeWidth="0.8" filter={`url(#schatten-${id})`} />
-                  <circle r={6.2} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth="1" opacity={s.ton === "grau" ? 0 : 0.5} />
+                  <circle r={4.2} fill={farbe} stroke="rgba(0,0,0,.18)" strokeWidth="0.7" filter={`url(#schatten-${id})`} />
+                  <circle r={4.2} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth="0.8" opacity={s.ton === "grau" ? 0 : 0.5} />
                 </>
               )}
               {sk && s.wert !== undefined && !s.torwart && (
                 <>
-                  <circle r={9.2} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="0.9" />
-                  <circle r={8.1} fill="none" stroke={heatFarbe(s.wert)} strokeWidth="2.6" />
+                  <circle r={6.6} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="0.7" />
+                  <circle r={5.7} fill="none" stroke={heatFarbe(s.wert)} strokeWidth="1.8" />
                 </>
               )}
-              <rect x={-breite / 2} y={vergleich && s.gegner ? -18.5 : 9} width={breite} height={s.zusatz ? 17 : 9.4} rx={4.7} fill={s.gegner ? "rgba(127,29,29,.9)" : "rgba(0,0,0,.5)"} />
-              <text y={vergleich && s.gegner ? -11.6 : 15.9} textAnchor="middle" fontSize="6.8" fill="#fff" fontWeight="600">
+              <rect x={-breite / 2} y={vergleich && s.gegner ? -16 : 7.5} width={breite} height={s.zusatz ? 17 : 9.4} rx={4.7} fill={s.gegner ? "rgba(127,29,29,.9)" : "rgba(0,0,0,.5)"} />
+              <text y={vergleich && s.gegner ? -9.1 : 14.4} textAnchor="middle" fontSize="6.8" fill="#fff" fontWeight="600">
                 {s.label}
               </text>
               {s.zusatz && (
-                <text y={23.6} textAnchor="middle" fontSize="6.2" fill="#d1fae5" fontWeight="600">
+                <text y={22.1} textAnchor="middle" fontSize="6.2" fill="#d1fae5" fontWeight="600">
                   {s.zusatz}
                 </text>
               )}
@@ -157,9 +157,9 @@ export function Spielfeld({ spieler, titel, heatmap, vergleich = false, linien =
         {spieler
           .filter((p) => p.urteil)
           .map((p, i) => (
-            <g key={`u${i}`} transform={`translate(${p.x + 7.5} ${p.y - 7.5})`}>
-              <circle r={4.3} fill={p.urteil === "gut" ? "#16a34a" : "#dc2626"} stroke="#fff" strokeWidth="1.2" />
-              <text y={2.1} textAnchor="middle" fontSize="6" fontWeight="800" fill="#fff">
+            <g key={`u${i}`} transform={`translate(${p.x + 5.5} ${p.y - 5.5})`}>
+              <circle r={3.6} fill={p.urteil === "gut" ? "#16a34a" : "#dc2626"} stroke="#fff" strokeWidth="1.2" />
+              <text y={1.8} textAnchor="middle" fontSize="5" fontWeight="800" fill="#fff">
                 {p.urteil === "gut" ? "✓" : "✗"}
               </text>
             </g>

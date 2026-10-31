@@ -147,7 +147,7 @@ export function spieltagLage(db: Database.Database) {
       stuetzt: scoutWahl ? gleich : undefined,
     });
     // Taktik-Einstellung des vorgeschlagenen Reiters aus deinem Archiv
-    const reiter = archiv.find((a) => a.reiter === vorschlag.taktik)?.taktik?.team.tactics;
+    const reiter = archiv.find((a) => a.reiter.toLowerCase() === vorschlag.taktik.toLowerCase())?.taktik?.team.tactics;
     if (gegen && gegen.spiele.length) {
       const g = reiter ? gegen.nachTaktik.find((x) => x.wert === de(reiter)) : undefined;
       if (!reiter) belege.push({ quelle: "Gegen ihn", text: `${vorschlag.taktik} nicht im Archiv: kein Abgleich` });
@@ -193,7 +193,7 @@ export function spieltagLage(db: Database.Database) {
   // Kader), sonst die Koordinaten aus mz-wissen.md, Abschnitt 8 (ohne Namen)
   let aufstellung: { quelle: string; feld: FeldSpieler[]; einstellung?: string; fehler: Befund[]; hinweise: Befund[] } | null = null;
   if (vorschlag) {
-    const a = archiv.find((x) => x.reiter === vorschlag.taktik);
+    const a = archiv.find((x) => x.reiter.toLowerCase() === vorschlag.taktik.toLowerCase());
     if (a?.taktik) {
       const kaderL = ladeKader(db);
       const namen = new Map(kaderL.map((k) => [k.pid, k.name]));
@@ -233,10 +233,10 @@ export function spieltagLage(db: Database.Database) {
 
   // Anpassungen aus den Scoutspielen und der Taktik-Code: Archiv-Taktik mit Anpassungen, oder (nicht im Archiv)
   // neu erzeugt aus den Koordinaten in mz-wissen.md mit deiner besten Besetzung
-  const anpassungen = (scout?.anpassungen ?? []).filter((a) => a.art === "hinweis" || a.reiter === vorschlag?.taktik);
+  const anpassungen = (scout?.anpassungen ?? []).filter((a) => a.art === "hinweis" || a.reiter?.toLowerCase() === vorschlag?.taktik.toLowerCase());
   let taktikCode: { art: "archiv" | "angepasst" | "neu" | "editor"; xml: string; geaendert: string[]; hinweise: string[] } | null = null;
   if (vorschlag) {
-    const roh = ladeTaktiken(db).find((t) => t.reiter === vorschlag.taktik);
+    const roh = ladeTaktiken(db).find((t) => t.reiter.toLowerCase() === vorschlag.taktik.toLowerCase());
     if (roh) {
       const r = anpassen(roh.xml, anpassungen);
       taktikCode = { art: r.geaendert.length ? "angepasst" : "archiv", xml: r.xml, geaendert: r.geaendert, hinweise: [] };
@@ -245,7 +245,7 @@ export function spieltagLage(db: Database.Database) {
       taktikCode = { art: "editor", xml: "", geaendert: [], hinweise: [] };
     } else {
       const t = TAKTIKEN.find((x) => x.name === vorschlag.taktik);
-      const st = scout?.taktiken.find((x) => x.reiter === vorschlag.taktik)?.einstellung.split(" / ");
+      const st = scout?.taktiken.find((x) => x.reiter.toLowerCase() === vorschlag.taktik.toLowerCase())?.einstellung.split(" / ");
       const rueck: Record<string, string> = { Flügel: "wings", Kurzpass: "shortpass", "lange Bälle": "longball", offensiv: "offensive", normal: "normal", defensiv: "defensive", aggressiv: "aggressive", passiv: "passive" };
       if (t?.koordinaten) {
         try {
@@ -340,7 +340,7 @@ export function spieltagLage(db: Database.Database) {
     const gk = new Map(ladeGegnerKader(db, gegner.tid).map((k) => [k.pid, k.wert ?? undefined]));
     const namen = new Map<number, string>([...kaderListe.map((k) => [k.pid, k.name] as [number, string]), ...neuestes.spieler.map((p) => [p.id, p.name] as [number, string])]);
     for (const st of gegner.stats) for (const p of st.spieler) if (!namen.has(p.id)) namen.set(p.id, p.name);
-    const arch = archiv.find((a) => a.reiter === vorschlag.taktik)?.taktik;
+    const arch = archiv.find((a) => a.reiter.toLowerCase() === vorschlag.taktik.toLowerCase())?.taktik;
     const startElf = startelfAusLetztemSpiel(db);
     const eigeneElf = arch ? arch.pos.map((p) => p.pid) : (startElf?.elf.map((p) => p.pid) ?? []);
     const zeitregel = (r: Record<string, string>) =>
@@ -435,7 +435,7 @@ export function spieltagLage(db: Database.Database) {
   const kaderAlle = ladeKader(db);
   const mwEigen = new Map(kaderAlle.map((k) => [k.pid, k.marktwert]));
   const nameEigen = new Map(kaderAlle.map((k) => [k.pid, k.name.split(" ").at(-1)!]));
-  const archivReiter = vorschlag ? archiv.find((a) => a.reiter === vorschlag.taktik)?.taktik : undefined;
+  const archivReiter = vorschlag ? archiv.find((a) => a.reiter.toLowerCase() === vorschlag.taktik.toLowerCase())?.taktik : undefined;
   const letzteElf = startelfAusLetztemSpiel(db);
   const eigeneAufstellung = archivReiter
     ? { quelle: `Reiter ${vorschlag!.taktik} aus deinem Archiv`, feld: archivReiter.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: nameEigen.get(p.pid) ?? "?", wert: mwEigen.get(p.pid), torwart: p.pos === "goalie" })) }
@@ -468,7 +468,7 @@ export function spieltagLage(db: Database.Database) {
       const t = TAKTIKEN.find((x) => x.name === vorschlag.taktik);
       if (!t?.koordinaten) return null;
       plaetze = t.koordinaten.map((k) => ({ x: k.x, y: k.y }));
-      const st = scout?.taktiken.find((x) => x.reiter === vorschlag.taktik)?.einstellung.split(" / ");
+      const st = scout?.taktiken.find((x) => x.reiter.toLowerCase() === vorschlag.taktik.toLowerCase())?.einstellung.split(" / ");
       const rueck: Record<string, string> = { Flügel: "wings", Kurzpass: "shortpass", "lange Bälle": "longball", offensiv: "offensive", normal: "normal", defensiv: "defensive", aggressiv: "aggressive", passiv: "passive" };
       if (st) team = { tactics: rueck[st[0]], playstyle: rueck[st[1]], aggression: rueck[st[2]] };
     }
