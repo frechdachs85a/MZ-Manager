@@ -52,6 +52,9 @@ export function VorschlagKarte({ b, verkauf, imBietomat, rang }: { b: Bewertung;
         <div className="shrink-0 rounded-[12px] bg-tint px-3 py-2 text-center text-auf-akzent">
           <div className="text-[22px] font-bold leading-none tabular-nums">+{komma(b.gewinn)}</div>
           <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider opacity-80">MZ-Wert</div>
+          <div className="mt-1 text-[10.5px] tabular-nums opacity-90" title="MZ-Gewinn je Million Mindestpreis">
+            {komma(b.gewinn / Math.max(1, b.preis / 1_000_000))} je Mio €
+          </div>
         </div>
       </header>
 
