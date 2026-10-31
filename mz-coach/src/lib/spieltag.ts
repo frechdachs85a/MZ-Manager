@@ -11,7 +11,7 @@ import { gegnerKlasse, spielMuster, stilText } from "@/lib/mz/analyse/muster";
 import { faelligAb } from "@/lib/spieltag-zeit";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
-import { kaderwertVergleich, startelfWerte } from "@/lib/kaderwert";
+import { kaderwertVergleich, spielzeitWerte } from "@/lib/kaderwert";
 import { ladeGegnerKader } from "@/lib/db/gegner-kader";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { wertbereich, wertverlauf, type Wertverlauf } from "@/lib/mz/analyse/wertverlauf";
@@ -56,7 +56,7 @@ export function spieltagLage(db: Database.Database) {
 
   const letztesSpiel = lauf?.letztesMid ? ladeSpiel(db, lauf.letztesMid) : null;
   const bericht = letztesSpiel ? spielBericht(letztesSpiel, TEAM.tid) : null;
-  const elfWerte = letztesSpiel ? startelfWerte(db, letztesSpiel) : null;
+  const elfWerte = letztesSpiel ? spielzeitWerte(db, letztesSpiel) : null;
 
   const gegner = lauf?.gegnerTid ? gegnerAnalyseLaden(db, lauf.gegnerTid) : null;
   const gegen = gegner ? gegenIhn(gegner.tid, gegner.stats) : null;
@@ -374,13 +374,32 @@ export function spieltagLage(db: Database.Database) {
     }
   }
 
+  // Ein Teamwert je Team (Marcus, 30.10.2026): nach Spielzeit gewichteter Wert (jeder Spieler zählt anteilig mit seinen
+  // erwarteten Minuten); ohne erwartete Wechsel der Startelf-Wert.
+  const teamwert: { eigen: number; gegner: number; art: "spielzeit" | "startelf" } | null = verlauf
+    ? { eigen: verlauf.gewichtet.eigen, gegner: verlauf.gewichtet.gegner, art: "spielzeit" }
+    : kaderwert?.eigen && kaderwert.gegner
+      ? { eigen: kaderwert.eigen.summe, gegner: kaderwert.gegner.summe, art: "startelf" }
+      : null;
+  if (teamwert) {
+    const eur = (n: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(n))} €`;
+    const d = Math.round((teamwert.eigen / teamwert.gegner - 1) * 100);
+    const kf = kurzfassung.find((k) => k.titel === "Kaderwert Startelf");
+    if (kf) {
+      kf.titel = "Teamwert";
+      kf.punkte = [`Du ${mioK(teamwert.eigen)} · er ${mioK(teamwert.gegner)}`, `${d >= 0 ? "+" : ""}${d} % für ${d >= 0 ? "dich" : "ihn"}`];
+    }
+    const b = belege.find((x) => x.quelle === "Kaderwert");
+    if (b) b.text = `Du ${eur(teamwert.eigen)} · er ${eur(teamwert.gegner)} → ${d < 0 ? `er +${Math.round((teamwert.gegner / teamwert.eigen - 1) * 100)} % (Standard bleiben)` : `du +${d} %`}`;
+  }
+
   if (verlauf) {
     const v = verlauf.gewichtet.verhaeltnis;
     const f = (n: number) => n.toFixed(2).replace(".", ",");
     belege.push({
-      quelle: "Kaderwert über 90 Minuten",
+      quelle: "Einordnung Teamwert",
       text:
-        `Gewichtet ${f(v)} · ` +
+        `Verhältnis ${f(v)} · ` +
         (() => {
           const q = quotenJeBereich(db, "feld").find((x) => v >= x.von && v < x.bis);
           return q && q.spiele >= 30
@@ -388,8 +407,6 @@ export function spieltagLage(db: Database.Database) {
             : wertbereich(v).replace(/^[^:]*: in den Top-10-Spielen /, "Top 10: ");
         })(),
     });
-    const kf = kurzfassung.find((k) => k.titel === "Kaderwert Startelf");
-    if (kf) kf.punkte.push(`Über 90 Min. mit Wechseln: ${f(v)}`);
   }
 
   // Seine wahrscheinliche Aufstellung gegen dich: die häufigste Aufstellung seiner Ligaspiele, mit Marktwert je Platz
@@ -524,6 +541,7 @@ export function spieltagLage(db: Database.Database) {
   })();
 
   return {
+    teamwert,
     liga,
     ligaStatus: letzterAbruf(db, "liga"),
     eigeneAufstellung,

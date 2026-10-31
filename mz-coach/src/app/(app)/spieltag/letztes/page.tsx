@@ -52,7 +52,7 @@ export default async function LetztesLigaspiel() {
                   <ElfWertZeile w={elfWerte?.[b.gegner.id]} rechts />
                 </div>
               </div>
-              <p className="mt-3 text-[12px] text-label-3">Startelf-Wert = Marktwerte der 11 Startspieler laut Kaderseite (heutiger Stand, nicht der Wert am Spieltag).</p>
+              <p className="mt-3 text-[12px] text-label-3">Teamwert = Marktwerte laut Kaderseite (heutiger Stand, nicht der Wert am Spieltag), jeder Spieler anteilig nach seinen Spielminuten in diesem Spiel.</p>
               <Link href={`/spiele/${b.mid}`} className="mt-4 inline-block text-[12.5px] font-semibold uppercase tracking-wider text-tint-hell">
                 Aufstellungen und Spielverlauf →
               </Link>

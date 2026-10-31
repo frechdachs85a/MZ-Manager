@@ -7,6 +7,7 @@ import { ladeSpiel } from "@/lib/db/spiele";
 import { letzteLigaspiele } from "@/lib/mz/parser/spielliste";
 import type { StatsSpiel } from "@/lib/mz/parser/stats";
 import { TEAM } from "@/lib/wissen/startbasis";
+import { wertverlauf } from "@/lib/mz/analyse/wertverlauf";
 
 // Kaderwert-Vergleich (mz-wissen.md, Abschnitt 10: "Immer Kaderwert vergleichen: Startelf-Marktwert eigene
 // Taktik gegen Gegner"). Eigene Startelf aus dem neuesten eigenen Spiel, gegnerische aus seinem neuesten
@@ -70,5 +71,32 @@ export function startelfWerte(db: Database.Database, spiel: StatsSpiel): Record<
         : null;
     }
   }
+  return out;
+}
+
+// Teamwert nach Spielzeit in einem gespielten Spiel (Marcus, 30.10.2026: ein Wert je Team): jeder Spieler zählt mit
+// seinen tatsächlich gespielten Minuten (Startelf und Wechsel aus der Stats-XML), Summe ÷ 90 Minuten. Beispiel: 70 Min.
+// ein Spieler mit 1 Mio und 20 Min. einer mit 0,5 Mio ergeben 1 × 70/90 + 0,5 × 20/90. Wert, Anzahl mit Marktwert und
+// Fehlende wie startelfWerte; summe ist der gewichtete Wert.
+export function spielzeitWerte(db: Database.Database, spiel: StatsSpiel): Record<number, (ElfWert & { stand?: string }) | null> {
+  const basis = startelfWerte(db, spiel);
+  const [a, b] = spiel.teams;
+  if (!a || !b) return basis;
+  const eigen = new Map(ladeKader(db).map((s) => [s.pid, s.marktwert]));
+  const fremd = new Map<number, number | undefined>();
+  for (const t of spiel.teams) if (t.id !== TEAM.tid) for (const s of ladeGegnerKader(db, t.id)) fremd.set(s.pid, s.wert ?? undefined);
+  const elf = (tid: number) => spiel.spieler.filter((p) => p.teamId === tid && p.origin).map((p) => p.id);
+  const wechsel = (tid: number) => spiel.wechsel.filter((w) => w.teamId === tid).map((w) => ({ minute: w.minute, raus: w.raus, rein: w.rein }));
+  const v = wertverlauf({
+    eigeneElf: elf(a.id),
+    gegnerElf: elf(b.id),
+    eigeneWechsel: wechsel(a.id),
+    gegnerWechsel: wechsel(b.id),
+    wert: (pid) => (eigen.has(pid) ? eigen.get(pid) : fremd.get(pid)),
+    name: (pid) => spiel.spieler.find((p) => p.id === pid)?.name ?? `pid ${pid}`,
+  });
+  const out = { ...basis };
+  if (out[a.id]) out[a.id] = { ...out[a.id]!, summe: v.gewichtet.eigen };
+  if (out[b.id]) out[b.id] = { ...out[b.id]!, summe: v.gewichtet.gegner };
   return out;
 }

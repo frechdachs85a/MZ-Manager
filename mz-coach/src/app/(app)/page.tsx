@@ -1,4 +1,5 @@
-// Zentrale (Startseite): nächstes Spiel, Lage des Kaders, Hinweise und Abkürzungen.
+// Zentrale (Startseite): alles Wichtige kurz gebündelt (Marcus, 30.10.2026): Warnungen, nächstes Spiel in einer
+// Zeile (Details im Reiter Spieltag), Verfügbarkeit, Aufgaben, Ball-Bilanz, Tabelle.
 
 import Link from "next/link";
 import { connection } from "next/server";
@@ -6,13 +7,14 @@ import { PageHeader } from "@/components/page-header";
 import { Card, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { spieltagLage } from "@/lib/spieltag";
-import { Matchplan } from "@/components/matchplan";
+import { WertDiff } from "@/components/elf-wert";
+import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { spieltagCheckliste } from "@/lib/checkliste";
 import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
 import { tabelleAus } from "@/lib/mz/parser/tabelle";
 import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
-import { ladeKader, letzteAenderungen } from "@/lib/db/kader";
+import { ladeKader } from "@/lib/db/kader";
 import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
 import { StatusBadges } from "@/components/status";
 import { datumZeit, heuteInBerlin } from "@/lib/format";
@@ -23,7 +25,7 @@ export default async function Uebersicht() {
   await connection(); // Datum pro Anfrage, nicht beim Build
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
   const db = getDb();
-  const aenderungen = letzteAenderungen(db, 8);
+  const { bilanz, warnungen: verlust } = skillBilanz(db, 14);
   const kader = ladeKader(db);
   const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
   const taktikStand = kader.map((s) => s.statusStand?.aufstellbar).filter(Boolean).sort().at(-1);
@@ -39,14 +41,67 @@ export default async function Uebersicht() {
   const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
   const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.map((s) => s.pid)]).size;
   const kurzDatum = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(spieltag);
+  // Warnungen: Ausdauer unter die Grenze gefallen, und Startspieler mit Ausdauer unter der Grenze (halten keine 90 Minuten)
+  const nachPid = new Map(kader.map((s) => [s.pid, s]));
+  const schwacheAusdauer = (start?.elf ?? [])
+    .map((p) => nachPid.get(p.pid))
+    .filter((s): s is NonNullable<typeof s> => !!s && (s.skills.ausdauer?.wert ?? 10) < AUSDAUER_GRENZE && !verlust.some((v) => v.pid === s.pid));
+  const warnungen = [
+    ...verlust.map((v) => ({ name: v.name, text: v.text })),
+    ...schwacheAusdauer.map((s) => ({ name: s.name, text: `Startspieler mit Ausdauer ${s.skills.ausdauer?.wert}: hält keine 90 Minuten durch, Wechsel einplanen` })),
+  ];
+  const anstoss = st.lauf?.anstoss ? new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(st.lauf.anstoss)) : null;
 
   return (
     <>
       <PageHeader title="Zentrale" subtitle={`${TEAM.name} · ${TEAM.liga}`} />
 
-      {/* Herzstück: Taktikvorschlag für das nächste Ligaspiel */}
+      {warnungen.length > 0 && (
+        <div className="seite mt-6">
+          <Card className="border-l-4 border-l-red p-4">
+            <div className="text-[13px] font-bold uppercase tracking-wider text-red">Achtung</div>
+            <ul className="mt-1.5 space-y-1 text-[14px]">
+              {warnungen.map((w) => (
+                <li key={w.name + w.text}>
+                  <b>{w.name}</b>: {w.text}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      )}
+
+      {/* Nächstes Spiel kurz; Taktik und Analyse im Reiter Spieltag */}
       <div className="seite mt-6">
-        <Matchplan l={st} mitLink />
+        <Link href="/spieltag" className="zeile-hover block">
+          <Card className="p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">Nächstes Ligaspiel{anstoss ? ` · ${anstoss}` : ""}</div>
+                <div className="text-[18px] font-bold">
+                  {st.lauf?.gegnerName ? `${st.lauf.heim ? "gegen" : "bei"} ${st.lauf.gegnerName}` : "Spielplan noch nicht abgerufen"}
+                </div>
+              </div>
+              <span className="text-[12.5px] font-semibold uppercase tracking-wider text-tint">Taktik und Analyse →</span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13.5px]">
+              {st.vorschlag && (
+                <span>
+                  <span className="text-label-3">Vorschlag </span>
+                  <b>{st.vorschlag.taktik}</b>
+                </span>
+              )}
+              {st.teamwert && (
+                <WertDiff eigen={st.teamwert.eigen} gegner={st.teamwert.gegner} klein />
+              )}
+              {st.liga && (
+                <span className={st.ligaStatus?.ok ? "text-green" : "text-label-2"}>
+                  Formation Liga {st.ligaStatus?.ok ? "✓ in ManagerZone" : st.ligaStatus ? "✗ nicht gespeichert" : "noch nicht gespeichert"}
+                </span>
+              )}
+            </div>
+          </Card>
+        </Link>
       </div>
       <div className="seite mt-4 grid grid-cols-2 gap-4">
           <Kachel
@@ -125,6 +180,28 @@ export default async function Uebersicht() {
           )}
         </Section>
 
+        <Section title="Bälle der letzten 14 Tage" footer="Aus den Kaderabrufen: gewonnene und verlorene Skill-Bälle je Spieler (ohne Form). Rot = Verlust.">
+          {bilanz.length ? (
+            <List>
+              {bilanz.map((b) => (
+                <Row
+                  key={b.pid}
+                  title={b.name}
+                  detail={b.aenderungen.map((a) => `${a.skill} ${a.alt}→${a.neu}`).join(" · ")}
+                  value={
+                    <span className="display text-[16px] font-bold tabular-nums">
+                      {b.plus > 0 && <span className="text-green">+{b.plus}</span>}
+                      {b.plus > 0 && b.minus > 0 && " "}
+                      {b.minus > 0 && <span className="text-red">−{b.minus}</span>}
+                    </span>
+                  }
+                />
+              ))}
+            </List>
+          ) : (
+            <Unavailable title="Bälle" reason="In den letzten 14 Tagen keine Skill-Änderung in den Kaderabrufen." />
+          )}
+        </Section>
         <Section title="Tabelle" footer={tabRoh ? `Stand ${datumZeit(tabRoh.abgerufen)}, so wie ManagerZone sie zeigt.` : undefined}>
           {tabelle ? (
             <Card>
@@ -157,22 +234,6 @@ export default async function Uebersicht() {
           )}
         </Section>
 
-        <Section title="Letzte Skill-Änderungen">
-          {aenderungen.length ? (
-            <List>
-              {aenderungen.map((a, i) => (
-                <Row
-                  key={i}
-                  title={`${a.name}: ${a.feld}`}
-                  detail={datumZeit(a.datum)}
-                  value={<span className="display text-[17px] font-bold tabular-nums text-label">{a.alt ?? "?"} → {a.neu ?? "?"}</span>}
-                />
-              ))}
-            </List>
-          ) : (
-            <Unavailable title="Änderungsliste" reason="Entsteht ab dem zweiten Kaderabruf, jede Änderung wird mit Datum gespeichert." />
-          )}
-        </Section>
       </div>
     </>
   );
