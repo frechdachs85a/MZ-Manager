@@ -35,11 +35,17 @@ export default async function Markt(props: PageProps<"/markt">) {
   const auftraege = ladeAuftraege(db).filter((a) => a.status === "aktiv");
   const watch = watchlistAktuell(db).liste;
   const aufWatch = new Set(watch.map((w) => w.pid));
-  // Vorschläge: alle, die verbessern, ohne die schon auf der Watchlist; zum Durchblättern (Marcus, 31.10.2026)
-  const alleVorschlaege = (ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid));
+  // Vorschläge (Marcus, 31.10.2026): die 30 mit der größten Verbesserung (ohne Watchlist), sortiert nach Verbesserung
+  // oder nach Preis-Leistung (MZ-Gewinn je Million Mindestpreis), zum Durchblättern
+  const TOP = 30;
+  const sp = await props.searchParams;
+  const sortPreis = sp.sort === "preis";
+  const pl = (b: { gewinn: number; preis: number }) => b.gewinn / Math.max(1, b.preis / 1_000_000);
+  const top = (ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid)).slice(0, TOP);
+  const alleVorschlaege = sortPreis ? [...top].sort((a, b) => pl(b) - pl(a)) : top;
   const JE_SEITE = 4;
   const seiten = Math.max(1, Math.ceil(alleVorschlaege.length / JE_SEITE));
-  const sp = await props.searchParams;
+  const seitenLink = (n: number) => `/markt?seite=${n}${sortPreis ? "&sort=preis" : ""}`;
   const seite = Math.min(seiten, Math.max(1, Number(typeof sp.seite === "string" ? sp.seite : 1) || 1));
   const vorschlaege = alleVorschlaege.slice((seite - 1) * JE_SEITE, seite * JE_SEITE);
   const auslaender = kader.filter((s) => s.nationalitaet && s.nationalitaet !== HEIMATLAND);
@@ -54,8 +60,24 @@ export default async function Markt(props: PageProps<"/markt">) {
       <div className="seite">
         <Section
           title="Vorschläge"
-          footer="Spieler aus der letzten Marktsuche, die einen Platz deiner Startelf verbessern, größter Gewinn zuerst. Annehmen setzt ihn auf die Watchlist, Ablehnen blendet ihn aus."
+          footer="Die 30 Spieler aus der letzten Marktsuche, die deine Startelf am meisten verbessern. Preis-Leistung = MZ-Gewinn je Million Mindestpreis (höheres aus Startgebot und aktuellem Gebot; der Endpreis kann höher liegen). Annehmen setzt ihn auf die Watchlist, Ablehnen blendet ihn aus."
         >
+          <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[13px]">
+            <span className="mr-1 text-label-2">Sortieren:</span>
+            {[
+              { href: "/markt", aktiv: !sortPreis, label: "Größte Verbesserung" },
+              { href: "/markt?sort=preis", aktiv: sortPreis, label: "Bestes Preis-Leistungs-Verhältnis" },
+            ].map((c) => (
+              <Link
+                key={c.label}
+                href={c.href}
+                scroll={false}
+                className={`rounded-full border px-2.5 py-0.5 ${c.aktiv ? "border-tint bg-tint/10 text-tint" : "border-separator text-label-2 hover:text-label"}`}
+              >
+                {c.label}
+              </Link>
+            ))}
+          </div>
           {!schwach ? (
             <Unavailable title="Vorschläge" reason="Kein eigenes Spiel mit Stats-XML gespeichert, daher keine Startelf." />
           ) : !suche ? (
@@ -81,7 +103,7 @@ export default async function Markt(props: PageProps<"/markt">) {
               {seiten > 1 && (
                 <nav className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-[14px]" aria-label="Vorschläge blättern">
                   <Link
-                    href={`/markt?seite=${Math.max(1, seite - 1)}`}
+                    href={seitenLink(Math.max(1, seite - 1))}
                     scroll={false}
                     aria-disabled={seite === 1}
                     className={`rounded-md border border-separator px-3 py-1 ${seite === 1 ? "pointer-events-none opacity-40" : "hover:text-tint"}`}
@@ -91,7 +113,7 @@ export default async function Markt(props: PageProps<"/markt">) {
                   {Array.from({ length: seiten }, (_, n) => n + 1).map((n) => (
                     <Link
                       key={n}
-                      href={`/markt?seite=${n}`}
+                      href={seitenLink(n)}
                       scroll={false}
                       className={`min-w-8 rounded-md border px-2 py-1 text-center tabular-nums ${n === seite ? "border-tint bg-tint/10 font-semibold text-tint" : "border-separator hover:text-tint"}`}
                     >
@@ -99,7 +121,7 @@ export default async function Markt(props: PageProps<"/markt">) {
                     </Link>
                   ))}
                   <Link
-                    href={`/markt?seite=${Math.min(seiten, seite + 1)}`}
+                    href={seitenLink(Math.min(seiten, seite + 1))}
                     scroll={false}
                     aria-disabled={seite === seiten}
                     className={`rounded-md border border-separator px-3 py-1 ${seite === seiten ? "pointer-events-none opacity-40" : "hover:text-tint"}`}
@@ -124,7 +146,6 @@ export default async function Markt(props: PageProps<"/markt">) {
       </div>
       <div className="seite lg:grid lg:grid-cols-[1.15fr_1fr] lg:gap-x-8">
         <div>
-
           {ergebnis && (
             <Section title="Nicht vorgeschlagen" footer={`Von ${ergebnis.geprueft} Spielern der letzten Suche.`}>
               <List>
@@ -137,7 +158,6 @@ export default async function Markt(props: PageProps<"/markt">) {
               </List>
             </Section>
           )}
-
 
           <Section
             title="Suche"
