@@ -6,6 +6,10 @@ import { KOMBIS, scoutEinstufung, type Kombi, type ScoutEinstufung } from "@/lib
 // und nach ersetzen (dienstags 3 neue losen). Nur Scout-Rang 1 bis 3 (Spitzenklasse 4/2, Elite 4/1, Spitzenspieler 3/2) behalten.
 export const TALENTE = { von: 100, bis: 110 };
 export const ERSETZEN_AB = 195;
+// Behalten oder abgeben nach der Rückennummer (Marcus, 31.10.2026): er hat die Nummern bewusst sortiert, unter 150 bleibt,
+// ab 150 geht. Das ist die Einteilung; der Scout-Vorschlag steht nur noch als Info dabei, eigene Klicks gehen vor.
+export const BEHALTEN_UNTER_NR = 150;
+export const nachNummer = (nr?: number): "behalten" | "abgeben" => ((nr ?? 0) < BEHALTEN_UNTER_NR ? "behalten" : "abgeben");
 // Bis zu diesem Scout-Rang behalten (Marcus, 25.10.2026: Rang 1 bis 3)
 export const BEHALTEN_BIS_RANG = 3;
 

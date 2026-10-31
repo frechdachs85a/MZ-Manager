@@ -12,7 +12,7 @@ import { datumKurz, einsatzImLigaspiel, tag } from "@/lib/mz/einsatz";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 import { GEWICHTE, mzWert, POSITIONEN, posDe } from "@/lib/mz/formel";
 import { ladeJugendEntscheidungen } from "@/lib/db/watch";
-import { jugendAuswertung } from "@/lib/jugend";
+import { BEHALTEN_UNTER_NR, jugendAuswertung, nachNummer } from "@/lib/jugend";
 import { jugendEntscheiden } from "../../jugend/actions";
 import { ALLE_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
 import type { SpielerDaten } from "@/lib/mz/spieler";
@@ -31,14 +31,14 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
   const { talente, ersetzen, weitere } = jugendAuswertung(ladeKader(db), ladeKombis(db));
   const jung = [...talente, ...ersetzen, ...weitere].find((j) => j.s.pid === s.pid);
   const eigene = ladeJugendEntscheidungen(db).get(s.pid);
-  const jetzt = eigene ?? (jung?.vorschlag === "Abgabekandidat" ? "abgeben" : "behalten");
+  const jetzt = eigene ?? nachNummer(s.nr);
 
   return (
     <>
       <PageHeader title={s.name} subtitle={[s.nr && `Nr. ${s.nr}`, s.alter !== undefined && `${s.alter} Jahre`].filter(Boolean).join(" · ")} />
       <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
         {jung && (
-          <Section title="Jugend: behalten?" footer={`Vorschlag nach deiner Regel: ${jung.vorschlag}.${eigene ? " Deine Entscheidung gilt." : ""}`}>
+          <Section title="Jugend: behalten?" footer={`Nach deiner Nummerierung: unter Nr. ${BEHALTEN_UNTER_NR} behalten, ab ${BEHALTEN_UNTER_NR} abgeben. Scout-Vorschlag: ${jung.vorschlag}.${eigene ? " Deine Entscheidung gilt." : ""}`}>
             <Card className="flex flex-wrap items-center gap-2 p-4">
               {(["behalten", "abgeben"] as const).map((e) => (
                 <form key={e} action={jugendEntscheiden}>

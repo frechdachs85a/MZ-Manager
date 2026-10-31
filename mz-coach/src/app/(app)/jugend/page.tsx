@@ -10,12 +10,11 @@ import { KaderAnsicht } from "@/components/kader-ansicht";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
 import { ladeJugendEntscheidungen } from "@/lib/db/watch";
-import { ERSETZEN_AB, jugendAuswertung, TALENTE, type JugendSpieler, type Vorschlag } from "@/lib/jugend";
+import { BEHALTEN_UNTER_NR, ERSETZEN_AB, jugendAuswertung, nachNummer, TALENTE, type JugendSpieler } from "@/lib/jugend";
 import { ladeKombis } from "@/lib/scout";
 import { jugendEntscheiden } from "./actions";
 
 // Ohne eigene Entscheidung: nur der Regel-Vorschlag "Abgabekandidat" landet bei den Abgabekandidaten
-const nachRegel = (v: Vorschlag) => (v === "Abgabekandidat" ? "abgeben" : "behalten");
 
 export default async function Jugend(props: PageProps<"/jugend">) {
   await connection();
@@ -27,7 +26,7 @@ export default async function Jugend(props: PageProps<"/jugend">) {
   const params = await props.searchParams;
   const alle = [...talente, ...weitere, ...ersetzen];
   const je = new Map<number, JugendSpieler>(alle.map((j) => [j.s.pid, j]));
-  const wohin = (pid: number) => entscheidung.get(pid) ?? nachRegel(je.get(pid)!.vorschlag);
+  const wohin = (pid: number) => entscheidung.get(pid) ?? nachNummer(je.get(pid)!.s.nr);
   const zeilen: KaderZeile[] = alle.map((j) => ({ ...j.s, scout: j.scout }));
   const behalten = zeilen.filter((z) => wohin(z.pid) === "behalten").length;
 
@@ -47,7 +46,7 @@ export default async function Jugend(props: PageProps<"/jugend">) {
             </button>
           </form>
           <span className="text-[10.5px] leading-tight text-label-3" title="Vorschlag nach deiner Jugendregel">
-            {eigen ? `deine Wahl (Regel: ${j.vorschlag})` : `Regel: ${j.vorschlag}`}
+            {eigen ? `deine Wahl · Scout: ${j.vorschlag}` : `Nr. ${(z.nr ?? 0) < BEHALTEN_UNTER_NR ? "unter" : "ab"} ${BEHALTEN_UNTER_NR} · Scout: ${j.vorschlag}`}
           </span>
         </span>
       );
@@ -74,7 +73,7 @@ export default async function Jugend(props: PageProps<"/jugend">) {
                   titel: "Behalten",
                   passt: (z) => wohin(z.pid) === "behalten",
                   extra: { titel: "Entscheidung", zelle: zelle("abgeben") },
-                  footer: `Talente (Nr. ${TALENTE.von} bis ${TALENTE.bis}), Spieler ab Nr. ${ERSETZEN_AB} und weitere junge Spieler bis 21. Vorschlag nach deiner Regel: Scout-Rang 1 bis 3 behalten. „→ Abgabe“ verschiebt den Spieler; deine Entscheidung gilt, bis du sie änderst (auch auf der Spielerseite).`,
+                  footer: `Talente (Nr. ${TALENTE.von} bis ${TALENTE.bis}), Spieler ab Nr. ${ERSETZEN_AB} und weitere junge Spieler bis 21. Einteilung nach deiner Nummerierung: unter Nr. ${BEHALTEN_UNTER_NR} behalten, ab ${BEHALTEN_UNTER_NR} abgeben; der Scout-Vorschlag steht als Info dabei. „→ Abgabe“ verschiebt den Spieler; deine Entscheidung gilt, bis du sie änderst (auch auf der Spielerseite).`,
                 },
                 {
                   titel: "Abgabekandidaten",
