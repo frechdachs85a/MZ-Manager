@@ -37,20 +37,20 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
           </div>
           <div className="display mt-3 text-[15px] font-semibold uppercase text-label-2">{lauf.heim ? "Gegen" : "Bei"}</div>
           <div className="display text-[32px] font-bold uppercase leading-none lg:text-[40px]">{lauf.gegnerName}</div>
-          {l.kaderwert?.gegner && l.kaderwert.eigen ? (
+          {l.teamwert ? (
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[13.5px] tabular-nums">
               <span>
-                <span className="text-label-3">Startelf-Wert </span>
-                <span className="font-bold text-label">{eur(l.kaderwert.gegner.summe)}</span>
+                <span className="text-label-3">Teamwert </span>
+                <span className="font-bold text-label">{eur(l.teamwert.gegner)}</span>
               </span>
               <span>
-                <span className="text-label-3">deine Startelf </span>
-                <span className="font-bold text-label">{eur(l.kaderwert.eigen.summe)}</span>
+                <span className="text-label-3">dein Team </span>
+                <span className="font-bold text-label">{eur(l.teamwert.eigen)}</span>
               </span>
-              <WertDiff eigen={l.kaderwert.eigen.summe} gegner={l.kaderwert.gegner.summe} klein />
+              <WertDiff eigen={l.teamwert.eigen} gegner={l.teamwert.gegner} klein />
             </div>
           ) : (
-            <div className="mt-2 text-[12.5px] text-label-3">Startelf-Wert n. v. (Kaderseite des Gegners noch nicht gelesen)</div>
+            <div className="mt-2 text-[12.5px] text-label-3">Teamwert n. v. (Kaderseite des Gegners noch nicht gelesen)</div>
           )}
 
           <div className="mt-6 border-t border-separator pt-5">

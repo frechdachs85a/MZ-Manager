@@ -280,3 +280,9 @@ Weitere Beobachtungen von Marcus zu Sydney (Ligaspiele): Gegentore bekam Sydney 
 - Zeitpunkt fest (kein bewusst zufälliger Zeitpunkt). Erst scharf nach Prüfung des Gebotsfensters und einem Testgebot mit Zustimmung von Marcus.
 - Heiße Phase hat Vorrang (Marcus, 26.10.2026): Solange ein Gebot läuft, pausieren alle anderen Abrufe (Spieltag, Top 10, Wertscan, Markt, Liga). Technischer Grund zusätzlich: die Seite lässt nur eine ManagerZone-Sitzung gleichzeitig zu, ein laufender Scan würde das Gebot sonst blockieren. Umsetzung: keine neuen Abrufe starten, wenn eine Auktion mit aktivem Auftrag bald endet; lange Abrufe prüfen zwischen ihren Schritten und warten, bis der Bietomat fertig ist.
 - Keine Zeitgrenze (Marcus, 26.10.2026): "bieten bis" abgeschafft. Geboten wird bis zum Endpreis, egal wie oft und wie lange sich die Auktion verlängert.
+
+## 16. Ausdauer und Alter (Marcus, 30.10.2026)
+
+- Ältere Spieler (Beispiel: 33 Jahre) verlieren Bälle, auch in Ausdauer.
+- Ausdauer unter 8: Der Spieler hält nicht über 90 Minuten durch, ein Wechsel muss eingeplant werden. Die Zentrale warnt, wenn Ausdauer unter 8 fällt und wenn ein Startspieler Ausdauer unter 8 hat.
+- Teamwert immer als ein Wert je Team: jeder Spieler anteilig nach seinen Spielminuten (keine Tabelle je Zeitfenster).

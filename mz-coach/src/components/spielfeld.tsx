@@ -114,7 +114,7 @@ export function Spielfeld({ spieler, titel, heatmap, vergleich = false, linien =
             {spieler
               .filter((p) => p.wert !== undefined && !p.torwart)
               .map((p, i) => (
-                <circle key={i} cx={p.x} cy={p.y} r={20} fill={heatFarbe(p.wert!)} opacity={0.6} filter={`url(#weich-${id})`} />
+                <circle key={i} cx={p.x} cy={p.y} r={17} fill={heatFarbe(p.wert!)} opacity={0.55} filter={`url(#weich-${id})`} />
               ))}
           </g>
         )}
@@ -123,30 +123,30 @@ export function Spielfeld({ spieler, titel, heatmap, vergleich = false, linien =
         ))}
         {spieler.map((s, i) => {
           const farbe = s.gegner ? "#111827" : s.ton === "rot" ? "var(--red)" : s.ton === "grau" ? "rgba(255,255,255,.4)" : s.torwart ? "var(--yellow)" : "#fff";
-          const breite = Math.max(14, Math.max(s.label.length * 4.6, (s.zusatz?.length ?? 0) * 4.2) + 6);
+          const breite = Math.max(13, Math.max(s.label.length * 4.3, (s.zusatz?.length ?? 0) * 4.1) + 5);
           return (
             <g key={i} transform={`translate(${s.x} ${s.y})`}>
               <title>{`${s.label}${s.zusatz ? ` · ${s.zusatz}` : ""}${s.wert !== undefined ? ` · ${new Intl.NumberFormat("de-DE").format(s.wert)} €` : ""}${s.torwart ? " (Torwart)" : ""} · x ${s.x} / y ${s.y}`}</title>
               {vergleich && s.gegner ? (
-                <path d="M0 -8.5 L8.5 0 L0 8.5 L-8.5 0 Z" fill="#7f1d1d" stroke="#fff" strokeWidth="1.2" filter={`url(#schatten-${id})`} />
+                <path d="M0 -7 L7 0 L0 7 L-7 0 Z" fill="#7f1d1d" stroke="#fff" strokeWidth="1.2" filter={`url(#schatten-${id})`} />
               ) : (
                 <>
-                  <circle r={8} fill={farbe} stroke="rgba(0,0,0,.18)" strokeWidth="0.8" filter={`url(#schatten-${id})`} />
-                  <circle r={8} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth="1" opacity={s.ton === "grau" ? 0 : 0.5} />
+                  <circle r={6.2} fill={farbe} stroke="rgba(0,0,0,.18)" strokeWidth="0.8" filter={`url(#schatten-${id})`} />
+                  <circle r={6.2} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth="1" opacity={s.ton === "grau" ? 0 : 0.5} />
                 </>
               )}
               {sk && s.wert !== undefined && !s.torwart && (
                 <>
-                  <circle r={11.4} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="1" />
-                  <circle r={10.2} fill="none" stroke={heatFarbe(s.wert)} strokeWidth="3" />
+                  <circle r={9.2} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="0.9" />
+                  <circle r={8.1} fill="none" stroke={heatFarbe(s.wert)} strokeWidth="2.6" />
                 </>
               )}
-              <rect x={-breite / 2} y={vergleich && s.gegner ? -20.5 : 10.5} width={breite} height={s.zusatz ? 18 : 10} rx={5} fill={s.gegner ? "rgba(127,29,29,.9)" : "rgba(0,0,0,.5)"} />
-              <text y={vergleich && s.gegner ? -13.2 : 17.8} textAnchor="middle" fontSize="7.2" fill="#fff" fontWeight="600">
+              <rect x={-breite / 2} y={vergleich && s.gegner ? -18.5 : 9} width={breite} height={s.zusatz ? 17 : 9.4} rx={4.7} fill={s.gegner ? "rgba(127,29,29,.9)" : "rgba(0,0,0,.5)"} />
+              <text y={vergleich && s.gegner ? -11.6 : 15.9} textAnchor="middle" fontSize="6.8" fill="#fff" fontWeight="600">
                 {s.label}
               </text>
               {s.zusatz && (
-                <text y={25.6} textAnchor="middle" fontSize="6.4" fill="#d1fae5" fontWeight="600">
+                <text y={23.6} textAnchor="middle" fontSize="6.2" fill="#d1fae5" fontWeight="600">
                   {s.zusatz}
                 </text>
               )}
@@ -157,9 +157,9 @@ export function Spielfeld({ spieler, titel, heatmap, vergleich = false, linien =
         {spieler
           .filter((p) => p.urteil)
           .map((p, i) => (
-            <g key={`u${i}`} transform={`translate(${p.x + 9} ${p.y - 9})`}>
-              <circle r={5} fill={p.urteil === "gut" ? "#16a34a" : "#dc2626"} stroke="#fff" strokeWidth="1.2" />
-              <text y={2.4} textAnchor="middle" fontSize="7" fontWeight="800" fill="#fff">
+            <g key={`u${i}`} transform={`translate(${p.x + 7.5} ${p.y - 7.5})`}>
+              <circle r={4.3} fill={p.urteil === "gut" ? "#16a34a" : "#dc2626"} stroke="#fff" strokeWidth="1.2" />
+              <text y={2.1} textAnchor="middle" fontSize="6" fontWeight="800" fill="#fff">
                 {p.urteil === "gut" ? "✓" : "✗"}
               </text>
             </g>

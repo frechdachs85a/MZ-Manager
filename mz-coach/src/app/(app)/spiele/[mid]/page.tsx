@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { ElfWertZeile, WertDiff } from "@/components/elf-wert";
 import { SpielberichtTeile } from "@/components/spielbericht";
-import { startelfWerte } from "@/lib/kaderwert";
+import { spielzeitWerte } from "@/lib/kaderwert";
 import { Spielfeld } from "@/components/spielfeld";
 import { alleMarktwerte } from "@/lib/marktwerte";
 import { StatVergleich } from "@/components/stat-vergleich";
@@ -72,7 +72,7 @@ export default async function SpielSeite(props: PageProps<"/spiele/[mid]">) {
           })(),
   }));
   const heim = s.teams.find((t) => t.heim) ?? s.teams[0];
-  const elfWerte = startelfWerte(getDb(), s);
+  const elfWerte = spielzeitWerte(getDb(), s);
   // Marktwerte für die Heatmap (feste Grenzen, siehe spielfeld.tsx)
   const werte = alleMarktwerte(getDb());
   const gast = s.teams.find((t) => t !== heim)!;

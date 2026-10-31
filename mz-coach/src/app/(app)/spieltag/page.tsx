@@ -27,7 +27,7 @@ const FARBE = { S: "text-green", U: "text-label-2", N: "text-red" } as const;
 export default async function Spieltag() {
   await connection();
   const l = spieltagLage(getDb());
-  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, verlauf, erwartet } = l;
+  const { lauf, gegner, gegen, empfehlung, gegnerAufstellung: ga, kaderwert: kw, steckbrief: sb, kurzfassung, scout, erwartet, teamwert } = l;
   const gName = gegner?.name ?? lauf?.gegnerName ?? "Gegner";
 
   return (
@@ -85,7 +85,7 @@ export default async function Spieltag() {
                   So in {erwartet.positionen} von {erwartet.von} Ligaspielen ·{" "}
                   {erwartet.ohneWert.length === erwartet.feld.length
                     ? "Marktwerte n. v. (Kaderseite des Gegners noch nicht gelesen)"
-                    : `Startelf-Wert ${euro(erwartet.summe)}${erwartet.ohneWert.length ? ` (ohne Wert: ${erwartet.ohneWert.join(", ")})` : ""}`}
+                    : `Wert dieser Elf ${euro(erwartet.summe)}${erwartet.ohneWert.length ? ` (ohne Wert: ${erwartet.ohneWert.join(", ")})` : ""}`}
                 </div>
                 <div className="mx-auto mt-3 max-w-[360px]">
                   <Spielfeld spieler={erwartet.feld} titel={`Aufstellung ${gName}`} heatmap={erwartet.ohneWert.length < erwartet.feld.length} />
@@ -96,49 +96,6 @@ export default async function Spieltag() {
               </Card>
             )}
             </div>
-          </Section>
-        )}
-
-        {verlauf && (
-          <Section
-            title="Kaderwert über die Spielzeit"
-            footer={`Summe der Marktwerte auf dem Feld je Zeitfenster zwischen den Wechseln, Verhältnis = deine ÷ seine; gewichtet nach Minuten (mz-wissen.md, Abschnitt 14). Du: ${verlauf.quelleEigen}. Er: ${verlauf.quelleGegner}.${verlauf.fehlend.length ? ` Ohne Marktwert (zählen mit 0): ${verlauf.fehlend.join(", ")}.` : ""}`}
-          >
-            <Card className="overflow-x-auto">
-              <table className="w-full min-w-[620px] text-[13.5px]">
-                <thead>
-                  <tr className="border-b border-separator bg-card-2 text-left text-[11px] uppercase tracking-wider text-label-3">
-                    <th className={th}>Minuten</th>
-                    <th className={th}>Wechsel davor</th>
-                    <th className={`${th} text-right`}>{TEAM.name}</th>
-                    <th className={`${th} text-right`}>{gName}</th>
-                    <th className={`${th} text-right`}>Verhältnis</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-separator">
-                  {verlauf.fenster.map((f) => (
-                    <tr key={f.von}>
-                      <td className={td}>{f.von === 0 ? "Anpfiff" : `${f.von}.`} bis {f.bis}.</td>
-                      <td className={`${td} text-label-2`}>{f.aenderung.join(", ") || "–"}</td>
-                      <td className={`${td} text-right`}>{euro(f.eigen)}</td>
-                      <td className={`${td} text-right`}>{euro(f.gegner)}</td>
-                      <td className={`${td} text-right font-bold ${f.verhaeltnis >= 1 ? "text-green" : "text-red"}`}>
-                        {f.verhaeltnis.toFixed(2).replace(".", ",")} ({f.verhaeltnis >= 1 ? "+" : ""}{Math.round((f.verhaeltnis - 1) * 100)} %)
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="bg-card-2 font-semibold">
-                    <td className={td} colSpan={2}>Nach Minuten gewichtet</td>
-                    <td className={`${td} text-right`}>{euro(verlauf.gewichtet.eigen)}</td>
-                    <td className={`${td} text-right`}>{euro(verlauf.gewichtet.gegner)}</td>
-                    <td className={`${td} text-right ${verlauf.gewichtet.verhaeltnis >= 1 ? "text-green" : "text-red"}`}>
-                      {verlauf.gewichtet.verhaeltnis.toFixed(2).replace(".", ",")} ({verlauf.gewichtet.verhaeltnis >= 1 ? "+" : ""}
-                      {Math.round((verlauf.gewichtet.verhaeltnis - 1) * 100)} %)
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </Card>
           </Section>
         )}
 
@@ -204,25 +161,32 @@ export default async function Spieltag() {
                 </Card>
               </Section>
             )}
-            <Section title="Kaderwert der Startelf" footer="Marktwert aus deiner Kaderseite und der Kaderseite des Gegners; Startelf jeweils aus dem neuesten gespeicherten Spiel (mz-wissen.md, Abschnitt 10: immer Kaderwert vergleichen).">
-              {kw?.eigen && kw.gegner ? (
+            <Section
+              title="Teamwert"
+              footer={
+                teamwert?.art === "spielzeit"
+                  ? "Ein Wert je Team: jeder Spieler zählt anteilig mit seinen erwarteten Minuten (deine Elf und Zeitwechsel aus dem Reiter, bei ihm Startelf seines neuesten Ligaspiels und die Wechsel, die er meistens so macht). Marktwerte laut Kaderseiten."
+                  : "Startelf-Wert (erwartete Wechsel unbekannt). Marktwerte laut Kaderseiten."
+              }
+            >
+              {kw?.eigen && kw.gegner && teamwert ? (
                 <Card className="p-4">
                   {[
-                    { name: TEAM.name, w: kw.eigen, eigen: true },
-                    { name: gName, w: kw.gegner, eigen: false },
-                  ].map(({ name, w, eigen }) => {
-                    const max = Math.max(kw.eigen!.summe, kw.gegner!.summe);
+                    { name: TEAM.name, w: kw.eigen, summe: teamwert.eigen, eigen: true },
+                    { name: gName, w: kw.gegner, summe: teamwert.gegner, eigen: false },
+                  ].map(({ name, w, summe, eigen }) => {
+                    const max = Math.max(teamwert.eigen, teamwert.gegner);
                     return (
                       <div key={name} className="py-2">
                         <div className="flex items-baseline justify-between gap-3">
                           <span className="font-semibold">{name}</span>
-                          <span className="display text-[22px] font-bold tabular-nums">{euro(w.summe)}</span>
+                          <span className="display text-[22px] font-bold tabular-nums">{euro(summe)}</span>
                         </div>
                         <div className="mt-1.5 h-2.5 rounded-full bg-fill">
-                          <div className={`h-2.5 rounded-full ${eigen ? "bg-tint" : "bg-label-3"}`} style={{ width: `${(w.summe / max) * 100}%` }} />
+                          <div className={`h-2.5 rounded-full ${eigen ? "bg-tint" : "bg-label-3"}`} style={{ width: `${(summe / max) * 100}%` }} />
                         </div>
                         <div className="mt-1 text-[12.5px] text-label-2">
-                          {w.mitWert} von {w.spieler} Spielern mit Marktwert
+                          {w.mitWert} von {w.spieler} Startspielern mit Marktwert
                           {w.alterSchnitt !== undefined && ` · Altersschnitt ${w.alterSchnitt.toFixed(1).replace(".", ",")}`}
                           {w.fehlt.length > 0 && ` · ohne Wert: ${w.fehlt.join(", ")}`}
                         </div>
@@ -230,9 +194,9 @@ export default async function Spieltag() {
                     );
                   })}
                   <div className="mt-2 border-t border-separator pt-3 text-[14px] font-semibold">
-                    {kw.gegner.summe > kw.eigen.summe
-                      ? `${gName} ist laut Marktwert stärker (+${Math.round((kw.gegner.summe / kw.eigen.summe - 1) * 100)} %).`
-                      : `Du bist laut Marktwert stärker (+${Math.round((kw.eigen.summe / kw.gegner.summe - 1) * 100)} %).`}
+                    {teamwert.gegner > teamwert.eigen
+                      ? `${gName} ist laut Marktwert stärker (+${Math.round((teamwert.gegner / teamwert.eigen - 1) * 100)} %).`
+                      : `Du bist laut Marktwert stärker (+${Math.round((teamwert.eigen / teamwert.gegner - 1) * 100)} %).`}
                   </div>
                 </Card>
               ) : (
