@@ -24,7 +24,9 @@ export function AufstellungVergleich({ spiel, eigeneTid, werte }: { spiel: Stats
   const ich = spiel.teams.find((t) => t.id === eigeneTid);
   if (!er || !ich) return null;
   const elf = (tid: number): P[] =>
-    spiel.spieler.filter((p) => p.teamId === tid && p.editor).map((p) => ({ x: p.editor!.x, y: p.editor!.y, name: kurz(p.name), wert: werte[p.id], torwart: p.torwart }));
+    spiel.spieler
+      .filter((p) => p.teamId === tid && p.editor)
+      .map((p) => ({ x: p.editor!.x, y: p.editor!.y, name: kurz(p.name), wert: werte[p.id], torwart: p.torwart }));
   const meine = elf(ich.id);
   const seineEigen = elf(er.id); // seine Sicht, für den Seitenvergleich
   if (!meine.length || !seineEigen.length) return null;
@@ -73,7 +75,8 @@ export function AufstellungVergleich({ spiel, eigeneTid, werte }: { spiel: Stats
   // ✓/✗ nur, wenn Werte da sind
   const urteil = (l: Duell[]) => (l.some((d) => d.farbe !== "grau") ? l.every((d) => d.farbe !== "rot") : undefined);
   if (abwehr.length) punkte.push({ text: `Abwehr gegen seine Stürmer: ${bilanz(abwehr)}`, ok: urteil(abwehr) });
-  for (const d of abwehr.filter((x) => x.farbe === "rot")) punkte.push({ text: `${d.er.name} (${mio(d.er.wert)}) gegen ${d.du.name} (${mio(d.du.wert)})`, ok: false });
+  for (const d of abwehr.filter((x) => x.farbe === "rot"))
+    punkte.push({ text: `${d.er.name} (${mio(d.er.wert)}) gegen ${d.du.name} (${mio(d.du.wert)})`, ok: false });
   if (angriff.length) punkte.push({ text: `Angriff gegen seine Abwehr: ${bilanz(angriff)}`, ok: urteil(angriff) });
   if (seiten.angriff)
     punkte.push(
@@ -107,13 +110,16 @@ export function AufstellungVergleich({ spiel, eigeneTid, werte }: { spiel: Stats
           <ul className="mt-2 space-y-1.5 text-[13.5px]">
             {punkte.map((p) => (
               <li key={p.text} className="flex gap-2">
-                <span className={`font-bold ${p.ok === true ? "text-green" : p.ok === false ? "text-red" : "text-label-3"}`}>{p.ok === true ? "✓" : p.ok === false ? "✗" : "•"}</span>
+                <span className={`font-bold ${p.ok === true ? "text-green" : p.ok === false ? "text-red" : "text-label-3"}`}>
+                  {p.ok === true ? "✓" : p.ok === false ? "✗" : "•"}
+                </span>
                 <span>{p.text}</span>
               </li>
             ))}
           </ul>
           <p className="mt-3 text-[11.5px] leading-relaxed text-label-3">
-            Ein Feld aus deiner Sicht (dein Tor unten), seine Plätze gespiegelt. Ring = Marktwert (feste Skala). ✓/✗ = Duell mit dem nächsten Gegenspieler (seine Stürmer gegen deine Abwehr, deine Stürmer gegen seine Abwehr). Steht er fast auf deinem Spieler, ist seine Raute leicht nach oben versetzt.
+            Ein Feld aus deiner Sicht (dein Tor unten), seine Plätze gespiegelt. Ring = Marktwert (feste Skala). ✓/✗ = Duell mit dem nächsten Gegenspieler
+            (seine Stürmer gegen deine Abwehr, deine Stürmer gegen seine Abwehr). Steht er fast auf deinem Spieler, ist seine Raute leicht nach oben versetzt.
             Werte = heutiger Stand der Kaderseiten.
           </p>
         </div>

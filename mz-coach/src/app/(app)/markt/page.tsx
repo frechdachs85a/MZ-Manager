@@ -9,6 +9,7 @@ import { letzterAbruf } from "@/lib/db/abruf";
 import { datumZeit, euro, spielDatum } from "@/lib/format";
 import { GRUND_TEXT, HEIMATLAND, type Grund, type Schwachstelle } from "@/lib/mz/analyse/markt";
 import { vonWatchlist, zuruecknehmen } from "./actions";
+import { posDe } from "@/lib/mz/formel";
 import { VorschlagKarte } from "@/components/vorschlag-karte";
 import { ladeWatchlist } from "@/lib/db/watch";
 import { RahmenForm, SuchKnopf } from "./formulare";
@@ -22,7 +23,7 @@ const MZ = "https://www.managerzone.com";
 const komma = (n: number, s = 2) => n.toFixed(s).replace(".", ",");
 
 // Seite Transfermarkt
-export default async function Markt() {
+export default async function Markt(props: PageProps<"/markt">) {
   await connection();
   const db = getDb();
   const { kader, start, suche, rahmen, abgelehnt, schwach, r, ergebnis } = marktErgebnis(db);
@@ -36,8 +37,13 @@ export default async function Markt() {
   const auftraege = ladeAuftraege(db).filter((a) => a.status === "aktiv");
   const watch = ladeWatchlist(db);
   const aufWatch = new Set(watch.map((w) => w.pid));
-  // Vorschläge: alle, die verbessern, ohne die schon auf der Watchlist; höchstens 8
-  const vorschlaege = (ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid)).slice(0, 8);
+  // Vorschläge: alle, die verbessern, ohne die schon auf der Watchlist; zum Durchblättern (Marcus, 31.10.2026)
+  const alleVorschlaege = (ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid));
+  const JE_SEITE = 4;
+  const seiten = Math.max(1, Math.ceil(alleVorschlaege.length / JE_SEITE));
+  const sp = await props.searchParams;
+  const seite = Math.min(seiten, Math.max(1, Number(typeof sp.seite === "string" ? sp.seite : 1) || 1));
+  const vorschlaege = alleVorschlaege.slice((seite - 1) * JE_SEITE, seite * JE_SEITE);
   const auslaender = kader.filter((s) => s.nationalitaet && s.nationalitaet !== HEIMATLAND);
 
   return (
@@ -64,10 +70,48 @@ export default async function Markt() {
               )}
               <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {vorschlaege.map((b, i) => (
-                  <VorschlagKarte key={b.kandidat.pid} b={b} rang={i + 1} verkauf={verkaeufe.get(b.kandidat.pid)} imBietomat={imBietomat.get(b.kandidat.pid)} />
+                  <VorschlagKarte
+                    key={b.kandidat.pid}
+                    b={b}
+                    rang={(seite - 1) * JE_SEITE + i + 1}
+                    verkauf={verkaeufe.get(b.kandidat.pid)}
+                    imBietomat={imBietomat.get(b.kandidat.pid)}
+                  />
                 ))}
               </div>
-              <p className="mt-2 text-[12px] text-label-3">Stand der Marktsuche vom {datumZeit(suche.zeit)}.</p>
+              {seiten > 1 && (
+                <nav className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-[14px]" aria-label="Vorschläge blättern">
+                  <Link
+                    href={`/markt?seite=${Math.max(1, seite - 1)}`}
+                    scroll={false}
+                    aria-disabled={seite === 1}
+                    className={`rounded-md border border-separator px-3 py-1 ${seite === 1 ? "pointer-events-none opacity-40" : "hover:text-tint"}`}
+                  >
+                    ← zurück
+                  </Link>
+                  {Array.from({ length: seiten }, (_, n) => n + 1).map((n) => (
+                    <Link
+                      key={n}
+                      href={`/markt?seite=${n}`}
+                      scroll={false}
+                      className={`min-w-8 rounded-md border px-2 py-1 text-center tabular-nums ${n === seite ? "border-tint bg-tint/10 font-semibold text-tint" : "border-separator hover:text-tint"}`}
+                    >
+                      {n}
+                    </Link>
+                  ))}
+                  <Link
+                    href={`/markt?seite=${Math.min(seiten, seite + 1)}`}
+                    scroll={false}
+                    aria-disabled={seite === seiten}
+                    className={`rounded-md border border-separator px-3 py-1 ${seite === seiten ? "pointer-events-none opacity-40" : "hover:text-tint"}`}
+                  >
+                    weiter →
+                  </Link>
+                </nav>
+              )}
+              <p className="mt-2 text-center text-[12px] text-label-3">
+                {alleVorschlaege.length} Vorschläge · Seite {seite} von {seiten} · Stand der Marktsuche vom {datumZeit(suche.zeit)}.
+              </p>
             </>
           ) : (
             <Card className="p-4">
@@ -93,7 +137,7 @@ export default async function Markt() {
                         </a>
                         {w.bewertung && (
                           <div className="text-[12.5px] text-label-2">
-                            als {w.bewertung.rolle} statt {w.bewertung.statt}: +{komma(w.bewertung.gewinn)} MZ-Wert (beim Annehmen)
+                            als {posDe(w.bewertung.rolle)} statt {w.bewertung.statt}: +{komma(w.bewertung.gewinn)} MZ-Wert (beim Annehmen)
                           </div>
                         )}
                       </div>
@@ -243,7 +287,7 @@ function SchwachstellenKarte({ liste, fehlt }: { liste: Schwachstelle[]; fehlt: 
           <li key={s.slot.pid} title={`${s.spieler.name} · x ${s.slot.x} / y ${s.slot.y}`}>
             <div className="flex items-baseline justify-between gap-2 text-[15px]">
               <span className="min-w-0 truncate">
-                <span className="mr-1.5 inline-block w-[4.6rem] text-[12px] font-semibold uppercase tracking-wide text-label-2">{s.rolle}</span>
+                <span className="mr-1.5 inline-block w-[4.6rem] text-[12px] font-semibold uppercase tracking-wide text-label-2">{posDe(s.rolle)}</span>
                 {s.spieler.name}
               </span>
               <span className={`tabular-nums ${i === 0 ? "font-semibold" : "text-label-2"}`}>{komma(s.wert)}</span>

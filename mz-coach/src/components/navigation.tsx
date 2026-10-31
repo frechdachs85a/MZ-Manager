@@ -20,88 +20,148 @@ const s = {
 } as const;
 
 const GRUPPEN: { titel: string | null; tabs: Tab[] }[] = [
-  { titel: null, tabs: [
-    { href: "/", label: "Zentrale", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />
-      </svg>
-    ) },
-  ] },
-  { titel: "Verein", tabs: [
-    { href: "/kader", label: "Kader", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <circle cx="9" cy="8" r="3.2" />
-        <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
-        <circle cx="17" cy="9" r="2.5" />
-        <path d="M16 14.2c2.8.2 5 2.7 5 5.8" />
-      </svg>
-    ) },
-    { href: "/jugend", label: "Jugend", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z" />
-      </svg>
-    ) },
-    { href: "/markt", label: "Transfermarkt", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <path d="M4 7h16l-1.2 12.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z" />
-        <path d="M8.5 10V6.5a3.5 3.5 0 0 1 7 0V10" />
-      </svg>
-    ) },
-  ] },
-  { titel: "Spieltag", tabs: [
-    { href: "/spieltag", label: "Spieltag", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <rect x="3.5" y="4.5" width="17" height="16" rx="2" />
-        <path d="M3.5 9.5h17M8 2.5v4M16 2.5v4M8 14l2.5 2.5L16 12" />
-      </svg>
-    ) },
-    { href: "/gegner", label: "Gegner", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <circle cx="11" cy="11" r="6.5" />
-        <path d="m20.5 20.5-4.8-4.8" />
-      </svg>
-    ) },
-    { href: "/taktik", label: "Taktik", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <rect x="3.5" y="2.5" width="17" height="19" rx="2" />
-        <path d="M3.5 12h17M9 2.5v3.5h6V2.5M9 21.5V18h6v3.5" />
-        <circle cx="12" cy="12" r="2.3" />
-      </svg>
-    ) },
-    { href: "/spiele", label: "Spiele", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <circle cx="12" cy="12" r="8.5" />
-        <path d="m12 7.5 3.6 2.6-1.4 4.2H9.8L8.4 10.1z" />
-      </svg>
-    ) },
-  ] },
-  { titel: "Analyse", tabs: [
-    { href: "/saison", label: "Saison", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
-      </svg>
-    ) },
-    { href: "/top10", label: "Top 10", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
-        <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z" />
-      </svg>
-    ) },
-    { href: "/portfolio", label: "Taktik-Portfolio", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
-        <rect x="3" y="7" width="18" height="13" rx="2" />
-        <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18" />
-      </svg>
-    ) },
-  ] },
+  {
+    titel: null,
+    tabs: [
+      {
+        href: "/",
+        label: "Zentrale",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    titel: "Verein",
+    tabs: [
+      {
+        href: "/kader",
+        label: "Kader",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <circle cx="9" cy="8" r="3.2" />
+            <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+            <circle cx="17" cy="9" r="2.5" />
+            <path d="M16 14.2c2.8.2 5 2.7 5 5.8" />
+          </svg>
+        ),
+      },
+      {
+        href: "/jugend",
+        label: "Jugend",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z" />
+          </svg>
+        ),
+      },
+      {
+        href: "/markt",
+        label: "Transfermarkt",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <path d="M4 7h16l-1.2 12.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z" />
+            <path d="M8.5 10V6.5a3.5 3.5 0 0 1 7 0V10" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    titel: "Spieltag",
+    tabs: [
+      {
+        href: "/spieltag",
+        label: "Spieltag",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <rect x="3.5" y="4.5" width="17" height="16" rx="2" />
+            <path d="M3.5 9.5h17M8 2.5v4M16 2.5v4M8 14l2.5 2.5L16 12" />
+          </svg>
+        ),
+      },
+      {
+        href: "/gegner",
+        label: "Gegner",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m20.5 20.5-4.8-4.8" />
+          </svg>
+        ),
+      },
+      {
+        href: "/taktik",
+        label: "Taktik",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <rect x="3.5" y="2.5" width="17" height="19" rx="2" />
+            <path d="M3.5 12h17M9 2.5v3.5h6V2.5M9 21.5V18h6v3.5" />
+            <circle cx="12" cy="12" r="2.3" />
+          </svg>
+        ),
+      },
+      {
+        href: "/spiele",
+        label: "Spiele",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="m12 7.5 3.6 2.6-1.4 4.2H9.8L8.4 10.1z" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    titel: "Analyse",
+    tabs: [
+      {
+        href: "/saison",
+        label: "Saison",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+          </svg>
+        ),
+      },
+      {
+        href: "/top10",
+        label: "Top 10",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+            <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z" />
+          </svg>
+        ),
+      },
+      {
+        href: "/portfolio",
+        label: "Taktik-Portfolio",
+        icon: (
+          <svg viewBox="0 0 24 24" {...s}>
+            <rect x="3" y="7" width="18" height="13" rx="2" />
+            <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18" />
+          </svg>
+        ),
+      },
+    ],
+  },
 ];
 
-const EINSTELLUNGEN: Tab = { href: "/einstellungen", label: "Einstellungen", icon: (
-      <svg viewBox="0 0 24 24" {...s}>
+const EINSTELLUNGEN: Tab = {
+  href: "/einstellungen",
+  label: "Einstellungen",
+  icon: (
+    <svg viewBox="0 0 24 24" {...s}>
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
     </svg>
-    ) };
+  ),
+};
 
 const ALLE = GRUPPEN.flatMap((g) => g.tabs);
 const tab = (href: string) => ALLE.find((t) => t.href === href)!;

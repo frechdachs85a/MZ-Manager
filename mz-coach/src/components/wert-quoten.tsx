@@ -39,7 +39,8 @@ export function WertQuoten({ elf, feld, spiele }: { elf: Quote[]; feld: Quote[];
         </tbody>
       </table>
       <p className="border-t border-separator px-4 py-2 text-[12px] text-label-3">
-        {spiele} Spiele, jedes aus Sicht beider Teams gezählt (Sichten). Nur Spiele, in denen alle Spieler einen Marktwert hatten. Marktwerte vom Abrufdatum, nicht vom Spieltag.
+        {spiele} Spiele, jedes aus Sicht beider Teams gezählt (Sichten). Nur Spiele, in denen alle Spieler einen Marktwert hatten. Marktwerte vom Abrufdatum,
+        nicht vom Spieltag.
       </p>
     </Card>
   );

@@ -22,8 +22,8 @@ export function RegelSaetze({ regeln }: { regeln: RegelSatz[] }) {
         <div className="mt-1 text-label-3">Keine Regel ausgelöst.</div>
       )}
       <div className="mt-1.5 text-[12px] text-label-3">
-        Nur ausgelöste Regeln stehen in der XML. Rolle des Ausgewechselten aus seiner Startposition; der Einwechsler übernimmt dessen Platz (abgeleitet).
-        Eine Umstellung der Formation im Spiel ist nicht erkennbar.
+        Nur ausgelöste Regeln stehen in der XML. Rolle des Ausgewechselten aus seiner Startposition; der Einwechsler übernimmt dessen Platz (abgeleitet). Eine
+        Umstellung der Formation im Spiel ist nicht erkennbar.
       </div>
     </div>
   );

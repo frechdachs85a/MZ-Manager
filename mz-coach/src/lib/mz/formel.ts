@@ -5,6 +5,9 @@ import { FORMEL_SKILLS, type FormelSkill, type Skills } from "./skills";
 // Technik, Zweikampf, Flanken, Erfahrung
 export const POSITIONEN = ["TW", "VT", "Anchorman", "MF", "Flügel", "Sturm"] as const;
 export type Position = (typeof POSITIONEN)[number];
+// Anzeige auf Deutsch (Marcus, 31.10.2026): "Anchorman" heißt in der Formel so, angezeigt wird "Sechser" (defensives
+// Mittelfeld vor der Abwehr); die übrigen Kürzel sind schon deutsch.
+export const posDe = (p: string) => (p === "Anchorman" ? "Sechser" : p);
 
 const ROH: Record<Position, number[]> = {
   TW: [0.09, 0.09, 0.09, 0.02, 0, 0, 0.55, 0.09, 0, 0.02, 0.05],
@@ -19,9 +22,7 @@ export const GEWICHTE: Record<Position, Record<FormelSkill, number>> = Object.fr
   POSITIONEN.map((p) => [p, Object.fromEntries(FORMEL_SKILLS.map((s, i) => [s, ROH[p][i]]))]),
 ) as Record<Position, Record<FormelSkill, number>>;
 
-export type MzWert =
-  | { ok: true; wert: number }
-  | { ok: false; fehlend: FormelSkill[] };
+export type MzWert = { ok: true; wert: number } | { ok: false; fehlend: FormelSkill[] };
 
 // Liefert den Wert nur, wenn alle Skills mit Gewicht > 0 bekannt sind. Nie schätzen.
 export function mzWert(skills: Skills, position: Position): MzWert {

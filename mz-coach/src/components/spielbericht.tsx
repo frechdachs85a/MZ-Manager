@@ -45,9 +45,7 @@ function Spielertabelle({ spieler }: { spieler: SpielerWert[] }) {
               <td className={td}>{p.rolle ?? "eingewechselt"}</td>
               <td className={`${td} text-right font-semibold`}>{p.tore || ""}</td>
               <td className={`${td} text-right`}>{p.vorlagen || ""}</td>
-              <td className={`${td} text-right`}>
-                {p.schuesseTor + p.schuesseDaneben ? `${p.schuesseTor + p.schuesseDaneben} (${p.schuesseTor})` : ""}
-              </td>
+              <td className={`${td} text-right`}>{p.schuesseTor + p.schuesseDaneben ? `${p.schuesseTor + p.schuesseDaneben} (${p.schuesseTor})` : ""}</td>
               <td className={`${td} text-right`}>{p.paesse || ""}</td>
               <td className={`${td} text-right`}>{p.passquote ? quoteText(p.passquote) : ""}</td>
               <td className={`${td} text-right`}>{p.zweikaempfe ? `${quoteText(p.zweikaempfe)} von ${p.zweikaempfe.von}` : ""}</td>
@@ -113,7 +111,10 @@ export function SpielberichtTeile({ b }: { b: SpielBericht }) {
         </Section>
       )}
 
-      <Section title={`Spielerwerte ${b.eigen.name}`} footer="Startelf zuerst, Rolle aus der Startposition. Grau: eingewechselt. Zweikämpfe = gewonnene Anteile.">
+      <Section
+        title={`Spielerwerte ${b.eigen.name}`}
+        footer="Startelf zuerst, Rolle aus der Startposition. Grau: eingewechselt. Zweikämpfe = gewonnene Anteile."
+      >
         <Spielertabelle spieler={b.spieler} />
       </Section>
       <Section title={`Spielerwerte ${b.gegner.name}`}>

@@ -5,6 +5,7 @@ import { potenzial } from "@/lib/mz/analyse/potenzial";
 import type { Bewertung } from "@/lib/mz/analyse/markt";
 import type { Verkauf } from "@/lib/mz/parser/verkauf";
 import { ALLE_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
+import { posDe } from "@/lib/mz/formel";
 
 // Transfervorschlag als Karte (Marcus, 31.10.2026): wer, für wen, wie viel besser, Potenzial, alle Skills, Preis und Ende;
 // Annehmen setzt ihn auf die Watchlist, Ablehnen nimmt ihn aus den Vorschlägen.
@@ -33,7 +34,7 @@ export function VorschlagKarte({ b, verkauf, imBietomat, rang }: { b: Bewertung;
       <header className="flex items-start justify-between gap-3 bg-gradient-to-br from-tint/15 to-transparent px-4 pb-3 pt-4">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">
-            #{rang} · als {b.ziel.rolle} statt {b.ziel.spieler.name.split(" ").at(-1)}
+            #{rang} · als {posDe(b.ziel.rolle)} statt {b.ziel.spieler.name.split(" ").at(-1)}
           </div>
           <a
             href={`${MZ}/?p=players&pid=${k.pid}`}
@@ -57,7 +58,7 @@ export function VorschlagKarte({ b, verkauf, imBietomat, rang }: { b: Bewertung;
       <div className="space-y-1.5 px-4 pt-1">
         <Balken label={b.ziel.spieler.name.split(" ").at(-1)!} wert={b.ziel.wert} ton="alt" />
         <Balken label={k.name.split(" ").at(-1)!} wert={b.neu} ton="neu" />
-        {p.plusEins !== undefined && p.plusEins > b.neu && <Balken label="Potenzial (+1 Ball je offenem Skill)" wert={p.plusEins} ton="pot" />}
+        {p.plusEins !== undefined && p.plusEins > b.neu && <Balken label="Potenzial" wert={p.plusEins} ton="pot" />}
         <div className="text-[12px] text-label-2">
           {p.trainierbar.length ? (
             <>Potenzial: noch trainierbar in dieser Rolle: {p.trainierbar.join(", ")}</>
@@ -67,25 +68,25 @@ export function VorschlagKarte({ b, verkauf, imBietomat, rang }: { b: Bewertung;
         </div>
       </div>
 
-      <details className="group px-4 pt-2">
-        <summary className="cursor-pointer list-none text-[12.5px] font-semibold text-tint">
-          <span className="group-open:hidden">Alle Skills zeigen</span>
-          <span className="hidden group-open:inline">Skills ausblenden</span>
-        </summary>
-        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-x-5">
+      <div className="px-4 pt-3">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-label-3">Skills</div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-x-5">
           {ALLE_SKILLS.map((s) => (
             <SkillKugeln key={s} label={SKILL_LABEL[s]} skill={k.skills[s]} kompakt />
           ))}
         </div>
-      </details>
+      </div>
 
       <div className="px-4 py-3">
         <MarktInfo s={k} verkauf={verkauf} />
         {b.vorbehalte.slice(1).some((v) => !v.startsWith("Auktionsende") && !v.startsWith("Rahmen nicht eingetragen")) && (
           <ul className="mt-2 space-y-0.5 text-[12px] text-orange">
-            {b.vorbehalte.slice(1).filter((v) => !v.startsWith("Auktionsende") && !v.startsWith("Rahmen nicht eingetragen")).map((v) => (
-              <li key={v}>• {v}</li>
-            ))}
+            {b.vorbehalte
+              .slice(1)
+              .filter((v) => !v.startsWith("Auktionsende") && !v.startsWith("Rahmen nicht eingetragen"))
+              .map((v) => (
+                <li key={v}>• {v}</li>
+              ))}
           </ul>
         )}
       </div>

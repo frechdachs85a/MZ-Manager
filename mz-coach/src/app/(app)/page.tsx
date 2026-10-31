@@ -12,8 +12,8 @@ import { reiterUebersicht } from "@/lib/reiter-uebersicht";
 import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { spieltagCheckliste } from "@/lib/checkliste";
-import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
-import { tabelleAus } from "@/lib/mz/parser/tabelle";
+
+import { LigaTabelle } from "@/components/liga-tabelle";
 import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
@@ -28,19 +28,22 @@ export default async function Uebersicht() {
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
   const db = getDb();
   const { bilanz, warnungen: verlust } = skillBilanz(db, 14);
-  const taktikVorschlaege = reiterUebersicht(db).karten.filter((k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag).length;
+  const taktikVorschlaege = reiterUebersicht(db).karten.filter(
+    (k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag,
+  ).length;
   const kader = ladeKader(db);
   const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
-  const taktikStand = kader.map((s) => s.statusStand?.aufstellbar).filter(Boolean).sort().at(-1);
+  const taktikStand = kader
+    .map((s) => s.statusStand?.aufstellbar)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
   const fehlen = einsatz.filter((x) => x.e.lage === "nicht_bereit" || x.e.lage === "unklar" || x.s.status?.verletzt);
   const zurueck = einsatz.filter((x) => x.e.lage === "wieder_bereit");
   const gesperrt = kader.filter((s) => s.status?.gesperrt);
   const start = startelfAusLetztemSpiel(db);
   const st = spieltagLage(db);
   const check = spieltagCheckliste(db);
-  const tabRoh = letzteRohseite(db, "tabelle");
-  const tabHtml = tabRoh ? ladeRohseite(db, tabRoh.id, "dom") ?? ladeRohseite(db, tabRoh.id, "roh") : null;
-  const tabelle = tabHtml ? tabelleAus(tabHtml.html, TEAM.name) : null;
   const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
   // Pokalsperren zählen fürs Ligaspiel nicht
   const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.filter(sperreGiltFuerLiga).map((s) => s.pid)]).size;
@@ -52,9 +55,21 @@ export default async function Uebersicht() {
     .filter((s): s is NonNullable<typeof s> => !!s && (s.skills.ausdauer?.wert ?? 10) < AUSDAUER_GRENZE && !verlust.some((v) => v.pid === s.pid));
   const warnungen = [
     ...verlust.map((v) => ({ name: v.name, text: v.text })),
-    ...schwacheAusdauer.map((s) => ({ name: s.name, text: `Startspieler mit Ausdauer ${s.skills.ausdauer?.wert}: hält keine 90 Minuten durch, Wechsel einplanen` })),
+    ...schwacheAusdauer.map((s) => ({
+      name: s.name,
+      text: `Startspieler mit Ausdauer ${s.skills.ausdauer?.wert}: hält keine 90 Minuten durch, Wechsel einplanen`,
+    })),
   ];
-  const anstoss = st.lauf?.anstoss ? new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(st.lauf.anstoss)) : null;
+  const anstoss = st.lauf?.anstoss
+    ? new Intl.DateTimeFormat("de-DE", {
+        timeZone: "Europe/Berlin",
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(st.lauf.anstoss))
+    : null;
 
   return (
     <>
@@ -107,9 +122,7 @@ export default async function Uebersicht() {
                   <b>{st.vorschlag.taktik}</b>
                 </span>
               )}
-              {st.teamwert && (
-                <WertDiff eigen={st.teamwert.eigen} gegner={st.teamwert.gegner} klein />
-              )}
+              {st.teamwert && <WertDiff eigen={st.teamwert.eigen} gegner={st.teamwert.gegner} klein />}
               {st.liga && (
                 <span className={st.ligaStatus?.ok ? "text-green" : "text-label-2"}>
                   Formation Liga {st.ligaStatus?.ok ? "✓ in ManagerZone" : st.ligaStatus ? "✗ nicht gespeichert" : "noch nicht gespeichert"}
@@ -120,19 +133,19 @@ export default async function Uebersicht() {
         </Link>
       </div>
       <div className="seite mt-4 grid grid-cols-2 gap-4">
-          <Kachel
-            titel="Fehlen oder unklar"
-            ton={taktikStand && nichtDabei > 0 ? "red" : "tint"}
-            wert={taktikStand ? nichtDabei : "n. v."}
-            unten={taktikStand ? `${zurueck.length} kommen rechtzeitig zurück` : "Taktikseite noch nicht eingelesen"}
-          />
-          <Kachel
-            titel="Größte Schwachstelle"
-            ton="gold"
-            wert={schwach ? schwach.wert.toFixed(2).replace(".", ",") : "n. v."}
-            unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
-            href="/markt"
-          />
+        <Kachel
+          titel="Fehlen oder unklar"
+          ton={taktikStand && nichtDabei > 0 ? "red" : "tint"}
+          wert={taktikStand ? nichtDabei : "n. v."}
+          unten={taktikStand ? `${zurueck.length} kommen rechtzeitig zurück` : "Taktikseite noch nicht eingelesen"}
+        />
+        <Kachel
+          titel="Größte Schwachstelle"
+          ton="gold"
+          wert={schwach ? schwach.wert.toFixed(2).replace(".", ",") : "n. v."}
+          unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
+          href="/markt"
+        />
       </div>
 
       <div className="seite grid gap-x-6 lg:grid-cols-2">
@@ -163,7 +176,11 @@ export default async function Uebersicht() {
 
         <Section
           title={`Verfügbarkeit am ${kurzDatum}`}
-          aktion={<Link href="/kader" className="text-[12.5px] font-semibold uppercase tracking-wider text-tint hover:text-tint-hell">Kader ({kader.length}) →</Link>}
+          aktion={
+            <Link href="/kader" className="text-[12.5px] font-semibold uppercase tracking-wider text-tint hover:text-tint-hell">
+              Kader ({kader.length}) →
+            </Link>
+          }
           footer={
             taktikStand
               ? `Kegel laut Taktikseite (Stand ${datumZeit(taktikStand)}) plus Enddatum aus dem Trainingslager. Ob ein Spieler am Enddatum selbst schon frei ist, ist nicht belegt. Sperren stehen auf ManagerZone je Wettbewerb.`
@@ -178,18 +195,32 @@ export default async function Uebersicht() {
                 <Row title="Alle aufstellbar" detail="Laut Taktikseite hat kein Spieler einen Kegel." />
               )}
               {fehlen.map(({ s, e }) => (
-                <Row key={s.pid} title={<span className="flex flex-wrap items-center gap-1.5">{s.name} <StatusBadges s={s} /></span>} detail={e.text} />
+                <Row
+                  key={s.pid}
+                  title={
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {s.name} <StatusBadges s={s} />
+                    </span>
+                  }
+                  detail={e.text}
+                />
               ))}
               {zurueck.map(({ s, e }) => (
-                <Row key={s.pid} title={<span className="flex flex-wrap items-center gap-1.5">{s.name} <span className="text-[12px] font-semibold uppercase tracking-wider text-green">wieder dabei</span></span>} detail={e.text} />
+                <Row
+                  key={s.pid}
+                  title={
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {s.name} <span className="text-[12px] font-semibold uppercase tracking-wider text-green">wieder dabei</span>
+                    </span>
+                  }
+                  detail={e.text}
+                />
               ))}
               {gesperrt.map((s) => (
                 <Row
                   key={`g${s.pid}`}
                   title={`${s.name}: Sperre`}
-                  detail={(s.sperren ?? [])
-                    .map((x) => `${x.karte}, ${x.spiele} Spiel(e), gilt laut Seite für ${x.art}: ${x.wettbewerb}`)
-                    .join(" · ")}
+                  detail={(s.sperren ?? []).map((x) => `${x.karte}, ${x.spiele} Spiel(e), gilt laut Seite für ${x.art}: ${x.wettbewerb}`).join(" · ")}
                 />
               ))}
             </List>
@@ -218,38 +249,7 @@ export default async function Uebersicht() {
             <Unavailable title="Bälle" reason="In den letzten 14 Tagen keine Skill-Änderung in den Kaderabrufen." />
           )}
         </Section>
-        <Section title="Tabelle" footer={tabRoh ? `Stand ${datumZeit(tabRoh.abgerufen)}, so wie ManagerZone sie zeigt.` : undefined}>
-          {tabelle ? (
-            <Card>
-              <table className="w-full text-[13.5px]">
-                {tabelle.kopf.length > 0 && (
-                  <thead>
-                    <tr className="border-b border-separator bg-card-2 text-left text-[11px] uppercase tracking-wider text-label-3">
-                      {tabelle.kopf.map((k, i) => (
-                        <th key={i} className="px-3 py-2 font-semibold first:pl-4 last:pr-4">{k}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                )}
-                <tbody className="divide-y divide-separator">
-                  {tabelle.zeilen.map((z, i) => (
-                    <tr key={i} className={z.eigen ? "bg-tint/[0.12] font-semibold text-label" : "text-label-2"}>
-                      {z.zellen.map((c, j) => (
-                        <td key={j} className="px-3 py-1.5 tabular-nums first:pl-4 last:pr-4">{c}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
-          ) : (
-            <Unavailable
-              title={TEAM.liga}
-              reason={tabRoh ? `Tabellenseite vom ${datumZeit(tabRoh.abgerufen)} gespeichert, aber keine Tabelle mit ${TEAM.name} darin erkannt.` : "Wird beim täglichen Abruf (ab 4 Uhr, mit Login) geholt."}
-            />
-          )}
-        </Section>
-
+        <LigaTabelle db={db} />
       </div>
     </>
   );

@@ -2,17 +2,7 @@
 // schmale Überschriften, Akzentgrün, Gold für Bewertungen.
 
 // Panel mit Kopfzeile wie im Manager-Spiel (Titel links, Aktion rechts)
-export function Section({
-  title,
-  footer,
-  aktion,
-  children,
-}: {
-  title?: string;
-  footer?: string;
-  aktion?: React.ReactNode;
-  children: React.ReactNode;
-}) {
+export function Section({ title, footer, aktion, children }: { title?: string; footer?: string; aktion?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="mt-8">
       {title && (
@@ -80,13 +70,7 @@ export function Unavailable({ title, reason }: { title: string; reason: string }
 }
 
 // Kleines Etikett
-export function Badge({
-  children,
-  tone = "neutral",
-}: {
-  children: React.ReactNode;
-  tone?: "neutral" | "green" | "red" | "orange" | "tint";
-}) {
+export function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "green" | "red" | "orange" | "tint" }) {
   const tones = {
     neutral: "bg-fill text-label-2",
     green: "bg-green/15 text-green",
@@ -95,9 +79,7 @@ export function Badge({
     tint: "bg-tint/15 text-tint-hell",
   };
   return (
-    <span className={`inline-flex items-center rounded-[4px] px-1.5 py-[2px] text-[10.5px] font-bold uppercase tracking-wider ${tones[tone]}`}>
-      {children}
-    </span>
+    <span className={`inline-flex items-center rounded-[4px] px-1.5 py-[2px] text-[10.5px] font-bold uppercase tracking-wider ${tones[tone]}`}>{children}</span>
   );
 }
 

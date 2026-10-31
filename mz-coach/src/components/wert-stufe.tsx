@@ -20,7 +20,12 @@ export function WertLegende() {
       <span className="text-label-3">MZ-Wert:</span>
       {STUFEN.map((s, i) => (
         <span key={s.name} className={`rounded-[6px] px-2 py-0.5 ${s.cls} ${s.name === "ungeeignet" ? "border border-separator" : ""}`}>
-          {s.name} {i === 0 ? `ab ${s.ab.toFixed(1).replace(".", ",")}` : s.ab === -Infinity ? `unter ${STUFEN[i - 1].ab.toFixed(1).replace(".", ",")}` : `${s.ab.toFixed(1).replace(".", ",")} bis ${STUFEN[i - 1].ab.toFixed(1).replace(".", ",")}`}
+          {s.name}{" "}
+          {i === 0
+            ? `ab ${s.ab.toFixed(1).replace(".", ",")}`
+            : s.ab === -Infinity
+              ? `unter ${STUFEN[i - 1].ab.toFixed(1).replace(".", ",")}`
+              : `${s.ab.toFixed(1).replace(".", ",")} bis ${STUFEN[i - 1].ab.toFixed(1).replace(".", ",")}`}
         </span>
       ))}
     </div>

@@ -32,7 +32,13 @@ export function MarktInfo({ s, stand, verkauf, hell = false }: { s: MarktSpieler
         <Feld titel="Auktionsende" wert={ende(s.markt.ende)} stark />
         <Feld
           titel="Letzter Verkauf"
-          wert={!verkauf ? "noch nicht gelesen" : verkauf.preis !== undefined ? `${eur(verkauf.preis)}${verkauf.datum ? ` (${verkauf.datum.split("-").reverse().join(".")})` : ""}` : "noch nie verkauft"}
+          wert={
+            !verkauf
+              ? "noch nicht gelesen"
+              : verkauf.preis !== undefined
+                ? `${eur(verkauf.preis)}${verkauf.datum ? ` (${verkauf.datum.split("-").reverse().join(".")})` : ""}`
+                : "noch nie verkauft"
+          }
         />
       </div>
       {stand && <div className={`mt-1.5 text-[11px] ${hell ? "text-white/60" : "text-label-3"}`}>{stand}</div>}
