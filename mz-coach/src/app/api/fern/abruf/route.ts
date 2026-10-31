@@ -8,12 +8,11 @@ import { wertScanAbrufen } from "@/lib/mz/abruf/wertscan";
 import { ligaHinterlegen } from "@/lib/mz/abruf/liga";
 import { gebotsformularLesen } from "@/lib/mz/abruf/bietomat";
 import { scoutspieleAbrufen } from "@/lib/mz/abruf/scoutspiele";
-import { marktLinkTesten } from "@/lib/mz/abruf/markt-link";
 
 // Abruf für Claude mit Fernschlüssel starten (siehe src/lib/fern.ts): ?art=kader|markt|top|spieltag|wertscan|liga|gebotsformular (nur lesen). Läuft im Hintergrund,
 // das Ergebnis steht danach im Abrufprotokoll der Diagnose. Gebremst je Art; nach "Passwort falsch" oder
 // "gesperrt" blockiert die Sitzung selbst jeden weiteren Login.
-const ABRUFE = { kader: kaderAbrufen, markt: marktAbrufen, top: topAbrufen, spieltag: spieltagAbrufen, wertscan: wertScanAbrufen, liga: ligaHinterlegen, gebotsformular: (db: Parameters<typeof gebotsformularLesen>[0]) => gebotsformularLesen(db), scoutspiele: (db: Parameters<typeof scoutspieleAbrufen>[0]) => scoutspieleAbrufen(db, { manuell: true }), marktlink: (db: Parameters<typeof marktLinkTesten>[0]) => marktLinkTesten(db) } as const;
+const ABRUFE = { kader: kaderAbrufen, markt: marktAbrufen, top: topAbrufen, spieltag: spieltagAbrufen, wertscan: wertScanAbrufen, liga: ligaHinterlegen, gebotsformular: (db: Parameters<typeof gebotsformularLesen>[0]) => gebotsformularLesen(db), scoutspiele: (db: Parameters<typeof scoutspieleAbrufen>[0]) => scoutspieleAbrufen(db, { manuell: true }) } as const;
 
 // Fernabruf starten (nur mit Fernschlüssel; je Art gebremst)
 export async function POST(request: Request) {

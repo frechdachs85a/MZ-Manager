@@ -346,6 +346,7 @@ Transfermarkt (31.10.2026)
 - Transfermarkt-Reiter (Marcus, 31.10.2026): Vorschläge, Watchlist, Gebote (Bietomat). Spieler verschwinden von der Watchlist, sobald ihre Auktion vorbei ist (zuletzt bekanntes Ende plus 30 Minuten; verlängerte Enden aus der neuesten Suche oder dem Bietomat zählen).
 - Ligatabelle (Marcus, 31.10.2026): ändert sich nur nach Ligaspielen, deshalb nur im Spieltag-Abruf 5 Stunden nach jedem Ligaspiel holen. Sie steht nicht im Seiten-HTML der Ligaseite, sondern im Reiter „Tabelle“ (a#league_tab_table, ajax.php …&sub=table); Spalten: Platz, Mannschaft, Sp, G, U, V, +, -, =, Pkt, Letzte 6 Spiele.
 - Transfermarkt (Marcus, 31.10.2026): überall alle Infos zum Spieler, auch auf Watchlist und Gebote (Skills, MZ-Werte, Eckdaten, wen er ersetzt und um wie viel).
+- Transfermarkt (Marcus, 31.10.2026): Klick auf den Spielernamen öffnet ihn in einem neuen Tab auf dem Transfermarkt von ManagerZone: https://www.managerzone.com/?p=transfer&sub=players&u=<Spielernummer> (Adresse von Marcus; per Test bestätigt, die Suche zeigt genau diesen Spieler). Wer ein aktives Gebot hat, steht unter Gebote, nicht auf der Watchlist. Gebot entfernen: „Verwerfen“ (weg, auch von der Watchlist) oder „Zurück auf Watchlist“.
 
 Arbeitsweise
 - Alles, was besprochen wird, in dieser Datei festhalten und vor neuen Aufgaben hier nachsehen, damit nichts doppelt besprochen werden muss.

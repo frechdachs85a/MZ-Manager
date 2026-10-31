@@ -13,6 +13,7 @@ import { SpielerProfil } from "@/components/spieler-profil";
 import { MarktInfo } from "@/components/markt-info";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
 import { MarktReiter } from "@/components/markt-reiter";
+import { mzMarktLink } from "@/lib/mz/formel";
 import { watchlistAktuell } from "@/lib/watchlist";
 import { marktErgebnis, verbesserungFuer } from "@/lib/markt-ergebnis";
 import { VerbesserungZeile } from "@/components/verbesserung-zeile";
@@ -69,16 +70,20 @@ export default async function BietomatSeite() {
                   <li key={a.pid} className="py-3">
                     <div className="flex items-start gap-3">
                       <div className="min-w-0 flex-1">
-                        <div className="text-[14.5px] font-medium leading-snug">{`${a.name ?? "?"} (${a.pid})`}</div>
+                        <a href={mzMarktLink(a.pid)} target="_blank" rel="noreferrer" title="Auf dem Transfermarkt von ManagerZone öffnen" className="text-[14.5px] font-medium leading-snug hover:underline">{`${a.name ?? "?"} (${a.pid})`}</a>
                         {!a.auktionEnde && (
                           <div className="mt-0.5 text-[12.5px] text-red">Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten.</div>
                         )}
                       </div>
                       <Badge tone={STATUS_TON[a.status]}>{a.status}</Badge>
-                      <form action={auftragLoeschen}>
+                      {/* Gebot entfernen (Marcus, 31.10.2026): ganz verwerfen oder zurück auf die Watchlist */}
+                      <form action={auftragLoeschen} className="flex flex-col items-end gap-1">
                         <input type="hidden" name="pid" value={a.pid} />
-                        <button type="submit" className="text-[13px] font-semibold text-red">
-                          Löschen
+                        <button type="submit" name="danach" value="watchlist" className="text-[12.5px] font-semibold text-tint">
+                          Zurück auf Watchlist
+                        </button>
+                        <button type="submit" name="danach" value="weg" className="text-[12.5px] font-semibold text-red">
+                          Verwerfen
                         </button>
                       </form>
                     </div>

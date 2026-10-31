@@ -11,5 +11,11 @@ export function watchlistAktuell(db: Database.Database): { liste: WatchEintrag[]
       .map((a) => [a.pid, a.auktionEnde!]),
   );
   const entfernt = watchlistAufraeumen(db, ladeLetzteSuche(db)?.spieler ?? [], auftragEnde);
-  return { liste: ladeWatchlist(db), entfernt };
+  // Wer ein aktives Gebot hat, steht unter Gebote, nicht auf der Watchlist (Marcus, 31.10.2026)
+  const imGebot = new Set(
+    ladeAuftraege(db)
+      .filter((a) => a.status === "aktiv")
+      .map((a) => a.pid),
+  );
+  return { liste: ladeWatchlist(db).filter((w) => !imGebot.has(w.pid)), entfernt };
 }

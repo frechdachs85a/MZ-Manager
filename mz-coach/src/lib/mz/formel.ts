@@ -37,3 +37,7 @@ export function mzWert(skills: Skills, position: Position): MzWert {
 export function alleMzWerte(skills: Skills): Record<Position, MzWert> {
   return Object.fromEntries(POSITIONEN.map((p) => [p, mzWert(skills, p)])) as Record<Position, MzWert>;
 }
+
+// Spieler auf dem Transfermarkt von ManagerZone (Adresse von Marcus, 31.10.2026; per Test bestätigt: zeigt genau diesen
+// Spieler)
+export const mzMarktLink = (pid: number) => `https://www.managerzone.com/?p=transfer&sub=players&u=${pid}`;

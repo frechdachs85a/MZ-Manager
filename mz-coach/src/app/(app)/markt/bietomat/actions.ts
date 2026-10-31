@@ -2,6 +2,7 @@
 
 // Server-Aktionen des Bietomats: Spieler laden (Nummer oder Name), Auftrag speichern, ändern, löschen, aus der Empfehlung übernehmen.
 
+import { entferneVonWatchlist, nimmAufWatchlist } from "@/lib/db/watch";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { aendereAuftrag, ladeAuftraege, loescheAuftrag, protokolliere, speichereAuftrag } from "@/lib/db/gebot";
@@ -42,6 +43,7 @@ export async function auftragSpeichern(_prev: AuftragState, formData: FormData):
   speichereAuftrag(db, { pid, name: spieler?.name, maximum, auktionEnde, spieler: spieler ?? undefined, status: "aktiv" });
   protokolliere(db, pid, `Auftrag gespeichert: höchstens ${maximum} EUR.`, maximum);
   revalidatePath("/markt/bietomat");
+  revalidatePath("/markt/watchlist");
   return { ok: true, meldung: "Auftrag gespeichert." };
 }
 
@@ -50,9 +52,19 @@ export async function auftragLoeschen(formData: FormData) {
   const pid = ganzzahl(formData.get("pid"));
   if (!pid) return;
   const db = getDb();
+  const auftrag = ladeAuftraege(db).find((x) => x.pid === pid);
   loescheAuftrag(db, pid);
-  protokolliere(db, pid, "Auftrag gelöscht.");
+  if (formData.get("danach") === "watchlist" && auftrag?.spieler) {
+    nimmAufWatchlist(db, auftrag.spieler);
+    protokolliere(db, pid, "Auftrag gelöscht, zurück auf die Watchlist.");
+  } else {
+    entferneVonWatchlist(db, pid);
+    protokolliere(db, pid, "Auftrag gelöscht und verworfen.");
+  }
   revalidatePath("/markt/bietomat");
+  revalidatePath("/markt/watchlist");
+  revalidatePath("/markt/watchlist");
+  revalidatePath("/markt");
 }
 
 // Endpreis eines Auftrags ändern
@@ -70,6 +82,7 @@ export async function auftragAendern(_prev: AuftragState, formData: FormData): P
   aendereAuftrag(db, pid, maximum);
   protokolliere(db, pid, `Auftrag geändert: Endpreis ${a.maximum} → ${maximum} EUR.`, maximum);
   revalidatePath("/markt/bietomat");
+  revalidatePath("/markt/watchlist");
   return { ok: true, meldung: "Gespeichert." };
 }
 
@@ -91,5 +104,6 @@ export async function empfehlungInBietomat(_prev: AuftragState, formData: FormDa
   protokolliere(db, pid, `Auftrag aus der Empfehlung gespeichert: höchstens ${maximum} EUR.`, maximum);
   revalidatePath("/markt");
   revalidatePath("/markt/bietomat");
+  revalidatePath("/markt/watchlist");
   return { ok: true, meldung: `Im Bietomat: Endpreis ${new Intl.NumberFormat("de-DE").format(maximum)} EUR, Ende ${spieler.markt.ende ?? "?"}.` };
 }
