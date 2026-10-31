@@ -1,6 +1,9 @@
 import type Database from "better-sqlite3";
 import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
 import { marktErgebnis } from "@/lib/markt-ergebnis";
+import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
+import { tabelleAus } from "@/lib/mz/parser/tabelle";
+import { TEAM } from "@/lib/wissen/startbasis";
 import { scoutAuswertung } from "@/lib/scout-auswertung";
 import { letzterLauf } from "@/lib/db/spieltag";
 import { bewerteMarkt } from "@/lib/mz/analyse/markt";
@@ -231,7 +234,17 @@ export function diagnose(db: Database.Database) {
   } catch (e) {
     scoutspiele = { fehler: e instanceof Error ? e.message : String(e) };
   }
+  // Ligatabelle wie auf der Saisonseite (zum Abgleich mit ManagerZone)
+  let ligaTabelle: unknown = null;
+  try {
+    const t = letzteRohseite(db, "tabelle");
+    const h = t ? (ladeRohseite(db, t.id, "dom") ?? ladeRohseite(db, t.id, "roh")) : null;
+    ligaTabelle = t ? { stand: t.abgerufen, bytes: t.bytes, tabelle: h ? tabelleAus(h.html, TEAM.name) : null } : { fehlt: true };
+  } catch (e) {
+    ligaTabelle = { fehler: e instanceof Error ? e.message : String(e) };
+  }
   return {
+    ligaTabelle,
     scoutspiele,
     marktGruende,
     bietomat,
