@@ -9,7 +9,8 @@ export const FELD = { x0: 8.4, x1: 200, y0: 8, y1: 318, mitte: 163 } as const;
 
 // zusatz: zweite Zeile unter dem Namen. wert: Marktwert für die Heatmap und den Tooltip
 // gegner: Spieler des anderen Teams im Vergleichsfeld (dunkler Punkt, rötliches Namensschild)
-export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; wert?: number; ton?: "normal" | "rot" | "grau"; torwart?: boolean; gegner?: boolean };
+// urteil: Ergebnis seiner Duelle im Vergleichsfeld (Abzeichen ✓ grün / ✗ rot am Spieler)
+export type FeldSpieler = { x: number; y: number; label: string; zusatz?: string; wert?: number; ton?: "normal" | "rot" | "grau"; torwart?: boolean; gegner?: boolean; urteil?: "gut" | "schlecht" };
 
 // Heatmap (Marcus, 26.10.2026): Ampel-Verlauf mit FESTEN Wertgrenzen, für alle Teams gleich. Damit ist jedes Feld
 // mit jedem vergleichbar: nur Grün = leichter Gegner, viel Dunkelrot = heftiger Gegner. Grenzen: ab 1,5 Mio maximal
@@ -40,7 +41,13 @@ const mioText = (n: number) => `${(n / 1_000_000).toFixed(n % 100_000 ? 2 : 1).r
 const STREIFEN = 10;
 
 // Heatmap erscheint automatisch, sobald Marktwerte da sind (Marcus, 26.10.2026: überall, immer)
-export function Spielfeld({ spieler, titel, heatmap }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean }) {
+// Linie im Vergleichsfeld: ein Duell, grün = dein Spieler mehr wert, rot = seiner, grau = Wert fehlt
+export type DuellLinie = { x1: number; y1: number; x2: number; y2: number; farbe: "gruen" | "rot" | "grau" };
+const LINIENFARBE = { gruen: "#22c55e", rot: "#ef4444", grau: "rgba(255,255,255,.55)" } as const;
+
+// vergleich: beide Teams auf einem Feld (Marcus, 30.10.2026). Dann keine Heatmap-Flächen (zu unruhig), Marktwert nur
+// als Ring; Gegner als dunkelrote Raute mit Namen darüber, eigene Spieler als weiße Kreise mit Namen darunter.
+export function Spielfeld({ spieler, titel, heatmap, vergleich = false, linien = [] }: { spieler: FeldSpieler[]; titel?: string; heatmap?: boolean; vergleich?: boolean; linien?: DuellLinie[] }) {
   const zeigen = heatmap ?? spieler.some((p) => p.wert !== undefined && !p.torwart);
   const sk = zeigen && spieler.some((p) => p.wert !== undefined && !p.torwart);
   const id = useId().replace(/:/g, "");
@@ -91,13 +98,13 @@ export function Spielfeld({ spieler, titel, heatmap }: { spieler: FeldSpieler[];
           <line x1={FELD.x0} y1={63} x2={FELD.x1} y2={63} />
         </g>
         <line x1={FELD.x0} y1={ABWEHR_Y} x2={FELD.x1} y2={ABWEHR_Y} stroke="rgba(255,255,255,.5)" strokeDasharray="5 3" strokeWidth="1" />
-        <g fontSize="6" fill="rgba(255,255,255,.6)" fontWeight="600" letterSpacing=".4">
+        <g fontSize="6" fill="rgba(255,255,255,.6)" fontWeight="600" letterSpacing=".4" display={vergleich ? "none" : undefined}>
           <text x={FELD.x1 - 2} y={108} textAnchor="end">STURM y 110</text>
           <text x={FELD.x1 - 2} y={61} textAnchor="end">MIN y 63</text>
           <text x={FELD.x1 - 2} y={ABWEHR_Y + 7} textAnchor="end">ABWEHR ab y {ABWEHR_Y}</text>
         </g>
         {/* Heatmap der Marktwerte: weiche Farbflächen unter den Spielern, feste Wertgrenzen */}
-        {sk && (
+        {sk && !vergleich && (
           <g>
             <defs>
               <filter id={`weich-${id}`} x="-100%" y="-100%" width="300%" height="300%">
@@ -111,22 +118,31 @@ export function Spielfeld({ spieler, titel, heatmap }: { spieler: FeldSpieler[];
               ))}
           </g>
         )}
+        {linien.map((l, i) => (
+          <line key={`l${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={LINIENFARBE[l.farbe]} strokeWidth="2.2" strokeLinecap="round" opacity={0.95} />
+        ))}
         {spieler.map((s, i) => {
           const farbe = s.gegner ? "#111827" : s.ton === "rot" ? "var(--red)" : s.ton === "grau" ? "rgba(255,255,255,.4)" : s.torwart ? "var(--yellow)" : "#fff";
           const breite = Math.max(14, Math.max(s.label.length * 4.6, (s.zusatz?.length ?? 0) * 4.2) + 6);
           return (
             <g key={i} transform={`translate(${s.x} ${s.y})`}>
               <title>{`${s.label}${s.zusatz ? ` · ${s.zusatz}` : ""}${s.wert !== undefined ? ` · ${new Intl.NumberFormat("de-DE").format(s.wert)} €` : ""}${s.torwart ? " (Torwart)" : ""} · x ${s.x} / y ${s.y}`}</title>
-              <circle r={8} fill={farbe} stroke="rgba(0,0,0,.18)" strokeWidth="0.8" filter={`url(#schatten-${id})`} />
-              <circle r={8} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth="1" opacity={s.ton === "grau" ? 0 : 0.5} />
+              {vergleich && s.gegner ? (
+                <path d="M0 -8.5 L8.5 0 L0 8.5 L-8.5 0 Z" fill="#7f1d1d" stroke="#fff" strokeWidth="1.2" filter={`url(#schatten-${id})`} />
+              ) : (
+                <>
+                  <circle r={8} fill={farbe} stroke="rgba(0,0,0,.18)" strokeWidth="0.8" filter={`url(#schatten-${id})`} />
+                  <circle r={8} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth="1" opacity={s.ton === "grau" ? 0 : 0.5} />
+                </>
+              )}
               {sk && s.wert !== undefined && !s.torwart && (
                 <>
                   <circle r={11.4} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="1" />
                   <circle r={10.2} fill="none" stroke={heatFarbe(s.wert)} strokeWidth="3" />
                 </>
               )}
-              <rect x={-breite / 2} y={10.5} width={breite} height={s.zusatz ? 18 : 10} rx={5} fill={s.gegner ? "rgba(127,29,29,.85)" : "rgba(0,0,0,.5)"} />
-              <text y={17.8} textAnchor="middle" fontSize="7.2" fill="#fff" fontWeight="600">
+              <rect x={-breite / 2} y={vergleich && s.gegner ? -20.5 : 10.5} width={breite} height={s.zusatz ? 18 : 10} rx={5} fill={s.gegner ? "rgba(127,29,29,.9)" : "rgba(0,0,0,.5)"} />
+              <text y={vergleich && s.gegner ? -13.2 : 17.8} textAnchor="middle" fontSize="7.2" fill="#fff" fontWeight="600">
                 {s.label}
               </text>
               {s.zusatz && (
@@ -137,6 +153,17 @@ export function Spielfeld({ spieler, titel, heatmap }: { spieler: FeldSpieler[];
             </g>
           );
         })}
+        {/* Duell-Abzeichen ganz oben, damit keine Raute sie verdeckt */}
+        {spieler
+          .filter((p) => p.urteil)
+          .map((p, i) => (
+            <g key={`u${i}`} transform={`translate(${p.x + 9} ${p.y - 9})`}>
+              <circle r={5} fill={p.urteil === "gut" ? "#16a34a" : "#dc2626"} stroke="#fff" strokeWidth="1.2" />
+              <text y={2.4} textAnchor="middle" fontSize="7" fontWeight="800" fill="#fff">
+                {p.urteil === "gut" ? "✓" : "✗"}
+              </text>
+            </g>
+          ))}
       </svg>
       {sk && (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-label-2">
