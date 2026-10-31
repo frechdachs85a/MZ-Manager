@@ -23,7 +23,7 @@ import { marktErgebnis } from "@/lib/markt-ergebnis";
 export const MARKT_PFAD = "/?p=transfer";
 export const MAX_SEITEN = 25;
 const JE_SEITE = 20;
-const JE_ZIEL = 40; // Kandidaten je Rolle, dann nächste Rolle
+const JE_ZIEL = 100; // Kandidaten je Rolle, dann nächste Rolle (31.10.2026: 40 war zu wenig, Bietomat-Spieler von Marcus fehlten)
 const SEITEN_JE_STUFE = 3;
 const VERKAEUFE_JE_SUCHE = 6; // Spielerseiten für den letzten Verkauf je Suche
 
