@@ -9,8 +9,8 @@ function db() {
   const d = new Database(":memory:");
   migrieren(d);
   speichereAuftrag(d, { pid: 1, name: "Max Muster", maximum: 2_000_000, status: "aktiv" } as never, "2026-01-01T10:00:00.000Z");
-  protokolliere(d, 1, "Geboten", 1_500_000, "2026-01-01T11:00:00.000Z");
-  protokolliere(d, 1, "Geboten", 1_700_000, "2026-01-01T11:01:00.000Z");
+  protokolliere(d, 1, "Geboten: 1", 1_500_000, "2026-01-01T11:00:00.000Z");
+  protokolliere(d, 1, "Geboten: 2", 1_700_000, "2026-01-01T11:01:00.000Z");
   return d;
 }
 

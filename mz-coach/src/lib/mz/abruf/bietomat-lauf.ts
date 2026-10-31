@@ -1,6 +1,7 @@
 import "server-only";
 import { auktionsBericht } from "@/lib/auktionsbericht";
 import { benachrichtige } from "@/lib/nachricht";
+import { entferneVonWatchlist } from "@/lib/db/watch";
 import type Database from "better-sqlite3";
 import type { Page } from "playwright";
 import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
@@ -150,7 +151,10 @@ export async function auftragAbarbeiten(db: Database.Database, a: GebotAuftrag):
 async function berichtSenden(db: Database.Database, pid: number, ergebnis: string) {
   try {
     const b = auktionsBericht(db, pid, ergebnis);
-    if (b) await benachrichtige(db, b);
+    if (!b) return;
+    // Auktion vorbei: nicht mehr auf der Watchlist, sondern unter Gebote → Beendete Auktionen (Marcus, 31.10.2026)
+    entferneVonWatchlist(db, pid);
+    await benachrichtige(db, b);
   } catch (e) {
     protokolliere(db, pid, `Bericht nicht gesendet: ${meldungAus(e)}`);
   }

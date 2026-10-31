@@ -11,17 +11,14 @@ export function watchlistAktuell(db: Database.Database): { liste: WatchEintrag[]
       .map((a) => [a.pid, a.auktionEnde!]),
   );
   const entfernt = watchlistAufraeumen(db, ladeLetzteSuche(db)?.spieler ?? [], auftragEnde);
-  // Wer ein aktives Gebot hat, steht unter Gebote, nicht auf der Watchlist (Marcus, 31.10.2026)
-  const imGebot = new Set(
-    ladeAuftraege(db)
-      .filter((a) => a.status === "aktiv")
-      .map((a) => a.pid),
-  );
+  // Wer ein Gebot hat, steht unter Gebote, nicht auf der Watchlist; auch nach dem Ende der Auktion (dann unter
+  // „Beendete Auktionen“, Marcus 31.10.2026)
+  const imGebot = new Set(ladeAuftraege(db).map((a) => a.pid));
   return { liste: ladeWatchlist(db).filter((w) => !imGebot.has(w.pid)), entfernt };
 }
 
-// Anzahl der Vorschläge wie im Reiter Vorschläge: Top 30 ohne Watchlist und ohne aktive Gebote
+// Anzahl der Vorschläge wie im Reiter Vorschläge: Top 30 ohne Watchlist und ohne Gebote (aktiv oder beendet)
 export function vorschlagAnzahl(db: Database.Database, alle: { kandidat: { pid: number } }[]): number {
-  const raus = new Set([...ladeWatchlist(db).map((w) => w.pid), ...ladeAuftraege(db).filter((a) => a.status === "aktiv").map((a) => a.pid)]);
+  const raus = new Set([...ladeWatchlist(db).map((w) => w.pid), ...ladeAuftraege(db).map((a) => a.pid)]);
   return alle.filter((b) => !raus.has(b.kandidat.pid)).slice(0, 30).length;
 }
