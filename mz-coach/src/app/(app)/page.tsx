@@ -92,22 +92,10 @@ export default async function Uebersicht() {
         </div>
       )}
 
-      {/* Taktik: nur der Hinweis, Vorschläge und Umbenennen auf der Taktikseite (Marcus, 31.10.2026) */}
-      <div className="seite mt-6">
-        <Link href="/taktik" className="zeile-hover block">
-          <Card className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
-            <span className="text-[15px] font-bold">Taktik</span>
-            <span className="text-[12.5px] text-label-2">
-              {taktikVorschlaege ? `${taktikVorschlaege} Reiter mit Vorschlägen` : "Keine Vorschläge"} → Taktik
-            </span>
-          </Card>
-        </Link>
-      </div>
-
-      {/* Nächstes Spiel kurz; Taktik und Analyse im Reiter Spieltag */}
-      <div className="seite mt-6">
-        <Link href="/spieltag" className="zeile-hover block">
-          <Card className="p-4">
+      {/* Oben die Kennzahlen (Marcus, 31.10.2026: Zentrale schöner sortiert): nächstes Spiel, Ausfälle, Schwachstelle, Taktik */}
+      <div className="seite mt-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <Link href="/spieltag" className="zeile-hover block col-span-2">
+          <Card className="h-full p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <div className="min-w-0">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">Nächstes Ligaspiel{anstoss ? ` · ${anstoss}` : ""}</div>
@@ -133,8 +121,6 @@ export default async function Uebersicht() {
             </div>
           </Card>
         </Link>
-      </div>
-      <div className="seite mt-4 grid grid-cols-2 gap-4">
         <Kachel
           titel="Fehlen oder unklar"
           ton={taktikStand && nichtDabei > 0 ? "red" : "tint"}
@@ -148,34 +134,16 @@ export default async function Uebersicht() {
           unten={schwach ? `${schwach.spieler.name} als ${schwach.rolle}` : "kein eigenes Spiel gespeichert"}
           href="/markt"
         />
+        <Kachel
+          titel="Taktik"
+          ton={taktikVorschlaege ? "gold" : "tint"}
+          wert={taktikVorschlaege}
+          unten={taktikVorschlaege ? "Reiter mit Vorschlägen" : "Keine Vorschläge"}
+          href="/taktik"
+        />
       </div>
 
       <div className="seite grid gap-x-6 lg:grid-cols-2">
-        <Section title="Aufgaben vor dem Spieltag" footer="Aus den gespeicherten Daten. Gelb: veraltet oder mit Fehlern, grau: noch offen.">
-          <Card>
-            <ul className="divide-y divide-separator">
-              {check.map((c) => (
-                <li key={c.titel}>
-                  <Link href={c.href ?? "/"} className="zeile-hover flex items-start gap-3 px-4 py-3">
-                    <span
-                      aria-label={c.status === "ok" ? "erledigt" : c.status === "warnung" ? "prüfen" : "offen"}
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] text-[11px] font-bold ${
-                        c.status === "ok" ? "bg-tint text-auf-akzent" : c.status === "warnung" ? "bg-yellow text-ink" : "border border-label-3 text-label-3"
-                      }`}
-                    >
-                      {c.status === "ok" ? "✓" : c.status === "warnung" ? "!" : ""}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[14px] font-semibold">{c.titel}</span>
-                      <span className="block text-[12.5px] leading-relaxed text-label-2">{c.text}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </Section>
-
         <Section
           title={`Verfügbarkeit am ${kurzDatum}`}
           aktion={
@@ -229,7 +197,37 @@ export default async function Uebersicht() {
           )}
         </Section>
 
-        <Section title="Bälle der letzten 14 Tage" footer="Aus den Kaderabrufen: gewonnene und verlorene Skill-Bälle je Spieler (ohne Form). Rot = Verlust.">
+        <Section title="Aufgaben vor dem Spieltag" footer="Aus den gespeicherten Daten. Gelb: veraltet oder mit Fehlern, grau: noch offen.">
+          <Card>
+            <ul className="divide-y divide-separator">
+              {check.map((c) => (
+                <li key={c.titel}>
+                  <Link href={c.href ?? "/"} className="zeile-hover flex items-start gap-3 px-4 py-3">
+                    <span
+                      aria-label={c.status === "ok" ? "erledigt" : c.status === "warnung" ? "prüfen" : "offen"}
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] text-[11px] font-bold ${
+                        c.status === "ok" ? "bg-tint text-auf-akzent" : c.status === "warnung" ? "bg-yellow text-ink" : "border border-label-3 text-label-3"
+                      }`}
+                    >
+                      {c.status === "ok" ? "✓" : c.status === "warnung" ? "!" : ""}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[14px] font-semibold">{c.titel}</span>
+                      <span className="block text-[12.5px] leading-relaxed text-label-2">{c.text}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </Section>
+      </div>
+
+      <div className="seite">
+        <Section
+          title="Bälle der letzten 14 Tage"
+          footer="Aus den Kaderabrufen: gewonnene (grün) und verlorene (rot) Skill-Bälle je Spieler, ohne Form; meiste Zugewinne zuerst. Name anklicken: alle Skills."
+        >
           {bilanz.length ? (
             <List>
               {bilanz.map((b) => (
@@ -252,7 +250,16 @@ export default async function Uebersicht() {
                               ))}
                             </ul>
                           </div>
-                          {kaderNach.get(b.pid) && <SpielerProfil skills={kaderNach.get(b.pid)!.skills} scout={kaderNach.get(b.pid)!.scoutSterne ? { ...kaderNach.get(b.pid)!.scoutSterne, training: kaderNach.get(b.pid)!.scoutTraining } : undefined} />}
+                          {kaderNach.get(b.pid) && (
+                            <SpielerProfil
+                              skills={kaderNach.get(b.pid)!.skills}
+                              scout={
+                                kaderNach.get(b.pid)!.scoutSterne
+                                  ? { ...kaderNach.get(b.pid)!.scoutSterne, training: kaderNach.get(b.pid)!.scoutTraining }
+                                  : undefined
+                              }
+                            />
+                          )}
                           <Link href={`/kader/${b.pid}`} className="inline-block text-[13px] font-semibold text-tint hover:underline">
                             Zur Spielerseite →
                           </Link>
@@ -260,7 +267,19 @@ export default async function Uebersicht() {
                       }
                     />
                   }
-                  detail={b.aenderungen.map((a) => `${a.skill} ${a.alt}→${a.neu}`).join(" · ")}
+                  detail={
+                    <span className="mt-1 flex flex-wrap gap-1">
+                      {b.aenderungen.map((a, i) => (
+                        <span
+                          key={i}
+                          className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold tabular-nums ${a.neu > a.alt ? "bg-green/12 text-green" : "bg-red/12 text-red"}`}
+                          title={datumZeit(a.datum)}
+                        >
+                          {a.skill} {a.alt} → {a.neu}
+                        </span>
+                      ))}
+                    </span>
+                  }
                   value={
                     <span className="display text-[16px] font-bold tabular-nums">
                       {b.plus > 0 && <span className="text-green">+{b.plus}</span>}
