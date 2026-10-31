@@ -10,7 +10,7 @@ import { getDb } from "@/lib/db";
 import { ladeAuftraege } from "@/lib/db/gebot";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
 import { datumZeit } from "@/lib/format";
-import { posDe } from "@/lib/mz/formel";
+import { mzMarktLink, posDe } from "@/lib/mz/formel";
 import { marktErgebnis, verbesserungFuer } from "@/lib/markt-ergebnis";
 import { SpielerProfil } from "@/components/spieler-profil";
 import { VerbesserungZeile } from "@/components/verbesserung-zeile";
@@ -18,7 +18,6 @@ import { watchlistAktuell } from "@/lib/watchlist";
 import { vonWatchlist } from "../actions";
 import { InBietomat } from "../bietomat/formulare";
 
-const MZ = "https://www.managerzone.com";
 const komma = (n: number) => n.toFixed(2).replace(".", ",");
 
 export default async function Watchlist() {
@@ -45,7 +44,7 @@ export default async function Watchlist() {
                 <Card key={w.pid} className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <a href={`${MZ}/?p=players&pid=${w.pid}`} target="_blank" rel="noreferrer" className="text-[17px] font-bold hover:underline">
+                      <a href={mzMarktLink(w.pid)} title="Auf dem Transfermarkt von ManagerZone öffnen" target="_blank" rel="noreferrer" className="text-[17px] font-bold hover:underline">
                         {w.name}
                       </a>
                       {w.bewertung && (

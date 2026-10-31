@@ -5,12 +5,11 @@ import { potenzial } from "@/lib/mz/analyse/potenzial";
 import type { Bewertung } from "@/lib/mz/analyse/markt";
 import type { Verkauf } from "@/lib/mz/parser/verkauf";
 import { ALLE_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
-import { posDe } from "@/lib/mz/formel";
+import { mzMarktLink, posDe } from "@/lib/mz/formel";
 
 // Transfervorschlag als Karte (Marcus, 31.10.2026): wer, für wen, wie viel besser, Potenzial, alle Skills, Preis und Ende;
 // Annehmen setzt ihn auf die Watchlist, Ablehnen nimmt ihn aus den Vorschlägen.
 
-const MZ = "https://www.managerzone.com";
 const komma = (n: number) => n.toFixed(2).replace(".", ",");
 
 function Balken({ label, wert, max = 10, ton }: { label: string; wert: number; max?: number; ton: "alt" | "neu" | "pot" }) {
@@ -37,7 +36,7 @@ export function VorschlagKarte({ b, verkauf, imBietomat, rang }: { b: Bewertung;
             #{rang} · als {posDe(b.ziel.rolle)} statt {b.ziel.spieler.name.split(" ").at(-1)}
           </div>
           <a
-            href={`${MZ}/?p=players&pid=${k.pid}`}
+            href={mzMarktLink(k.pid)} title="Auf dem Transfermarkt von ManagerZone öffnen"
             target="_blank"
             rel="noreferrer"
             className="mt-0.5 block text-[19px] font-bold leading-tight hover:underline"
