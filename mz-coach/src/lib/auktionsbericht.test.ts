@@ -17,7 +17,7 @@ function db() {
 describe("Auktionsbericht", () => {
   it("bekommen: höchstes eigenes Gebot und Maximum", () => {
     const b = auktionsBericht(db(), 1, "Auktion vorbei: du warst zuletzt Höchstbietender (Kauf in ManagerZone prüfen).")!;
-    expect(b.titel).toBe("✅ Max Muster: Spieler bekommen");
+    expect(b.titel).toBe("✅ Max Muster bekommen für 1.700.000 EUR");
     expect(b.text).toContain("2 Gebot(e)");
     expect(b.text).toContain("1.700.000 EUR");
     expect(b.text).toContain("2.000.000 EUR");
