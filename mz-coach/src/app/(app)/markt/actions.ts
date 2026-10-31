@@ -5,6 +5,8 @@
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { lehneAb, nimmAblehnungZurueck, RAHMEN_FELDER, speichereMarktRahmen, type MarktRahmenDaten } from "@/lib/db/markt";
+import { entferneVonWatchlist, nimmAufWatchlist } from "@/lib/db/watch";
+import { marktErgebnis } from "@/lib/markt-ergebnis";
 
 export type MarktState = { meldung?: string; ok?: boolean };
 
@@ -48,4 +50,21 @@ export async function jetztSuchen(): Promise<MarktState> {
   const r = await marktAbrufen(getDb(), { manuell: true });
   revalidatePath("/markt");
   return r;
+}
+
+// Vorschlag annehmen: kommt mit Momentaufnahme auf die Watchlist (Marcus, 31.10.2026)
+export async function annehmen(formData: FormData) {
+  const pid = Number(formData.get("pid"));
+  const db = getDb();
+  const b = marktErgebnis(db).ergebnis?.alle.find((x) => x.kandidat.pid === pid);
+  if (b)
+    nimmAufWatchlist(db, b.kandidat, { rolle: b.ziel.rolle, statt: b.ziel.spieler.name, gewinn: b.gewinn, neu: b.neu, preis: b.preis });
+  revalidatePath("/markt");
+}
+
+// Von der Watchlist entfernen (jederzeit)
+export async function vonWatchlist(formData: FormData) {
+  const pid = Number(formData.get("pid"));
+  if (pid > 0) entferneVonWatchlist(getDb(), pid);
+  revalidatePath("/markt");
 }

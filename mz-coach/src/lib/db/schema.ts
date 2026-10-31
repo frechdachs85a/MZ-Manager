@@ -284,6 +284,22 @@ const MIGRATIONEN: string[] = [
   `
   UPDATE gebot_auftrag SET bieten_bis = NULL;
   `,
+  // 21: Watchlist des Transfermarkts (angenommene Vorschläge mit Momentaufnahme des Spielers) und eigene Entscheidung je
+  // Jugendspieler behalten/abgeben (Marcus, 31.10.2026)
+  `
+  CREATE TABLE markt_watch (
+    pid INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    spieler_json TEXT NOT NULL,    -- MarktSpieler beim Annehmen
+    bewertung_json TEXT,           -- Rolle, Gewinn, Preis beim Annehmen
+    aufgenommen TEXT NOT NULL
+  );
+  CREATE TABLE jugend_entscheidung (
+    pid INTEGER PRIMARY KEY,
+    entscheidung TEXT NOT NULL CHECK (entscheidung IN ('behalten', 'abgeben')),
+    geaendert TEXT NOT NULL
+  );
+  `,
 ];
 
 // Schema auf den neuesten Stand bringen (Migrationen der Reihe nach)
