@@ -214,6 +214,37 @@ export async function reiterNameUebernehmen(db: Database.Database, reiter: strin
   }
 }
 
+// Reiter frei umbenennen (Taktikseite: Name eingeben oder Vorschlag übernehmen), auf Klick
+export async function reiterUmbenennenFrei(db: Database.Database, alt: string, neu: string): Promise<Ergebnis> {
+  const { ladeEditorReiter } = await import("@/lib/db/taktik");
+  const { nameErlaubt } = await import("@/lib/reiter-uebersicht");
+  const namen = ladeEditorReiter(db)?.reiter.map((r) => r.name) ?? ladeTaktiken(db).map((t) => t.reiter);
+  const fehler = nameErlaubt(neu, alt, namen);
+  if (fehler) return { ok: false, meldung: fehler };
+  if (/^liga$/i.test(alt)) return { ok: false, meldung: "Den Reiter „Liga“ braucht die Seite unter diesem Namen." };
+  const log = abrufBeginnen(db, "taktik-check");
+  try {
+    const slot = await mitMzSitzung(db, (s) => reiterUmbenennen(s, alt, neu.trim()), { manuell: true });
+    archivUmbenennen(db, alt, neu.trim());
+    const meldung = `Reiter ${slot.toUpperCase()} heißt jetzt „${neu.trim()}“ statt „${alt}“ (nach Neuladen geprüft).`;
+    abrufBeenden(db, log, true, meldung);
+    return { ok: true, meldung };
+  } catch (e) {
+    const meldung = `Umbenennen ${alt}: ${meldungAus(e)}`;
+    abrufBeenden(db, log, false, meldung);
+    return { ok: false, meldung };
+  }
+}
+
+// Vorschlag für den Reiter freund übernehmen: "bank" = wichtigste Spieler auf die Bank, "stil" = anderer Stil
+export async function freundUebernehmen(db: Database.Database, reiter: string, was: "bank" | "stil"): Promise<Ergebnis> {
+  const { reiterUebersicht } = await import("@/lib/reiter-uebersicht");
+  const k = reiterUebersicht(db).karten.find((x) => x.name === reiter && x.art === "freund");
+  const xml = was === "bank" ? k?.freund?.xml : k?.freund?.stilVorschlag?.xml;
+  if (!xml) return { ok: false, meldung: `Für „${reiter}“ gibt es diesen Vorschlag nicht mehr.` };
+  return xmlUebernehmen(db, reiter, xml, was === "bank" ? "freund: wichtigste Spieler auf die Bank" : `freund: anderer Stil ${k!.freund!.stilVorschlag!.stil}`);
+}
+
 // Eine XML auf Klick in den gleichnamigen Editor-Reiter schreiben, prüfen und danach auch im Archiv dieser Seite speichern
 async function xmlUebernehmen(db: Database.Database, reiter: string, xml: string, was: string): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "taktik-check");

@@ -133,7 +133,8 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
   const kandidatenAusdauer = tNeu.pos
     .filter((x) => x.pos === "normal" && !zeitRaus.has(x.pid))
     .map((x) => ({ pid: x.pid, x: x.start.x, y: x.start.y, ausdauer: nachPid.get(x.pid)?.skills.ausdauer?.wert }));
-  const plan = ausdauerPlan(kandidatenAusdauer, MAX_WECHSEL_SPIEL - zeitRaus.size);
+  // Altersreiter: eine Aufstellung für alles ohne viel Aufwand (Marcus, 31.10.2026), daher keine Ausdauer-Wechsel
+  const plan = alter ? { wechseln: [], ohneWechsel: [] } : ausdauerPlan(kandidatenAusdauer, MAX_WECHSEL_SPIEL - zeitRaus.size);
   for (const p of plan.wechseln) {
     const s = nachPid.get(p.pid)!;
     const r = rolle({ pid: p.pid, x: p.x, y: p.y, torwart: false });

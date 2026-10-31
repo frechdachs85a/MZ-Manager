@@ -8,9 +8,7 @@ import { Card, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { spieltagLage } from "@/lib/spieltag";
 import { WertDiff } from "@/components/elf-wert";
-import { ReiterNameKnopf, TaktikCheckKarte } from "@/components/taktik-check-karte";
-import { checkKurz, taktikCheck, MIN_GEWINN } from "@/lib/taktik-check";
-import { portfolioPlan, vorschlagText } from "@/lib/portfolio-plan";
+import { reiterUebersicht } from "@/lib/reiter-uebersicht";
 import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { spieltagCheckliste } from "@/lib/checkliste";
@@ -30,11 +28,7 @@ export default async function Uebersicht() {
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
   const db = getDb();
   const { bilanz, warnungen: verlust } = skillBilanz(db, 14);
-  const plan = portfolioPlan(db);
-  // Reiter, die laut Portfolio-Plan überschrieben werden sollen, nicht zusätzlich im Taktik-Check zeigen
-  const ueberschreiben = new Set(plan.vorschlaege.map((v) => v.reiter));
-  const checks = taktikCheck(db);
-  const anpassen = checks.filter((c) => !c.ok && !c.fehler && !ueberschreiben.has(c.reiter));
+  const taktikVorschlaege = reiterUebersicht(db).karten.filter((k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag).length;
   const kader = ladeKader(db);
   const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
   const taktikStand = kader.map((s) => s.statusStand?.aufstellbar).filter(Boolean).sort().at(-1);
@@ -81,118 +75,16 @@ export default async function Uebersicht() {
         </div>
       )}
 
-      {/* Portfolio: Abwechslung und Abdeckung aller Gegnertypen (Hauptaufgabe, Marcus 30.10.2026) */}
+      {/* Taktik: nur der Hinweis, Vorschläge und Umbenennen auf der Taktikseite (Marcus, 31.10.2026) */}
       <div className="seite mt-6">
-        <Card>
-          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-separator px-4 py-3">
-            <span className="text-[15px] font-bold">Taktik-Portfolio</span>
+        <Link href="/taktik" className="zeile-hover block">
+          <Card className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
+            <span className="text-[15px] font-bold">Taktik</span>
             <span className="text-[12.5px] text-label-2">
-              {plan.vorschlaege.length ? `${plan.vorschlaege.length} Reiter neu belegen` : plan.doppelt.length ? `${plan.doppelt.length} Reiter doppelt` : "Keine doppelten Reiter"}
+              {taktikVorschlaege ? `${taktikVorschlaege} Reiter mit Vorschlägen` : "Keine Vorschläge"} → Taktik
             </span>
-          </div>
-          <div className="px-4 py-3 text-[13px]">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">Gegen welchen Gegnertyp hast du eine bewährte Antwort?</div>
-            <ul className="mt-1.5 grid gap-x-6 gap-y-1 sm:grid-cols-2">
-              {plan.abdeckung.slice(0, 8).map((a) => (
-                <li key={a.klasse} className="flex gap-2">
-                  <span className={`font-bold ${a.reiter.length ? "text-green" : a.bester ? "text-red" : "text-label-3"}`}>{a.reiter.length ? "✓" : a.bester ? "✗" : "–"}</span>
-                  <span>
-                    {a.klasse}: {a.reiter.length ? a.reiter.join(", ") : a.bester ? `Lücke (bewährt: ${a.bester.schluessel})` : "kein bewährter Stil bekannt"}
-                    {a.dein && <span className="text-label-3"> · dein Stil {a.dein.schluessel}: {Math.round(a.dein.quote * 100)} % in {a.dein.spiele} Top-10-Spielen</span>}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {plan.jugend.length > 0 && (
-              <p className="mt-2 text-label-2">
-                Jugend ({plan.jugend.join(", ")}): eine Aufstellung für alles, nur Spieler im Alter des Reglers, Nr. 100 bis 150 zuerst auf dem Feld.
-                Besetzung prüft der Taktik-Check; Stil und Name bleiben.
-              </p>
-            )}
-            {plan.doppelt.length > 0 && (
-              <p className="mt-2 text-label-2">Doppelt: {plan.doppelt.map((d) => `${d.reiter} (${d.art} wie ${d.wie})`).join(" · ")}</p>
-            )}
-          </div>
-          {plan.vorschlaege.length > 0 && (
-            <div className="divide-y divide-separator border-t border-separator">
-              {plan.vorschlaege.map((v) => (
-                <TaktikCheckKarte
-                  key={v.reiter}
-                  art="portfolio"
-                  reiter={v.reiter}
-                  punkte={
-                    v.art === "seite"
-                      ? [vorschlagText(v)]
-                      : [vorschlagText(v), `Topteams: ${v.teams.slice(0, 3).join(", ")}`, `Mit deiner besten Elf: MZ-Wert ${v.summe.toFixed(2).replace(".", ",")}`]
-                  }
-                  gewinn={0}
-                  xml={v.xml}
-                  neuerName={v.name}
-                />
-              ))}
-            </div>
-          )}
-          {plan.sinn.length > 0 && (
-            <div className="border-t border-separator px-4 py-3 text-[13px]">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">Passen Name und Inhalt?</div>
-              <ul className="mt-1.5 space-y-2">
-                {plan.sinn.map((x) => (
-                  <li key={x.reiter}>
-                    <div>
-                      <span className="font-semibold">{x.reiter}</span> <span className="text-label-3">({x.stil})</span>
-                    </div>
-                    {[...x.probleme, ...x.hinweise].map((t) => (
-                      <div key={t} className="text-label-2">
-                        • {t}
-                      </div>
-                    ))}
-                    {x.name && (
-                      <div className="mt-1">
-                        <ReiterNameKnopf reiter={x.reiter} name={x.name} />
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <p className="px-4 py-2 text-[11.5px] leading-relaxed text-label-3">
-            Namen: Formation + Taktik + Spielweise, höchstens 6 Zeichen (Grenze des Editors), z. B. 532flo = 5-3-2 Flügel offensiv; fl = Flügel,
-            kp = Kurzpass, lb = lange Bälle, o = offensiv, d = defensiv, ohne Buchstaben = normal. außenR, außenL und kupass behalten ihren Namen
-            (Faustregel, Seitenvarianten). Ziel: jeder Reiter eine andere, für dein Team optimale Taktik, zusammen eine Antwort auf jeden Gegnertyp. Bewährt = bei den Top 10
-            mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Doppelte Reiter werden mit Lücken und mit Stilen belegt,
-            die bei den Top 10 mindestens 10 Prozentpunkte mehr holen als dein bester, reihum je Gegnerklasse, wichtigste zuerst; danach fehlende Seitenvarianten (Eckstürmer mal rechts, mal links). Grundlage: die Reiter, wie sie beim letzten Kaderabruf im Editor standen. Übernommen und umbenannt wird nur auf Klick.
-          </p>
-        </Card>
-      </div>
-
-      {/* Taktik-Check: deine Taktiken gegen den heutigen Kader (Skills, Ausdauer, Aufstellbarkeit) */}
-      <div className="seite mt-6">
-        <Card>
-          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-separator px-4 py-3">
-            <span className="text-[15px] font-bold">Taktik-Check</span>
-            <span className="text-[12.5px] text-label-2">
-              {checks.length === 0
-                ? "Noch keine Taktik im Archiv"
-                : anpassen.length
-                  ? `${anpassen.length} von ${checks.length} Taktiken anpassen`
-                  : `Alle ${checks.length} Taktiken passen zum heutigen Kader`}
-            </span>
-          </div>
-          {anpassen.length > 0 && (
-            <div className="divide-y divide-separator">
-              {anpassen.map((c) => (
-                <TaktikCheckKarte key={c.reiter} reiter={c.reiter} punkte={checkKurz(c)} gewinn={c.gewinn} xml={c.xml} />
-              ))}
-            </div>
-          )}
-          <p className="px-4 py-2 text-[11.5px] leading-relaxed text-label-3">
-            Täglich mit dem Kaderabruf neu berechnet: Plätze bleiben, Besetzung nach MZ-Wert der Rolle aus Elf, Bank und allen
-            aufstellbaren Spielern. Vorgeschlagen ab +{MIN_GEWINN.toFixed(1).replace(".", ",")} MZ-Wert in der Elf oder wenn ein Spieler
-            nicht aufstellbar ist; Startspieler mit Ausdauer unter 8 ohne Zeitwechsel bekommen einen Wechsel in der 70. Übernommen wird
-            nur auf Klick.
-          </p>
-        </Card>
+          </Card>
+        </Link>
       </div>
 
       {/* Nächstes Spiel kurz; Taktik und Analyse im Reiter Spieltag */}

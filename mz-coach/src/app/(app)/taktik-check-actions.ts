@@ -41,3 +41,27 @@ export async function reiterUmbenennenAktion(_prev: UebernahmeState, formData: F
   revalidatePath("/portfolio");
   return r;
 }
+
+// Reiter frei umbenennen (Taktikseite)
+export async function reiterFreiUmbenennen(_prev: UebernahmeState, formData: FormData): Promise<UebernahmeState> {
+  const alt = String(formData.get("reiter") ?? "");
+  const neu = String(formData.get("name") ?? "");
+  if (!alt) return { meldung: "Reiter fehlt." };
+  const { reiterUmbenennenFrei } = await import("@/lib/mz/abruf/liga");
+  const r = await reiterUmbenennenFrei(getDb(), alt, neu);
+  revalidatePath("/");
+  revalidatePath("/taktik");
+  return r;
+}
+
+// Vorschlag für freund übernehmen (Bank oder anderer Stil)
+export async function freundVorschlagUebernehmen(_prev: UebernahmeState, formData: FormData): Promise<UebernahmeState> {
+  const reiter = String(formData.get("reiter") ?? "");
+  const was = formData.get("was") === "stil" ? "stil" : "bank";
+  if (!reiter) return { meldung: "Reiter fehlt." };
+  const { freundUebernehmen } = await import("@/lib/mz/abruf/liga");
+  const r = await freundUebernehmen(getDb(), reiter, was);
+  revalidatePath("/");
+  revalidatePath("/taktik");
+  return r;
+}

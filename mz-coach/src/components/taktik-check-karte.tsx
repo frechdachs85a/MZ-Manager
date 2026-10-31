@@ -5,15 +5,42 @@
 
 import { useActionState } from "react";
 import { DateiKnopf } from "@/components/datei-knopf";
-import { portfolioVorschlagUebernehmen, reiterUmbenennenAktion, vorschlagUebernehmen, type UebernahmeState } from "@/app/(app)/taktik-check-actions";
+import {
+  freundVorschlagUebernehmen,
+  portfolioVorschlagUebernehmen,
+  reiterFreiUmbenennen,
+  reiterUmbenennenAktion,
+  vorschlagUebernehmen,
+  type UebernahmeState,
+} from "@/app/(app)/taktik-check-actions";
 
 // art portfolio: Reiter wird mit einem neuen Stil überschrieben (anderer Knopf-Text, andere Aktion)
-export function TaktikCheckKarte({ reiter, punkte, gewinn, xml, art = "check", neuerName }: { reiter: string; punkte: string[]; gewinn: number; xml: string; art?: "check" | "portfolio"; neuerName?: string }) {
-  const [state, action, pending] = useActionState<UebernahmeState, FormData>(art === "portfolio" ? portfolioVorschlagUebernehmen : vorschlagUebernehmen, {});
+// art freund-bank / freund-stil: Vorschläge für den Reiter freund (wichtigste auf die Bank, anderer Stil)
+export function TaktikCheckKarte({
+  reiter,
+  punkte,
+  gewinn,
+  xml,
+  art = "check",
+  neuerName,
+  titel,
+}: {
+  reiter: string;
+  punkte: string[];
+  gewinn: number;
+  xml: string;
+  art?: "check" | "portfolio" | "freund-bank" | "freund-stil";
+  neuerName?: string;
+  titel?: string;
+}) {
+  const [state, action, pending] = useActionState<UebernahmeState, FormData>(
+    art === "portfolio" ? portfolioVorschlagUebernehmen : art.startsWith("freund") ? freundVorschlagUebernehmen : vorschlagUebernehmen,
+    {},
+  );
   return (
     <div className="px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-[15px] font-semibold">{reiter}</span>
+        <span className="text-[15px] font-semibold">{titel ?? reiter}</span>
         {art === "check" && gewinn !== 0 && (
           <span className={`text-[12.5px] font-semibold ${gewinn > 0 ? "text-green" : "text-red"}`}>
             {gewinn > 0 ? "+" : ""}
@@ -31,12 +58,28 @@ export function TaktikCheckKarte({ reiter, punkte, gewinn, xml, art = "check", n
         <form
           action={action}
           onSubmit={(e) => {
-            if (!confirm(art === "portfolio" ? `Reiter „${reiter}“ in ManagerZone mit dem neuen Stil überschreiben${neuerName && neuerName !== reiter ? ` und in „${neuerName}“ umbenennen` : ""}? Die bisherige Taktik in diesem Reiter geht verloren.` : `Vorschlag für „${reiter}“ in ManagerZone in den gleichnamigen Reiter schreiben?`)) e.preventDefault();
+            if (
+              !confirm(
+                art === "portfolio"
+                  ? `Reiter „${reiter}“ in ManagerZone mit dem neuen Stil überschreiben${neuerName && neuerName !== reiter ? ` und in „${neuerName}“ umbenennen` : ""}? Die bisherige Taktik in diesem Reiter geht verloren.`
+                  : `Vorschlag für „${reiter}“ in ManagerZone in den gleichnamigen Reiter schreiben?`,
+              )
+            )
+              e.preventDefault();
           }}
         >
           <input type="hidden" name="reiter" value={reiter} />
-          <button type="submit" disabled={pending} className="pressable rounded-md bg-tint px-3 py-1.5 text-[13px] font-semibold text-auf-akzent disabled:opacity-50">
-            {pending ? "Wird übernommen …" : art === "portfolio" ? `${reiter} überschreiben${neuerName && neuerName !== reiter ? ` → ${neuerName}` : ""}` : "In ManagerZone übernehmen"}
+          {art.startsWith("freund") && <input type="hidden" name="was" value={art === "freund-stil" ? "stil" : "bank"} />}
+          <button
+            type="submit"
+            disabled={pending}
+            className="pressable rounded-md bg-tint px-3 py-1.5 text-[13px] font-semibold text-auf-akzent disabled:opacity-50"
+          >
+            {pending
+              ? "Wird übernommen …"
+              : art === "portfolio"
+                ? `${reiter} überschreiben${neuerName && neuerName !== reiter ? ` → ${neuerName}` : ""}`
+                : "In ManagerZone übernehmen"}
           </button>
         </form>
       </div>
@@ -57,11 +100,49 @@ export function ReiterNameKnopf({ reiter, name }: { reiter: string; name: string
         }}
       >
         <input type="hidden" name="reiter" value={reiter} />
-        <button type="submit" disabled={pending} className="pressable rounded-md bg-tint px-2.5 py-1 text-[12.5px] font-semibold text-auf-akzent disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={pending}
+          className="pressable rounded-md bg-tint px-2.5 py-1 text-[12.5px] font-semibold text-auf-akzent disabled:opacity-50"
+        >
           {pending ? "Wird umbenannt …" : `In „${name}“ umbenennen`}
         </button>
       </form>
       {state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
     </span>
+  );
+}
+
+// Reiter umbenennen mit eigenem Namen (höchstens 6 Zeichen, Grenze des Editors), vorbelegt mit dem Vorschlag
+export function ReiterNameForm({ reiter, vorschlag }: { reiter: string; vorschlag?: string }) {
+  const [state, action, pending] = useActionState<UebernahmeState, FormData>(reiterFreiUmbenennen, {});
+  return (
+    <form
+      action={action}
+      className="flex flex-wrap items-center gap-2"
+      onSubmit={(e) => {
+        const neu = String(new FormData(e.currentTarget).get("name") ?? "");
+        if (!confirm(`Reiter „${reiter}“ in ManagerZone in „${neu}“ umbenennen? Der Inhalt bleibt gleich.`)) e.preventDefault();
+      }}
+    >
+      <input type="hidden" name="reiter" value={reiter} />
+      <input
+        name="name"
+        defaultValue={vorschlag ?? reiter}
+        maxLength={6}
+        required
+        className="w-24 rounded-md border border-separator bg-white px-2 py-1 text-[13px]"
+        aria-label={`Neuer Name für ${reiter}`}
+      />
+      <button
+        type="submit"
+        disabled={pending}
+        className="pressable rounded-md border border-separator px-2.5 py-1 text-[12.5px] font-semibold disabled:opacity-50"
+      >
+        {pending ? "Wird umbenannt …" : "Umbenennen"}
+      </button>
+      {vorschlag && <span className="text-[12px] text-label-3">Vorschlag: {vorschlag}</span>}
+      {state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
+    </form>
   );
 }
