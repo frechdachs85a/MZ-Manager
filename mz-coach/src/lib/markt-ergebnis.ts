@@ -15,16 +15,15 @@ export function marktErgebnis(db: Database.Database) {
   const abgelehnt = ladeAblehnungen(db);
   const schwach = start ? schwachstellen(start.elf, kader) : null;
   const r = rahmen?.werte;
+  // Ohne Rahmen trotzdem bewerten (Marcus 31.10.2026: es gibt sicher Verstärkungen), Grenzen dann als Vorbehalt
+  const basis = { abgelehnt: new Set(abgelehnt.map((a) => a.pid)), eigene: new Set(kader.map((s) => s.pid)), gesperrteTeams: new Set(freund ? [freund.tid] : []) };
   const ergebnis =
-    schwach && suche && r
-      ? bewerteMarkt(suche.spieler, schwach.liste, {
-          kapital: r.kapital,
-          auslaenderFrei: r.auslaenderMax - r.auslaender,
-          bewilligungenFrei: r.bewilligungenMax - r.bewilligungen,
-          abgelehnt: new Set(abgelehnt.map((a) => a.pid)),
-          eigene: new Set(kader.map((s) => s.pid)),
-          gesperrteTeams: new Set(freund ? [freund.tid] : []),
-        })
+    schwach && suche
+      ? bewerteMarkt(
+          suche.spieler,
+          schwach.liste,
+          r ? { ...basis, kapital: r.kapital, auslaenderFrei: r.auslaenderMax - r.auslaender, bewilligungenFrei: r.bewilligungenMax - r.bewilligungen } : { ...basis, ohneRahmen: true },
+        )
       : null;
   return { kader, start, suche, rahmen, freund, abgelehnt, schwach, r, ergebnis };
 }

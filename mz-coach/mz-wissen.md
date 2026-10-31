@@ -323,6 +323,13 @@ Taktik-Portfolio (Hauptaufgabe, 30./31.10.2026)
 - Namensschema der Seite: Formation + Taktik + Spielweise, höchstens 6 Zeichen, z. B. 532flo = 5-3-2 Flügel offensiv, 343kp = 3-4-3 Kurzpass normal (fl Flügel, kp Kurzpass, lb lange Bälle, o offensiv, d defensiv, nichts = normal).
 - Umbenennen im Editor (tactics.js, gelesen 31.10.2026): Reiter wählen, „Umbenennen“ (#rename_tactics_button), Name ins Feld #tactic_name (maxlength 6), Speichern (POST ajax.php?p=tactics&sub=rename mit tactic_name und key). Ohne Clubmitgliedschaft nur Reiter A.
 - Stand Archiv 31.10.2026 (vor dem automatischen Einlesen aus dem Editor): 7 Reiter enthalten dieselbe Elf, dieselbe Bank und dieselben 8 Regeln; außenL, Kupass, 3313of, 532de, U18 und freund sind identisch, außenR hat teils andere Plätze (zum Teil gespiegelt, aber keine vollständige Spiegelung von außenL). Alle eingefügt am 26.10.2026 zwischen 12:26 und 12:31 UTC. Wahrscheinlich beim Einfügen jedes Mal dieselbe XML erwischt: jeden Reiter einzeln exportieren und neu einfügen, bevor Portfolio-Vorschläge übernommen werden.
+- freund (Marcus, 31.10.2026): Reiter für Freundschaftsspiele. Die wichtigsten Spieler sitzen auf der Bank, damit sie Erfahrung und Form bekommen, sich aber nicht verletzen können (laut Marcus). freund soll eine komplett andere Taktik sein als die offiziell gespielten Reiter. Umsetzung der Seite: wichtigste = Startelf des letzten Ligaspiels nach MZ-Wert, so viele wie Bankplätze; keine Wechselregel wechselt sie ein.
+- Taktikvorschläge (Marcus, 31.10.2026): inspiriert vom Wissen der Top 10 und davon, wie sie gegen bestimmte Gegner gespielt haben; dürfen den Gegner auch in die Falle locken (z. B. Seitenwechsel); immer auf die eigenen Spieler abgestimmt. Die aktuellen Reiter sind laut Marcus schon gut und bleiben die Basis; Änderungen nur, wenn etwas fehlt oder klar besser geht.
+- Taktikseite (Marcus, 31.10.2026): dort alle Reiter automatisch aus dem Editor, je Reiter Vorschläge (Spieler tauschen, Wechsel anders, kann weg, überschreiben), Abdeckung je Gegnertyp, U18 und freund, XML und Umbenennen mit Namensvorschlag (max. 6 Zeichen). Die Startseite zeigt dazu nur noch einen kurzen Hinweis.
+
+Transfermarkt (31.10.2026)
+- Schwachstellen = Startelf des letzten Ligaspiels. Einwechselspieler (z. B. Kaupa) stehen nicht drin; für sie spielt Ausdauer kaum eine Rolle (Marcus).
+- Ohne eingetragenen Rahmen (Kapital, Ausländer, Arbeitsbewilligungen) zeigte die Seite keinen Spieler. Seit 31.10.2026 zeigt sie Kandidaten trotzdem, mit dem Vorbehalt, dass diese Grenzen nicht geprüft sind.
 
 Arbeitsweise
 - Alles, was besprochen wird, in dieser Datei festhalten und vor neuen Aufgaben hier nachsehen, damit nichts doppelt besprochen werden muss.

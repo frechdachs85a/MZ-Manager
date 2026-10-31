@@ -41,12 +41,17 @@ export default async function Markt() {
           <Section title="Empfehlung">
             {!schwach ? (
               <Unavailable title="Empfehlung" reason="Kein eigenes Spiel mit Stats-XML gespeichert, daher keine Startelf." />
-            ) : !r ? (
-              <Unavailable title="Empfehlung" reason="Rahmen unten eintragen (Saldo, Ausländer, Arbeitsbewilligungen). Ohne diese Grenzen wird nichts vorgeschlagen." />
             ) : !suche ? (
               <Unavailable title="Empfehlung" reason="Noch keine Marktsuche. Sie läuft täglich ab 6 Uhr automatisch, oder unten jetzt suchen." />
             ) : ergebnis?.empfehlung ? (
+              <>
+              {!r && (
+                <p className="mb-2 rounded-md bg-[#fef3c7] px-3 py-2 text-[13px] text-[#92400e]">
+                  Rahmen noch nicht eingetragen (unten): Kapital, Ausländerplätze und Arbeitsbewilligungen sind bei diesen Vorschlägen nicht geprüft.
+                </p>
+              )}
               <EmpfehlungKarte b={ergebnis.empfehlung} imBietomat={imBietomat.get(ergebnis.empfehlung.kandidat.pid)} verkauf={verkaeufe.get(ergebnis.empfehlung.kandidat.pid)} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
+              </>
             ) : (
               <Card className="p-4">
                 <div className="text-[17px] font-semibold">Heute kein passender Spieler auf dem Markt</div>
