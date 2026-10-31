@@ -1,14 +1,19 @@
-// Jugend-Scouting: eigene Jugendspieler mit Einstufung und Vorschlag (behalten, beobachten, abgeben).
+// Jugend (Marcus, 31.10.2026): dieselbe Tabelle wie der Kader, aufgeteilt in „Behalten“ und „Abgabekandidaten“. Vorschlag
+// nach der Jugendregel (Scout-Rang 1 bis 3 behalten); per Klick eigene Entscheidung, dann rutscht der Spieler in die andere
+// Tabelle. Talente (Nr. 100 bis 110), Nr. ab 195 und weitere junge Spieler bis 21.
 
-import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Badge, Card, Section, Unavailable } from "@/components/ui";
+import { Badge, Section, Unavailable } from "@/components/ui";
+import { WertLegende } from "@/components/wert-stufe";
+import { KaderTabelle, mitParam, sortiere, type KaderZeile, type Sortierung } from "@/components/kader-tabelle";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
+import { ladeJugendEntscheidungen } from "@/lib/db/watch";
+import { POSITIONEN } from "@/lib/mz/formel";
 import { ERSETZEN_AB, jugendAuswertung, TALENTE, type JugendSpieler, type Vorschlag } from "@/lib/jugend";
-import { ScoutAbzeichen } from "@/components/scout-abzeichen";
-import { ladeKombis } from "@/lib/scout";
+import { ladeKombis, rangSortierung } from "@/lib/scout";
+import { jugendEntscheiden } from "./actions";
 
 const TON: Record<Vorschlag, "green" | "red" | "orange" | "neutral" | "tint"> = {
   behalten: "green",
@@ -18,81 +23,82 @@ const TON: Record<Vorschlag, "green" | "red" | "orange" | "neutral" | "tint"> = 
   loyal: "tint",
   "kein Scoutbericht": "neutral",
 };
+// Ohne eigene Entscheidung: nur der Regel-Vorschlag "Abgabekandidat" landet bei den Abgabekandidaten
+const nachRegel = (v: Vorschlag) => (v === "Abgabekandidat" ? "abgeben" : "behalten");
+const SORTIERUNGEN: Sortierung[] = ["nr", "alter", "scout", "bester", ...POSITIONEN];
 
-function Tabelle({ liste, rang = false }: { liste: JugendSpieler[]; rang?: boolean }) {
-  return (
-    <Card className="!overflow-x-auto">
-      <table className="w-full min-w-[760px] text-[14px]">
-        <thead>
-          <tr className="border-b border-separator bg-card-2 text-left text-[11px] uppercase tracking-wider text-label-3">
-            {rang && <th className="py-2.5 pl-5 font-medium">#</th>}
-            <th className={`py-2.5 font-medium ${rang ? "" : "pl-5"}`}>Nr</th>
-            <th className="py-2.5 font-medium">Name</th>
-            <th className="py-2.5 text-right font-medium">Alter</th>
-            <th className="py-2.5 pl-4 font-medium">Scout</th>
-            <th className="py-2.5 pl-4 font-medium">Vorschlag</th>
-            <th className="py-2.5 text-right font-medium">Training</th>
-            <th className="py-2.5 pr-5 text-right font-medium">Bester MZ-Wert</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-separator">
-          {liste.map((j, i) => (
-            <tr key={j.s.pid} className="zeile-hover">
-              {rang && <td className="py-2.5 pl-5 tabular-nums text-label-3">{i + 1}</td>}
-              <td className={`py-2.5 tabular-nums text-label-2 ${rang ? "" : "pl-5"}`}>{j.s.nr}</td>
-              <td className="py-2.5 font-medium">
-                <Link href={`/kader/${j.s.pid}`} className="hover:text-tint">{j.s.name}</Link>
-              </td>
-              <td className="py-2.5 text-right tabular-nums">{j.s.alter ?? "n. v."}</td>
-              <td className="py-2.5 pl-4">
-                <ScoutAbzeichen e={j.scout} mitSternen />
-              </td>
-              <td className="py-2.5 pl-4">
-                <span title={j.vorschlag === "loyal" ? "Loyaler Spieler: kann entlassen, aber nie verkauft werden" : undefined}>
-                  <Badge tone={TON[j.vorschlag]}>{j.vorschlag === "loyal" ? "loyal, nicht verkaufbar" : j.vorschlag}</Badge>
-                </span>
-              </td>
-              <td className="py-2.5 text-right tabular-nums">{j.s.scoutTraining !== undefined ? `${j.s.scoutTraining} ★` : "n. v."}</td>
-              <td className="py-2.5 pr-5 text-right tabular-nums">{j.besterWert ? `${j.besterWert.wert.toFixed(2)} ${j.besterWert.p}` : "n. v."}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Card>
-  );
-}
-
-// Seite Jugend
-export default async function Jugend() {
+export default async function Jugend(props: PageProps<"/jugend">) {
   await connection();
   const db = getDb();
   const kader = ladeKader(db);
-  const { talente, ersetzen, weitere } = jugendAuswertung(kader, ladeKombis(db));
-  const behalten = ersetzen.filter((j) => j.regelOk).length;
+  const kombis = ladeKombis(db);
+  const { talente, ersetzen, weitere } = jugendAuswertung(kader, kombis);
+  const entscheidung = ladeJugendEntscheidungen(db);
+  const params = await props.searchParams;
+  const roh = typeof params.sort === "string" ? params.sort : undefined;
+  const sort: Sortierung = roh && (SORTIERUNGEN as string[]).includes(roh) ? (roh as Sortierung) : "nr";
+  const link = (x: Sortierung) => mitParam("/jugend", {}, { sort: x === "nr" ? undefined : x });
+
+  const alle = [...talente, ...weitere, ...ersetzen];
+  const je = new Map<number, JugendSpieler>(alle.map((j) => [j.s.pid, j]));
+  const wohin = (j: JugendSpieler) => entscheidung.get(j.s.pid) ?? nachRegel(j.vorschlag);
+  const zeilen = (liste: JugendSpieler[]): KaderZeile[] =>
+    sortiere(
+      liste.map((j) => ({ ...j.s, scout: j.scout })),
+      sort,
+      rangSortierung,
+    );
+  const behalten = zeilen(alle.filter((j) => wohin(j) === "behalten"));
+  const abgeben = zeilen(alle.filter((j) => wohin(j) === "abgeben"));
+
+  const zelle = (ziel: "behalten" | "abgeben") =>
+    function EntscheidungZelle(z: KaderZeile) {
+      const j = je.get(z.pid)!;
+      const eigen = entscheidung.has(z.pid);
+      return (
+        <span className="flex items-center gap-2 whitespace-nowrap">
+          <span title={eigen ? "Deine Entscheidung (Regel-Vorschlag in Klammern)" : "Vorschlag nach deiner Jugendregel"}>
+            <Badge tone={TON[j.vorschlag]}>{eigen ? `du (${j.vorschlag})` : j.vorschlag}</Badge>
+          </span>
+          <form action={jugendEntscheiden}>
+            <input type="hidden" name="pid" value={z.pid} />
+            <input type="hidden" name="entscheidung" value={ziel} />
+            <button
+              className={`pressable rounded-md border px-2 py-0.5 text-[12px] font-semibold ${ziel === "abgeben" ? "border-orange/50 text-orange" : "border-green/50 text-green"}`}
+            >
+              {ziel === "abgeben" ? "→ Abgabe" : "→ Behalten"}
+            </button>
+          </form>
+        </span>
+      );
+    };
+
   return (
     <>
-      <PageHeader title="Jugend" subtitle={`${talente.length} Talente (Nr. ${TALENTE.von} bis ${TALENTE.bis}) · ${ersetzen.length} Spieler ab Nr. ${ERSETZEN_AB}`} />
+      <PageHeader title="Jugend" subtitle={`${alle.length} junge Spieler · ${behalten.length} behalten · ${abgeben.length} Abgabekandidaten`} />
       <div className="seite">
         {kader.length === 0 ? (
-          <Section title="Talente">
+          <Section title="Jugend">
             <Unavailable title="Jugend" reason="Noch kein Kaderabruf." />
           </Section>
         ) : (
           <>
-            <Section title="Talente" footer="Scout = Einstufung aus Sternen Hoch/Niedrig und Schlüsselwort im Text des Scoutberichts (Rang 1 = beste). Training = Sterne „Tr. Geschwindigkeit“.">
-              <Tabelle liste={talente} />
-            </Section>
+            <div className="mt-4">
+              <WertLegende />
+            </div>
             <Section
-              title="Ersetzen ab Nr. 195"
-              footer={`Deine Regel: nur Rang 1 bis 3 (Spitzenklasse 4/2, Elite 4/1, Spitzenspieler 3/2) behalten, alle anderen sind Abgabekandidaten; neue Jugendspieler werden dienstags gezogen. Loyale Spieler können nicht verkauft werden. Reihenfolge: zuerst wer die Regel nicht erfüllt, schwächste Einstufung und wenig Trainingssterne zuerst. ${behalten} von ${ersetzen.length} erfüllen die Regel.`}
+              title="Behalten"
+              footer={`Talente (Nr. ${TALENTE.von} bis ${TALENTE.bis}), Spieler ab Nr. ${ERSETZEN_AB} und weitere junge Spieler bis 21. Vorschlag nach deiner Regel: Scout-Rang 1 bis 3 behalten. „→ Abgabe“ verschiebt den Spieler; deine Entscheidung gilt, bis du sie wieder änderst.`}
             >
-              <Tabelle liste={ersetzen} rang />
+              <KaderTabelle kader={behalten} sort={sort} link={link} extra={{ titel: "Entscheidung", zelle: zelle("abgeben") }} />
             </Section>
-            {weitere.length > 0 && (
-              <Section title="Weitere junge Spieler" footer="Bis 21 Jahre, Nummern zwischen den Talenten und Nr. 195.">
-                <Tabelle liste={weitere} />
-              </Section>
-            )}
+            <Section title="Abgabekandidaten" footer="Loyale Spieler können nicht verkauft, nur entlassen werden. „→ Behalten“ verschiebt den Spieler zurück.">
+              {abgeben.length ? (
+                <KaderTabelle kader={abgeben} sort={sort} link={link} extra={{ titel: "Entscheidung", zelle: zelle("behalten") }} />
+              ) : (
+                <p className="text-[14px] text-label-2">Keine Abgabekandidaten.</p>
+              )}
+            </Section>
           </>
         )}
       </div>
