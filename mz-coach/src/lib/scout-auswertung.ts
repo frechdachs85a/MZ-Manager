@@ -10,9 +10,17 @@ import type { ScoutBericht, ScoutTaktik } from "@/lib/wissen/scoutspiele";
 // damit der Taktikvorschlag (scoutEntscheidung) es direkt nutzt.
 export type ScoutSpielZeile = { mid: number; datum: string | null; reiter: string; tore: string; ergebnis: "S" | "U" | "N"; ballbesitz?: number };
 
-export function scoutAuswertung(db: Database.Database, tid: number): { bericht: ScoutBericht; spiele: ScoutSpielZeile[] } | undefined {
-  const spiele = ladeScoutSpiele(db, tid);
-  if (!spiele.length) return undefined;
+// Gezählt werden nur die Scoutspiele des neuesten Scout-Tags (Marcus, 31.10.2026: „Scoutspiele gegen den Gegner am
+// heutigen Tag analysieren“). Ältere Tage stehen in `aeltere`, zählen aber nicht: der Gegner spielt im Scoutspiel mit der
+// Aufstellung seines letzten Ligaspiels, ältere Spiele können eine andere Aufstellung haben.
+export function scoutAuswertung(
+  db: Database.Database,
+  tid: number,
+): { bericht: ScoutBericht; spiele: ScoutSpielZeile[]; tag: string; aeltere: number } | undefined {
+  const alle = ladeScoutSpiele(db, tid);
+  if (!alle.length) return undefined;
+  const tag = alle.map((s) => s.datum ?? "").sort().at(-1) ?? "";
+  const spiele = alle.filter((s) => (s.datum ?? "") === tag);
   const archiv = archivLaden(db);
   const zeilen: ScoutSpielZeile[] = [];
   const je = new Map<string, ScoutTaktik & { besitz: number[] }>();
@@ -55,11 +63,13 @@ export function scoutAuswertung(db: Database.Database, tid: number): { bericht: 
   const pps = (t: ScoutTaktik) => ((3 * t.S + t.U) / t.spiele).toFixed(2).replace(".", ",");
   return {
     spiele: zeilen,
+    tag,
+    aeltere: alle.length - spiele.length,
     bericht: {
       tid,
       gegner: spiele[0].gegnerName ?? `tid ${tid}`,
       datum,
-      quelle: `${zeilen.length} Scoutspiele aus ManagerZone, automatisch ausgewertet (Taktik über die Startaufstellung zugeordnet)`,
+      quelle: `${zeilen.length} Scoutspiele vom ${tag.split("-").reverse().join(".")} aus ManagerZone, automatisch ausgewertet (Taktik über die Startaufstellung zugeordnet)${alle.length > spiele.length ? `; ${alle.length - spiele.length} ältere nicht gezählt` : ""}`,
       taktiken,
       befunde: taktiken.map(
         (t) => `${t.reiter}: ${t.spiele} Spiele, ${t.S} S / ${t.U} U / ${t.N} N, Tore ${t.tore}:${t.gegentore}, ${pps(t)} Punkte pro Spiel`,
