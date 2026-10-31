@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KaderSeiteUnbekannt } from "./kader";
-import { endeAlsDatum, parseTransferSuche } from "./transfer";
+import { endeAlsDatum, landAusFlagge, parseTransferSuche } from "./transfer";
 
 // Nachbau im Aufbau einer echten Antwort vom 26.10.2026 (Werte und Namen erfunden).
 // Prüft nur, dass der Leser diesen Aufbau liest und bei Abweichungen abbricht statt zu raten.
@@ -35,5 +35,13 @@ describe("Transfermarktsuche (Nachbau)", () => {
     const ohneKasten = block.replace('transfer-control-area', 'anders');
     expect(() => parseTransferSuche(JSON.stringify({ totalHits: 1, players: ohneKasten }))).toThrow(KaderSeiteUnbekannt);
     expect(parseTransferSuche(JSON.stringify({ totalHits: 0, players: "" })).spieler).toEqual([]);
+  });
+});
+
+describe("Land aus der Flagge", () => {
+  it("übersetzt ISO-Codes, Deutschland bleibt Deutschland", () => {
+    expect(landAusFlagge("de")).toBe("Deutschland");
+    expect(landAusFlagge("ro")).toBe("Rumänien");
+    expect(landAusFlagge("xx-yy")).toBe("Land xx-yy");
   });
 });

@@ -184,7 +184,9 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
     if (preis === undefined) return raus("preis-unbekannt");
     if (rahmen.kapital !== undefined && preis > rahmen.kapital) return raus("zu-teuer");
     // Nationalität zählt nur für Ausländerplätze: ohne Rahmen oder unlesbar kein Ausschluss, sondern Vorbehalt
-    if (!k.nationalitaet && !rahmen.ohneRahmen) return raus("nationalitaet-unbekannt");
+    // (31.10.2026) Unbekannt schließt nur aus, wenn weder Ausländerplatz noch Arbeitsbewilligung frei ist
+    if (!k.nationalitaet && !rahmen.ohneRahmen && (rahmen.auslaenderFrei ?? 0) <= 0 && (rahmen.bewilligungenFrei ?? 0) <= 0)
+      return raus("nationalitaet-unbekannt");
     const auslaender = !!k.nationalitaet && k.nationalitaet !== HEIMATLAND;
     const platzFrei = (rahmen.auslaenderFrei ?? 0) > 0;
     const bewilligungNoetig = auslaender && !platzFrei;
