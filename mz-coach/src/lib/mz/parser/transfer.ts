@@ -28,8 +28,6 @@ export function istNichtEingeloggt(antwort: string): boolean {
   return /You need to be logged in/i.test(antwort);
 }
 
-
-
 function marktFelder(block: HTMLElement): MarktSpieler["markt"] {
   const kasten = block.querySelector(".transfer-control-area");
   if (!kasten) throw new KaderSeiteUnbekannt("Spieler in der Marktsuche ohne Transferkasten (.transfer-control-area).");
@@ -50,7 +48,8 @@ function marktFelder(block: HTMLElement): MarktSpieler["markt"] {
       .find(Boolean);
     return t ? Number(t) : undefined;
   };
-  const zeileVon = (beschriftung: RegExp) => kasten.querySelectorAll("td").find((x) => beschriftung.test(text(x)) && text(x).length < 30)?.parentNode as HTMLElement | undefined;
+  const zeileVon = (beschriftung: RegExp) =>
+    kasten.querySelectorAll("td").find((x) => beschriftung.test(text(x)) && text(x).length < 30)?.parentNode as HTMLElement | undefined;
   // Höchstbietender: Vereinslink in der Tabelle mit "Letztes Gebot:" (Zeile danach)
   const gebotTabelle = zeileVon(/^Letztes Gebot:?$/i)?.parentNode as HTMLElement | undefined;
   return {
@@ -77,11 +76,35 @@ export function parseTransferSuche(antwort: string): TransferSuche {
   if (treffer > 0 && typeof json.players !== "string") throw new KaderSeiteUnbekannt("Marktsuche: players fehlt.");
   const bloecke = parse(typeof json.players === "string" ? json.players : "").querySelectorAll("div.playerContainer");
   if (treffer > 0 && bloecke.length === 0) throw new KaderSeiteUnbekannt("Marktsuche: keine Spielerblöcke (div.playerContainer).");
-  return { treffer, spieler: bloecke.map((b) => ({ ...parseSpielerBlock(b), markt: marktFelder(b) })) };
+  return {
+    treffer,
+    spieler: bloecke.map((b) => {
+      const sp = parseSpielerBlock(b);
+      // Die Marktsuche hat keine Zeile "Nationalität:", nur die Flagge vor dem Namen (img/flags/15/<code>.png, gesehen
+      // 31.10.2026). Dann das Land aus dem Flaggen-Code.
+      if (!sp.nationalitaet) {
+        const code = (b.querySelector("h2 img[src*='img/flags/']")?.getAttribute("src") ?? "").match(/flags\/\d+\/([a-z-]+)\.png/)?.[1];
+        if (code) sp.nationalitaet = landAusFlagge(code);
+      }
+      return { ...sp, markt: marktFelder(b) };
+    }),
+  };
 }
 
 // Auktionsende "25-10-2026 18:30" (Format laut Mazyar) oder "25.10.2026 18:30" als Berliner Zeit (ISO ohne Zone)
 export function endeAlsDatum(ende?: string): string | undefined {
   const m = ende?.match(/^(\d{2})[-.](\d{2})[-.](\d{4}) (\d{2}):(\d{2})/);
   return m ? `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}` : undefined;
+}
+
+// Flaggen-Code von ManagerZone (z. B. "de", "ro") in den deutschen Ländernamen (ISO-Ländercode über Intl.DisplayNames);
+// unbekannte Codes bleiben als "Land <code>" stehen
+export function landAusFlagge(code: string): string {
+  try {
+    const n = new Intl.DisplayNames(["de"], { type: "region" }).of(code.toUpperCase());
+    if (n && n.toUpperCase() !== code.toUpperCase()) return n;
+  } catch {
+    // kein ISO-Code
+  }
+  return `Land ${code}`;
 }
