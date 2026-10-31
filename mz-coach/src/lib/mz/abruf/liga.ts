@@ -144,19 +144,14 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
   return x.slot;
 }
 
-// Vorschlag des Taktik-Checks für einen Reiter übernehmen (nur auf Klick, Marcus 30.10.2026): in den gleichnamigen
-// Editor-Reiter schreiben, prüfen und danach auch im Archiv dieser Seite speichern.
-export async function taktikUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+// Eine XML auf Klick in den gleichnamigen Editor-Reiter schreiben, prüfen und danach auch im Archiv dieser Seite speichern
+async function xmlUebernehmen(db: Database.Database, reiter: string, xml: string, was: string): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "taktik-check");
   try {
-    const { taktikCheck } = await import("@/lib/taktik-check");
-    const c = taktikCheck(db).find((x) => x.reiter === reiter);
-    if (!c) throw new MzFehler(`Reiter „${reiter}“ nicht im Archiv.`);
-    if (c.ok) throw new MzFehler(`Reiter „${reiter}“ braucht keine Änderung.`);
-    const soll = sollAus(c.xml);
-    const slot = await mitMzSitzung(db, (s) => inEditorSchreiben(s, reiter, c.xml, soll), { manuell: true });
-    speichereTaktikXml(db, reiter, c.xml, `Taktik-Check, übernommen ${new Date().toISOString()}`);
-    const meldung = `Taktik ${reiter}: Vorschlag in ManagerZone gespeichert (Reiter ${slot.toUpperCase()}) und nach Neuladen geprüft.`;
+    const soll = sollAus(xml);
+    const slot = await mitMzSitzung(db, (s) => inEditorSchreiben(s, reiter, xml, soll), { manuell: true });
+    speichereTaktikXml(db, reiter, xml, `${was}, übernommen ${new Date().toISOString()}`);
+    const meldung = `Taktik ${reiter}: ${was} in ManagerZone gespeichert (Reiter ${slot.toUpperCase()}) und nach Neuladen geprüft.`;
     abrufBeenden(db, log, true, meldung);
     return { ok: true, meldung };
   } catch (e) {
@@ -164,4 +159,21 @@ export async function taktikUebernehmen(db: Database.Database, reiter: string): 
     abrufBeenden(db, log, false, meldung);
     return { ok: false, meldung };
   }
+}
+
+// Vorschlag des Taktik-Checks für einen Reiter übernehmen (nur auf Klick, Marcus 30.10.2026)
+export async function taktikUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  const { taktikCheck } = await import("@/lib/taktik-check");
+  const c = taktikCheck(db).find((x) => x.reiter === reiter);
+  if (!c) return { ok: false, meldung: `Reiter „${reiter}“ nicht im Archiv.` };
+  if (c.ok) return { ok: false, meldung: `Reiter „${reiter}“ braucht keine Änderung.` };
+  return xmlUebernehmen(db, reiter, c.xml, "Vorschlag des Taktik-Checks");
+}
+
+// Vorschlag des Portfolio-Plans übernehmen: Reiter mit dem neuen Stil überschreiben (nur auf Klick)
+export async function portfolioUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  const { portfolioPlan } = await import("@/lib/portfolio-plan");
+  const v = portfolioPlan(db).vorschlaege.find((x) => x.reiter === reiter);
+  if (!v) return { ok: false, meldung: `Für Reiter „${reiter}“ gibt es keinen Portfolio-Vorschlag mehr.` };
+  return xmlUebernehmen(db, reiter, v.xml, `Portfolio: ${v.stil} gegen ${v.klasse}`);
 }

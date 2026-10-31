@@ -10,6 +10,7 @@ import { spieltagLage } from "@/lib/spieltag";
 import { WertDiff } from "@/components/elf-wert";
 import { TaktikCheckKarte } from "@/components/taktik-check-karte";
 import { checkKurz, taktikCheck, MIN_GEWINN } from "@/lib/taktik-check";
+import { portfolioPlan, vorschlagText } from "@/lib/portfolio-plan";
 import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { spieltagCheckliste } from "@/lib/checkliste";
@@ -29,8 +30,11 @@ export default async function Uebersicht() {
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
   const db = getDb();
   const { bilanz, warnungen: verlust } = skillBilanz(db, 14);
+  const plan = portfolioPlan(db);
+  // Reiter, die laut Portfolio-Plan überschrieben werden sollen, nicht zusätzlich im Taktik-Check zeigen
+  const ueberschreiben = new Set(plan.vorschlaege.map((v) => v.reiter));
   const checks = taktikCheck(db);
-  const anpassen = checks.filter((c) => !c.ok && !c.fehler);
+  const anpassen = checks.filter((c) => !c.ok && !c.fehler && !ueberschreiben.has(c.reiter));
   const kader = ladeKader(db);
   const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
   const taktikStand = kader.map((s) => s.statusStand?.aufstellbar).filter(Boolean).sort().at(-1);
@@ -76,6 +80,53 @@ export default async function Uebersicht() {
           </Card>
         </div>
       )}
+
+      {/* Portfolio: Abwechslung und Abdeckung aller Gegnertypen (Hauptaufgabe, Marcus 30.10.2026) */}
+      <div className="seite mt-6">
+        <Card>
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-separator px-4 py-3">
+            <span className="text-[15px] font-bold">Taktik-Portfolio</span>
+            <span className="text-[12.5px] text-label-2">
+              {plan.vorschlaege.length ? `${plan.vorschlaege.length} Reiter neu belegen` : plan.doppelt.length ? `${plan.doppelt.length} Reiter doppelt` : "Keine doppelten Reiter"}
+            </span>
+          </div>
+          <div className="px-4 py-3 text-[13px]">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">Gegen welchen Gegnertyp hast du eine bewährte Antwort?</div>
+            <ul className="mt-1.5 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+              {plan.abdeckung.slice(0, 8).map((a) => (
+                <li key={a.klasse} className="flex gap-2">
+                  <span className={`font-bold ${a.reiter.length ? "text-green" : a.bester ? "text-red" : "text-label-3"}`}>{a.reiter.length ? "✓" : a.bester ? "✗" : "–"}</span>
+                  <span>
+                    {a.klasse}: {a.reiter.length ? a.reiter.join(", ") : a.bester ? `Lücke (bewährt: ${a.bester.schluessel})` : "kein bewährter Stil bekannt"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {plan.doppelt.length > 0 && (
+              <p className="mt-2 text-label-2">Doppelt: {plan.doppelt.map((d) => `${d.reiter} (${d.art} wie ${d.wie})`).join(" · ")}</p>
+            )}
+          </div>
+          {plan.vorschlaege.length > 0 && (
+            <div className="divide-y divide-separator border-t border-separator">
+              {plan.vorschlaege.map((v) => (
+                <TaktikCheckKarte
+                  key={v.reiter}
+                  art="portfolio"
+                  reiter={v.reiter}
+                  punkte={[vorschlagText(v), `Topteams: ${v.teams.slice(0, 3).join(", ")}`, `Mit deiner besten Elf: MZ-Wert ${v.summe.toFixed(2).replace(".", ",")}`]}
+                  gewinn={0}
+                  xml={v.xml}
+                />
+              ))}
+            </div>
+          )}
+          <p className="px-4 py-2 text-[11.5px] leading-relaxed text-label-3">
+            Ziel: jeder Reiter eine andere, für dein Team optimale Taktik, zusammen eine Antwort auf jeden Gegnertyp. Bewährt = bei den Top 10
+            mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Doppelte Reiter werden mit den Lücken belegt, wichtigste
+            Gegnerklasse zuerst; Jugend-Reiter (U18) bleiben. Den Namen des Reiters im Editor selbst anpassen. Übernommen wird nur auf Klick.
+          </p>
+        </Card>
+      </div>
 
       {/* Taktik-Check: deine Taktiken gegen den heutigen Kader (Skills, Ausdauer, Aufstellbarkeit) */}
       <div className="seite mt-6">
