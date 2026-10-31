@@ -1,5 +1,8 @@
 import type Database from "better-sqlite3";
 import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
+import { marktErgebnis } from "@/lib/markt-ergebnis";
+import { mzWert } from "@/lib/mz/formel";
+import { FORMEL_SKILLS } from "@/lib/mz/skills";
 import { checkKurz, taktikCheck } from "@/lib/taktik-check";
 import { portfolioPlan, vorschlagText } from "@/lib/portfolio-plan";
 import { ladeEditorReiter, ladeTaktiken } from "@/lib/db/taktik";
@@ -97,5 +100,34 @@ export function diagnose(db: Database.Database) {
     auftraege: ladeAuftraege(db).map((x) => ({ pid: x.pid, name: x.name, maximum: x.maximum, auktionEnde: x.auktionEnde, status: x.status, geaendert: x.geaendert })),
     protokoll: ladeProtokoll(db, undefined, 40),
   };
-  return { bietomat, analyse, erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, suchformular, rohseiten, scout };
+  // Transfermarkt: warum ein Spieler (Bietomat-Aufträge) vorgeschlagen wurde oder nicht
+  let marktGruende: unknown = null;
+  try {
+    const m = marktErgebnis(db);
+    const pids = ladeAuftraege(db).map((a) => a.pid);
+    marktGruende = {
+      suche: m.suche ? { zeit: m.suche.zeit, spieler: m.suche.spieler.length } : null,
+      schwach: m.schwach?.liste.map((x) => `${x.rolle} ${x.spieler.name} ${x.wert.toFixed(2)}`),
+      vorgeschlagen: m.ergebnis?.alle.length ?? 0,
+      je: pids.map((pid) => {
+        const k = m.suche?.spieler.find((x) => x.pid === pid);
+        const b = m.ergebnis?.alle.findIndex((x) => x.kandidat.pid === pid) ?? -1;
+        const best = k && m.schwach ? m.schwach.liste.map((x) => ({ r: x.rolle, w: mzWert(k.skills, x.rolle) })).filter((x) => x.w.ok).sort((a, c) => (c.w.ok ? c.w.wert : 0) - (a.w.ok ? a.w.wert : 0))[0] : undefined;
+        return {
+          pid,
+          inSuche: !!k,
+          rang: b >= 0 ? b + 1 : null,
+          grund: m.ergebnis?.grundJe.get(pid) ?? null,
+          sprint: k?.skills.sprint?.wert,
+          ausdauer: k?.skills.ausdauer?.wert,
+          skillsFehlen: k ? FORMEL_SKILLS.filter((x) => k.skills[x] === undefined) : null,
+          bestRolle: best ? `${best.r} ${best.w.ok ? best.w.wert.toFixed(2) : "?"}` : null,
+          preis: k?.markt,
+        };
+      }),
+    };
+  } catch (e) {
+    marktGruende = { fehler: e instanceof Error ? e.message : String(e) };
+  }
+  return { marktGruende, bietomat, analyse, erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, suchformular, rohseiten, scout };
 }

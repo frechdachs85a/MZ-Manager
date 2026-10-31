@@ -118,6 +118,8 @@ export type MarktErgebnis = {
   weitere: Bewertung[]; // nächste Kandidaten in Reihenfolge
   ausgeschlossen: Partial<Record<Grund, number>>;
   geprueft: number;
+  alle: Bewertung[]; // alle vorgeschlagenen in Reihenfolge
+  grundJe: Map<number, Grund>; // je ausgeschlossenem Spieler der Grund
 };
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -143,13 +145,17 @@ function staerken(k: MarktSpieler, alt: SpielerDaten, r: Position): string[] {
 // Kandidaten gegen deine Schwachstellen bewerten (mit Rahmen)
 export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[], rahmen: MarktRahmen): MarktErgebnis {
   const ausgeschlossen: Partial<Record<Grund, number>> = {};
+  const grundJe = new Map<number, Grund>();
+  let aktuell = 0;
   const raus = (g: Grund) => {
     ausgeschlossen[g] = (ausgeschlossen[g] ?? 0) + 1;
+    grundJe.set(aktuell, g);
     return null;
   };
   const elfVorher = schwach.reduce((n, s) => n + s.wert, 0);
 
   const bewertet = kandidaten.map((k): Bewertung | null => {
+    aktuell = k.pid;
     if (rahmen.eigene.has(k.pid)) return raus("eigener");
     if (rahmen.abgelehnt.has(k.pid)) return raus("abgelehnt");
     if (rahmen.gesperrteTeams?.size) {
@@ -221,5 +227,5 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
   const sortiert = bewertet
     .filter((b): b is Bewertung => b !== null)
     .sort((a, b) => b.gewinn - a.gewinn || a.preis - b.preis);
-  return { empfehlung: sortiert[0] ?? null, weitere: sortiert.slice(1, 6), ausgeschlossen, geprueft: kandidaten.length };
+  return { empfehlung: sortiert[0] ?? null, weitere: sortiert.slice(1, 6), ausgeschlossen, geprueft: kandidaten.length, alle: sortiert, grundJe };
 }
