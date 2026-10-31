@@ -6,6 +6,8 @@ import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { portfolioAnalyse, regelcheck, stilSchluessel, type StilEintrag } from "@/lib/portfolio";
 import { istAussen, STURM_Y } from "@/lib/mz/taktik/pruefer";
 import { archivLaden } from "@/lib/taktik-archiv";
+import { istAltersreiter, ladeEditorReiter } from "@/lib/db/taktik";
+import { spiegelX } from "@/lib/mz/taktik/gegner-gewichte";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
 // Portfolio-Plan (Marcus, 30.10.2026: die Reiter sollen ein Portfolio sein, optimal für dein Team und abwechslungsreich,
@@ -22,16 +24,21 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 // 5. Sinnhaftigkeit: verspricht der Name etwas anderes als der Inhalt (Formation, Taktik, Spielweise, Seite bei
 //    außenR/außenL), wird ein passender Name vorgeschlagen. Hinweise ohne Umbenennen: Stil bei den Top 10 nicht belegt,
 //    Startaufstellung verstößt gegen die Prüfliste.
+// 6. Seitenvarianten (Marcus, 31.10.2026): mal über rechts, mal über links angreifen, damit sich der Gegner nicht auf eine
+//    Seite einstellen kann. Hat ein Reiter seine Eckstürmer nur auf einer Seite und gibt es keinen Reiter mit gleichem Stil
+//    auf der anderen Seite, wird die gespiegelte Fassung vorgeschlagen (auf einem freien Reiter).
 // Gespiegelte Reiter (außenR/außenL) sind eine gewollte Seitenvariante und werden nicht als frei gezählt.
-// Jugend-Reiter (U18, U21, U23), „Liga“, außenR und kupass werden nicht überschrieben und nicht umbenannt.
+// Quelle der Reiter: der zuletzt aus dem Editor gelesene Stand (editor-reiter.ts); nur Reiter, die es dort gibt.
+// Altersreiter (Altersregler im Editor, z. B. U18 = 16 bis 18) sind eine Aufstellung für die Jugend, kein Stil: sie werden
+// nicht verglichen, nicht überschrieben und nicht umbenannt; ihre Besetzung prüft der Taktik-Check (nur Spieler im Alter,
+// Nr. 100 bis 150 zuerst). „Liga“, außenR, außenL und kupass werden nicht überschrieben und nicht umbenannt.
 // Übernommen und umbenannt wird nur auf Klick (abruf/liga.ts).
 
 export const JUGEND = /^u(18|21|23)\b/i;
 export const BESSER = 0.1;
 export const SPIEGEL_TOLERANZ = 6; // Punkte (eigene Setzung)
 // außenR und kupass nennt die Faustregel (mz-wissen.md, Abschnitt 10) und die Scoutauswertung beim Namen: bleiben
-const FEST = /^(liga|außenr|kupass)$/i;
-const NICHT_ANFASSEN = (r: string) => JUGEND.test(r) || FEST.test(r);
+const FEST = /^(liga|außenr|außenl|kupass)$/i;
 // Reiter mit Zweck statt Stil im Namen (Freundschaftsspiel) zuletzt überschreiben
 const ZWECK = /^freund/i;
 // Namensfeld im Editor: maxlength 6 (tactics.js, renameTactic, gelesen 31.10.2026)
@@ -95,18 +102,51 @@ export type PortfolioVorschlag = {
   spiele: number;
   teams: string[];
   name: string; // neuer Name des Reiters
+  art: "stil" | "seite"; // neuer Stil oder gespiegelte Fassung eines Reiters (Seitenvariante)
+  vorlage?: string; // bei "seite": der Reiter, der gespiegelt wird
   xml: string;
   summe: number; // MZ-Wert der Elf
 };
 export type Sinn = { reiter: string; stil: string; probleme: string[]; name?: string; hinweise: string[] };
-export type PortfolioPlan = { doppelt: { reiter: string; wie: string; art: "identisch" | "gespiegelt" | "gleicher Stil" }[]; abdeckung: Abdeckung[]; vorschlaege: PortfolioVorschlag[]; sinn: Sinn[] };
+export type PortfolioPlan = {
+  doppelt: { reiter: string; wie: string; art: "identisch" | "gespiegelt" | "gleicher Stil" }[];
+  abdeckung: Abdeckung[];
+  vorschlaege: PortfolioVorschlag[];
+  sinn: Sinn[];
+  jugend: string[]; // Altersreiter (nur Besetzung, siehe Taktik-Check)
+  editorStand?: string; // wann die Reiter zuletzt aus dem Editor gelesen wurden
+};
+
+// Seite der Eckstürmer (Sturm außen): "rechts", "links", "beide" oder null (keine)
+export function eckSeite(feld: { x: number; y: number }[]): "rechts" | "links" | "beide" | null {
+  const ecke = feld.filter((p) => p.y <= STURM_Y && istAussen(p.x));
+  const r = ecke.some((p) => p.x >= 104);
+  const l = ecke.some((p) => p.x < 104);
+  return r && l ? "beide" : r ? "rechts" : l ? "links" : null;
+}
+
+// Feldspieler einer Taktik-XML spiegeln (x, x1, x2 -> 208 − x), alles andere bleibt
+export function spiegelXml(xml: string): string {
+  return xml.replace(/<Pos\b[^>]*\/?>/g, (zeile) => {
+    if (!/\spos="normal"/.test(zeile)) return zeile;
+    return zeile.replace(/(\sx[12]?=")(-?\d+(?:\.\d+)?)(")/g, (_, a: string, v: string, b: string) => `${a}${spiegelX(Number(v))}${b}`);
+  });
+}
 
 const prozent = (q: number) => `${Math.round(q * 100)} %`;
 
 export function portfolioPlan(db: Database.Database): PortfolioPlan {
-  const archiv = archivLaden(db)
-    .filter((a) => a.taktik)
+  const editor = ladeEditorReiter(db);
+  const imEditor = (r: string) => !editor || editor.reiter.some((e) => e.name.toLowerCase() === r.toLowerCase());
+  const altersreiter = (r: string) => {
+    const e = editor?.reiter.find((x) => x.name.toLowerCase() === r.toLowerCase());
+    return e ? istAltersreiter(e) : JUGEND.test(r);
+  };
+  const alle = archivLaden(db)
+    .filter((a) => a.taktik && imEditor(a.reiter) && !/^liga$/i.test(a.reiter))
     .sort((a, b) => a.gespeichert.localeCompare(b.gespeichert));
+  const jugend = alle.filter((a) => altersreiter(a.reiter)).map((a) => a.reiter);
+  const archiv = alle.filter((a) => !altersreiter(a.reiter));
   const p = portfolioAnalyse(db);
 
   // 1. Doppelte
@@ -156,7 +196,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   });
 
   // 3. Freie Reiter (doppelt, keine Jugend) mit Lücken und klar besseren Stilen füllen
-  const frei = doppelt.filter((d) => d.art !== "gespiegelt" && !NICHT_ANFASSEN(d.reiter)).sort((a, b) => Number(ZWECK.test(a.reiter)) - Number(ZWECK.test(b.reiter)) || (a.art === b.art ? 0 : a.art === "identisch" ? -1 : 1));
+  const frei = doppelt.filter((d) => d.art !== "gespiegelt" && !FEST.test(d.reiter)).sort((a, b) => Number(ZWECK.test(a.reiter)) - Number(ZWECK.test(b.reiter)) || (a.art === b.art ? 0 : a.art === "identisch" ? -1 : 1));
   const kandidaten = abdeckung
     .map((a) => ({
       a,
@@ -194,6 +234,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
       vorschlaege.push({
         reiter: d.reiter,
         name,
+        art: "stil",
         grund: d.art === "identisch" ? `identisch mit ${d.wie}` : `gleicher Stil wie ${d.wie}`,
         klasse: s.klasse,
         statt: s.statt,
@@ -209,6 +250,43 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     }
   }
 
+  // 6. Seitenvarianten: einseitige Reiter ohne Gegenstück auf der anderen Seite
+  const seiteJe = new Map(archiv.map((a) => [a.reiter, eckSeite(a.taktik!.pos.filter((x) => x.pos === "normal").map((x) => x.start))]));
+  // Identische Kopien zählen nicht (sie sind frei und werden überschrieben)
+  const kopien = new Set(doppelt.filter((d) => d.art === "identisch").map((d) => d.reiter));
+  const ohneGegenstueck = archiv.filter((a) => {
+    if (kopien.has(a.reiter)) return false;
+    const seite = seiteJe.get(a.reiter);
+    if (seite !== "rechts" && seite !== "links") return false;
+    return !archiv.some((b) => b.reiter !== a.reiter && !kopien.has(b.reiter) && stilJe.get(b.reiter) === stilJe.get(a.reiter) && seiteJe.get(b.reiter) === (seite === "rechts" ? "links" : "rechts"));
+  });
+  const belegt = new Set(vorschlaege.map((v) => v.reiter));
+  const nochFrei = frei.filter((d) => !belegt.has(d.reiter) && !ohneGegenstueck.some((o) => o.reiter === d.reiter));
+  for (const [i, o] of ohneGegenstueck.entries()) {
+    const d = nochFrei[i];
+    if (!d) break;
+    const andere = seiteJe.get(o.reiter) === "rechts" ? "L" : "R";
+    const vergeben = (n: string) => [...namen].some((x) => x !== d.reiter && x.toLowerCase() === n.toLowerCase());
+    const name = /^au(ß|ss)en[rl]$/i.test(o.reiter) && !vergeben(o.reiter.slice(0, -1) + andere)
+      ? o.reiter.slice(0, -1) + andere
+      : nameFuer(stilJe.get(o.reiter)!, [...namen].filter((n) => n !== d.reiter)).slice(0, NAME_MAX - 1) + andere;
+    namen.add(name);
+    vorschlaege.push({
+      reiter: d.reiter,
+      name,
+      art: "seite",
+      vorlage: o.reiter,
+      grund: d.art === "identisch" ? `identisch mit ${d.wie}` : `gleicher Stil wie ${d.wie}`,
+      klasse: "Seitenvariante",
+      stil: stilJe.get(o.reiter)!,
+      quote: 0,
+      spiele: 0,
+      teams: [],
+      xml: spiegelXml(o.xml),
+      summe: 0,
+    });
+  }
+
   // 5. Sinnhaftigkeit der übrigen Reiter
   const ueberschrieben = new Set(vorschlaege.map((v) => v.reiter));
   const ungenutzt = new Set(p.ungenutzt.map((u) => u.reiter));
@@ -219,6 +297,8 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     const feld = a.taktik!.pos.filter((x) => x.pos === "normal").map((x) => x.start);
     const probleme = nameWiderspruch(a.reiter, st, feld);
     const hinweise: string[] = [];
+    if (ohneGegenstueck.some((o) => o.reiter === a.reiter) && !vorschlaege.some((v) => v.vorlage === a.reiter))
+      hinweise.push(`Eckstürmer nur ${seiteJe.get(a.reiter)}: es fehlt die Fassung für die andere Seite (Gegner kann sich sonst auf eine Seite einstellen)`);
     if (p.spiele > 0 && ungenutzt.has(a.reiter)) hinweise.push(`Stil ${st} kommt bei den Top 10 nicht vor`);
     const rc = regelcheck(feld);
     if (rc.verstoesse.length) hinweise.push(`Prüfliste: ${rc.verstoesse.join(", ")}`);
@@ -235,9 +315,11 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     }
     sinn.push({ reiter: a.reiter, stil: st, probleme, name, hinweise });
   }
-  return { doppelt, abdeckung, vorschlaege, sinn };
+  return { doppelt, abdeckung, vorschlaege, sinn, jugend, editorStand: editor?.stand };
 }
 
 export const vorschlagText = (v: PortfolioVorschlag) =>
-  `${v.reiter} (${v.grund}) überschreiben mit ${v.stil}, neuer Name ${v.name}: bei den Top 10 gegen „${v.klasse}“ ${prozent(v.quote)} Punktquote in ${v.spiele} Spielen` +
+  v.art === "seite"
+    ? `${v.reiter} (${v.grund}) überschreiben mit ${v.vorlage} gespiegelt, neuer Name ${v.name}: Angriff über die andere Seite, damit sich der Gegner nicht auf eine Seite einstellen kann`
+    : `${v.reiter} (${v.grund}) überschreiben mit ${v.stil}, neuer Name ${v.name}: bei den Top 10 gegen „${v.klasse}“ ${prozent(v.quote)} Punktquote in ${v.spiele} Spielen` +
   (v.statt ? ` (dein bisher bester Stil dort, ${v.statt.schluessel}: ${prozent(v.statt.quote)} in ${v.statt.spiele})` : " (bisher kein Reiter dafür)");

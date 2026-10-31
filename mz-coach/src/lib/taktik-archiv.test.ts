@@ -11,6 +11,7 @@ const vorhanden = ["kupass-2026-10-25.xml", "aussenR-2026-10-25.xml", "stats-162
 describe.skipIf(!vorhanden)("Taktik einem eigenen Spiel zuordnen", () => {
   const eintrag = (reiter: string, datei: string): ArchivEintrag => ({
     reiter,
+    xml: readFileSync(F(datei), "utf8"),
     gespeichert: "",
     quelle: "test",
     taktik: parseTaktikXml(readFileSync(F(datei), "utf8")),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nameFuer, nameWiderspruch } from "./portfolio-plan";
+import { eckSeite, nameFuer, nameWiderspruch, spiegelXml } from "./portfolio-plan";
 
 describe("nameFuer", () => {
   it("baut Formation + Taktik + Spielweise", () => {
@@ -28,5 +28,18 @@ describe("nameWiderspruch", () => {
   });
   it("sagt nichts zu Namen ohne Aussage", () => {
     expect(nameWiderspruch("freund", "4-3-3 wings/offensive", feld)).toEqual([]);
+  });
+});
+
+describe("Seitenvarianten", () => {
+  it("erkennt die Seite der Eckstürmer", () => {
+    expect(eckSeite([{ x: 200, y: 63 }, { x: 100, y: 95 }])).toBe("rechts");
+    expect(eckSeite([{ x: 8, y: 63 }])).toBe("links");
+    expect(eckSeite([{ x: 8, y: 63 }, { x: 200, y: 63 }])).toBe("beide");
+    expect(eckSeite([{ x: 104, y: 63 }])).toBeNull();
+  });
+  it("spiegelt nur Feldspieler (x, x1, x2)", () => {
+    const xml = `<Pos pos="goalie" pid="1" x="103" y="315" />\n<Pos pos="normal" pid="2" x="200" y="63" x1="190" y1="63" x2="180" y2="63" />\n<Sub pos="sub" pid="3" x="228" y="140" />`;
+    expect(spiegelXml(xml)).toBe(`<Pos pos="goalie" pid="1" x="103" y="315" />\n<Pos pos="normal" pid="2" x="8" y="63" x1="18" y1="63" x2="28" y2="63" />\n<Sub pos="sub" pid="3" x="228" y="140" />`);
   });
 });

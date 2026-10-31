@@ -40,7 +40,7 @@ const reiterSuchen = (page: Page, name: string) =>
     return null;
   }, name);
 
-type Ist = { slot: string; feld: number[]; torwart: number; bank: number[]; tactics?: string; playstyle?: string; aggression?: string } | { fehler: string };
+type Ist = { slot: string; feld: number[]; torwart: number; bank: number[]; tactics?: string; playstyle?: string; aggression?: string; alter?: string } | { fehler: string };
 
 // Belegung eines Reiters im Editor (tacticsDataLocal; direkt nach dem Laden = gespeicherter Stand. tacticsData enthält
 // die Reiter nicht unter demselben Index, gesehen 26.10.2026)
@@ -62,6 +62,7 @@ const belegung = (page: Page, slot: string, quelle: "tacticsData" | "tacticsData
         tactics: a?.tactics,
         playstyle: a?.playstyle,
         aggression: a?.aggression,
+        alter: `${a?.age_from ?? ""}-${a?.age_to ?? ""}`, // Altersregler (age_from/age_to)
       };
     },
     [slot, quelle] as const,
@@ -118,6 +119,9 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
       await page.waitForTimeout(1500);
       const aktiv = await page.evaluate(() => (document.querySelector("#current_tab") as HTMLInputElement | null)?.value);
       if (aktiv !== slot) return { fehler: `Reiter ${slot} ließ sich nicht wählen (aktiv: ${aktiv ?? "?"}): nichts geändert.` };
+      // Altersregler merken: muss nach dem Speichern gleich sein (U18 bleibt U18, Marcus 31.10.2026)
+      const vorher0 = await belegung(page, slot, "tacticsDataLocal");
+      const alter = "fehler" in vorher0 ? undefined : vorher0.alter;
       await page.evaluate((x) => {
         (document.querySelector("#importExportData") as HTMLTextAreaElement).value = x;
         (document.querySelector("#import_button") as HTMLElement).click();
@@ -130,17 +134,19 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
       const antwort = page.waitForResponse((r) => r.url().includes("p=tactics") && r.url().includes("sub=save"), { timeout: 30_000 });
       await page.evaluate(() => (document.querySelector("#savecurrentb") as HTMLElement).click());
       const r = await antwort;
-      return { slot, antwort: (await r.text()).slice(0, 300) };
+      return { slot, antwort: (await r.text()).slice(0, 300), alter };
     },
   });
-  const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
+  const x = seite.extra as { fehler: string } | { slot: string; antwort: string; alter?: string } | undefined;
   if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
   if ("fehler" in x) throw new MzFehler(x.fehler);
   // Antwort ist JSON; der Editor prüft data == "true" (gesehen 26.10.2026: ["true"], in JavaScript gleich "true")
   if (!/^\[?\s*"?true"?\s*\]?$/.test(x.antwort.trim())) throw new MzFehler(`ManagerZone hat das Speichern nicht bestätigt: ${x.antwort}`);
   const neu = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => belegung(page, x.slot, "tacticsDataLocal") });
-  const ab = abweichung(soll, neu.extra as Ist);
+  const ist = neu.extra as Ist;
+  const ab = abweichung(soll, ist);
   if (ab) throw new MzFehler(`Gespeichert, aber beim Neuladen anders: ${ab}.`);
+  if (x.alter && !("fehler" in ist) && ist.alter !== x.alter) throw new MzFehler(`Gespeichert, aber der Altersregler hat sich geändert (vorher ${x.alter}, jetzt ${ist.alter}). Bitte im Editor prüfen.`);
   return x.slot;
 }
 

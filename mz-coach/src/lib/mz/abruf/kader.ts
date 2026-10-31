@@ -20,6 +20,7 @@ import { speichereSpiel } from "@/lib/db/spiele";
 import { istSpielliste, ligaspieleDieserSaison, parseSpielliste, spiellisteHtmlAus } from "@/lib/mz/parser/spielliste";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { istStatsXml, parseStatsXml, statsXmlAus, StatsXmlFehler } from "@/lib/mz/parser/stats";
+import { reiterAusEditor, reiterSpeichern, type GelesenerReiter } from "./editor-reiter";
 import { mitMzSitzung, MZ_BASIS, MzFehler } from "./sitzung";
 import {
   speichereSpielerSeite,
@@ -132,13 +133,15 @@ export async function kaderAbrufen(db: Database.Database, opt = { manuell: false
         for (const pfad of [KADER_PFAD, SPIELER_PFAD, UNAVAILABLE_PFAD, TRAININGSLAGER_PFAD, TAKTIK_PFAD]) {
           // Spieleransicht: zusätzlich die Scoutberichte anklicken (nur fehlende oder mit geänderten Sternen)
           // Taktikseite: Editor-Skripte mitlesen (Grundlage für liga.ts, bei Änderungen von ManagerZone nachsehen)
-          const aufSeite = pfad === SPIELER_PFAD ? scoutKlicker(new Map(ladeKader(db).map((k) => [k.pid, k]))) : undefined;
+          // Taktikseite: zusätzlich jeden Reiter exportieren (nur lesen, editor-reiter.ts)
+          const aufSeite = pfad === SPIELER_PFAD ? scoutKlicker(new Map(ladeKader(db).map((k) => [k.pid, k]))) : pfad === TAKTIK_PFAD ? reiterAusEditor : undefined;
           try {
             const seite = await s.holeSeite(pfad, { aufSeite, warteAuf: WARTE_AUF[pfad], ...(pfad === TAKTIK_PFAD ? { skripte: /tactic/i } : {}) });
             if (pfad === TAKTIK_PFAD) {
               // Alle Editor-Skripte in einem Eintrag (die Diagnose zeigt je Art nur den neuesten)
               const sk = seite.skripte ?? [];
               if (sk.length) speichereRohseite(db, { art: "skript-taktik", url: sk.map((x) => x.url).join(" "), status: null, htmlRoh: sk.map((x) => `/* ==== ${x.url} ==== */\n${x.text}`).join("\n"), htmlDom: null });
+              if (Array.isArray(seite.extra)) teile.push(reiterSpeichern(db, seite.extra as GelesenerReiter[]));
             }
             const html = seite.htmlDom ?? seite.htmlRoh ?? "";
             teile.push(seiteEinlesen(db, html, { url: seite.url, quelle: `${MZ_BASIS}${pfad}`, htmlDom: seite.htmlDom }));

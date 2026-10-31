@@ -103,6 +103,12 @@ export default async function Uebersicht() {
                 </li>
               ))}
             </ul>
+            {plan.jugend.length > 0 && (
+              <p className="mt-2 text-label-2">
+                Jugend ({plan.jugend.join(", ")}): eine Aufstellung für alles, nur Spieler im Alter des Reglers, Nr. 100 bis 150 zuerst auf dem Feld.
+                Besetzung prüft der Taktik-Check; Stil und Name bleiben.
+              </p>
+            )}
             {plan.doppelt.length > 0 && (
               <p className="mt-2 text-label-2">Doppelt: {plan.doppelt.map((d) => `${d.reiter} (${d.art} wie ${d.wie})`).join(" · ")}</p>
             )}
@@ -114,7 +120,11 @@ export default async function Uebersicht() {
                   key={v.reiter}
                   art="portfolio"
                   reiter={v.reiter}
-                  punkte={[vorschlagText(v), `Topteams: ${v.teams.slice(0, 3).join(", ")}`, `Mit deiner besten Elf: MZ-Wert ${v.summe.toFixed(2).replace(".", ",")}`]}
+                  punkte={
+                    v.art === "seite"
+                      ? [vorschlagText(v)]
+                      : [vorschlagText(v), `Topteams: ${v.teams.slice(0, 3).join(", ")}`, `Mit deiner besten Elf: MZ-Wert ${v.summe.toFixed(2).replace(".", ",")}`]
+                  }
                   gewinn={0}
                   xml={v.xml}
                   neuerName={v.name}
@@ -148,10 +158,10 @@ export default async function Uebersicht() {
           )}
           <p className="px-4 py-2 text-[11.5px] leading-relaxed text-label-3">
             Namen: Formation + Taktik + Spielweise, höchstens 6 Zeichen (Grenze des Editors), z. B. 532flo = 5-3-2 Flügel offensiv; fl = Flügel,
-            kp = Kurzpass, lb = lange Bälle, o = offensiv, d = defensiv, ohne Buchstaben = normal. außenR und kupass behalten ihren Namen
-            (Faustregel). Ziel: jeder Reiter eine andere, für dein Team optimale Taktik, zusammen eine Antwort auf jeden Gegnertyp. Bewährt = bei den Top 10
+            kp = Kurzpass, lb = lange Bälle, o = offensiv, d = defensiv, ohne Buchstaben = normal. außenR, außenL und kupass behalten ihren Namen
+            (Faustregel, Seitenvarianten). Ziel: jeder Reiter eine andere, für dein Team optimale Taktik, zusammen eine Antwort auf jeden Gegnertyp. Bewährt = bei den Top 10
             mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Doppelte Reiter werden mit Lücken und mit Stilen belegt,
-            die bei den Top 10 mindestens 10 Prozentpunkte mehr holen als dein bester, reihum je Gegnerklasse, wichtigste zuerst; Jugend-Reiter (U18) bleiben. Übernommen und umbenannt wird nur auf Klick.
+            die bei den Top 10 mindestens 10 Prozentpunkte mehr holen als dein bester, reihum je Gegnerklasse, wichtigste zuerst; danach fehlende Seitenvarianten (Eckstürmer mal rechts, mal links). Grundlage: die Reiter, wie sie beim letzten Kaderabruf im Editor standen. Übernommen und umbenannt wird nur auf Klick.
           </p>
         </Card>
       </div>
