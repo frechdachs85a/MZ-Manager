@@ -30,6 +30,7 @@ import { anpassen } from "@/lib/mz/taktik/anpassen";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { gegnerGewichte } from "@/lib/mz/taktik/gegner-gewichte";
 import { ligaAusArchiv } from "@/lib/mz/taktik/liga-anpassen";
+import { checkKurz, pruefeTaktikGegenKader } from "@/lib/taktik-check";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 
 // Spieltag (Auftrag Marcus, 26.10.2026): Spielbericht des letzten Ligaspiels und Taktikvorschlag für das nächste,
@@ -472,10 +473,16 @@ export function spieltagLage(db: Database.Database) {
       const rueck: Record<string, string> = { Flügel: "wings", Kurzpass: "shortpass", "lange Bälle": "longball", offensiv: "offensive", normal: "normal", defensiv: "defensive", aggressiv: "aggressive", passiv: "passive" };
       if (st) team = { tactics: rueck[st[0]], playstyle: rueck[st[1]], aggression: rueck[st[2]] };
     }
-    // Taktik aus deinem Archiv: getestete Elf, Bank und Regeln behalten, nur Abwehr und Seite anpassen
+    // Taktik aus deinem Archiv: getestete Elf, Bank und Regeln behalten. Zuerst die Besetzung gegen den heutigen Kader und die
+    // Aufstellbarkeit am Spieltag prüfen (Taktik-Check: Verletzung, Sperre, Trainingslager, Skills, Ausdauer-Wechsel; Marcus
+    // 31.10.2026: für Liga ist die Seite allein zuständig), dann Abwehr und Seite gegen den Gegner anpassen.
     if (taktikCode?.xml && erwartet) {
       try {
-        const a = ligaAusArchiv({ xml: taktikCode.xml, kader: kaderAlle, gegner: erwartet.feld, seinStil: brief?.einstellungen[0]?.[0], angriffUeber: erwartet.seiten.angriff });
+        const amSpieltag = lauf?.anstoss ? new Date(new Date(lauf.anstoss).toLocaleString("en-US", { timeZone: "Europe/Berlin" })) : new Date();
+        const c = pruefeTaktikGegenKader(vorschlag.taktik, taktikCode.xml, kaderAlle, amSpieltag);
+        const basisXml = c.fehler ? taktikCode.xml : c.xml;
+        const checkZeilen = c.fehler ? [`Besetzung nicht geprüft: ${c.fehler}`] : checkKurz(c).map((z) => `Besetzung: ${z}`);
+        const a = ligaAusArchiv({ xml: basisXml, kader: kaderAlle, gegner: erwartet.feld, seinStil: brief?.einstellungen[0]?.[0], angriffUeber: erwartet.seiten.angriff });
         const t = parseTaktikXml(a.xml);
         const k = new Map(kaderAlle.map((x) => [x.pid, x]));
         const kurzName = (pid: number) => k.get(pid)?.name.split(" ").at(-1) ?? "?";
@@ -484,7 +491,7 @@ export function spieltagLage(db: Database.Database) {
           xml: a.xml,
           feld: t.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: kurzName(p.pid), wert: k.get(p.pid)?.marktwert, torwart: p.pos === "goalie" })) as FeldSpieler[],
           bank: t.subs.map((x) => kurzName(x.pid)),
-          kurz: [`Grundlage: dein Reiter ${vorschlag.taktik} aus dem Archiv${taktikCode.geaendert.length ? ` mit ${taktikCode.geaendert.join(", ")}` : ""}`, ...a.kurz],
+          kurz: [`Grundlage: dein Reiter ${vorschlag.taktik} aus dem Archiv${taktikCode.geaendert.length ? ` mit ${taktikCode.geaendert.join(", ")}` : ""}`, ...checkZeilen, ...a.kurz],
           hinweise: [] as string[],
         };
       } catch {
