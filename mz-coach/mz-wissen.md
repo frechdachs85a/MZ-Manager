@@ -343,6 +343,7 @@ Transfermarkt (31.10.2026)
 - Rahmen (31.10.2026): Marcus hatte noch Platz für Ausländer, und zwar über Arbeitsbewilligungen (Gebotsfenster vom 26.10.2026: Ausländische Spieler 5 von 5, Arbeitsbewilligungen 2 von 5, verfügbarer Saldo 3.482.080 EUR). Die Seite liest diese Zahlen jetzt bei jeder Marktsuche selbst aus dem Gebotsfenster eines gefundenen Spielers (nur lesen) und prüft damit Budget und Ausländerplätze.
 - Anzeige (31.10.2026): alles auf Deutsch; die Formel-Rolle „Anchorman“ heißt in der Anzeige „Sechser“. Filter sind Schalter (noch einmal klicken hebt sie auf). Jugend hat dieselben Filter wie der Kader. Behalten/Abgabe auch auf der Spielerseite einstellbar. XML überall herunterladen oder kopieren. Transfervorschläge zum Durchblättern (4 je Seite) mit sichtbaren Skills. Saison zeigt die Ligatabelle.
 - Marktsuche (31.10.2026): Nationalität steht in der Suche nur als Flaggenbild vor dem Namen (img/flags/15/<Code>.png), nicht als Zeile; die Seite liest den Ländercode daraus.
+- Transfermarkt-Reiter (Marcus, 31.10.2026): Vorschläge, Watchlist, Gebote (Bietomat). Spieler verschwinden von der Watchlist, sobald ihre Auktion vorbei ist (zuletzt bekanntes Ende plus 30 Minuten; verlängerte Enden aus der neuesten Suche oder dem Bietomat zählen).
 
 Arbeitsweise
 - Alles, was besprochen wird, in dieser Datei festhalten und vor neuen Aufgaben hier nachsehen, damit nichts doppelt besprochen werden muss.
