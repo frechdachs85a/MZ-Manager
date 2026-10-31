@@ -83,6 +83,13 @@ const wertIn = (s: SpielerDaten, r: Position) => {
   return w.ok ? w.wert : undefined;
 };
 
+// Gilt eine Sperre fürs Ligaspiel? Die Seite Verletzt/Gesperrt nennt je Sperre die Begegnungsart (gesehen: "Offizieller
+// Pokal"). Sperren nur für Pokal- oder Freundschaftsspiele betreffen die Liga nicht; ohne Angabe zur Sicherheit ja.
+export function sperreGiltFuerLiga(s: SpielerDaten): boolean {
+  const sp = s.sperren ?? [];
+  return sp.length === 0 || sp.some((x) => !/pokal|freundschaft/i.test(x.art));
+}
+
 // Verfügbar fürs nächste Ligaspiel wie auf der Zentrale: kein Kegel, nicht verletzt, nicht gesperrt
 export function verfuegbar(kader: SpielerDaten[], spieltag: Date): { ja: SpielerDaten[]; nein: { name: string; grund: string }[] } {
   const ja: SpielerDaten[] = [];
@@ -90,7 +97,7 @@ export function verfuegbar(kader: SpielerDaten[], spieltag: Date): { ja: Spieler
   for (const s of kader) {
     const e = einsatzImLigaspiel(s, spieltag);
     if (s.status?.verletzt) nein.push({ name: s.name, grund: "verletzt" });
-    else if (s.status?.gesperrt) nein.push({ name: s.name, grund: "gesperrt (Wettbewerb siehe Kader)" });
+    else if (s.status?.gesperrt && sperreGiltFuerLiga(s)) nein.push({ name: s.name, grund: "gesperrt (Wettbewerb siehe Kader)" });
     else if (e.lage === "nicht_bereit" || e.lage === "unklar") nein.push({ name: s.name, grund: e.text });
     else ja.push(s);
   }

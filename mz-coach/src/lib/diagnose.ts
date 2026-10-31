@@ -1,6 +1,8 @@
 import type Database from "better-sqlite3";
 import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
 import { checkKurz, taktikCheck } from "@/lib/taktik-check";
+import { ladeTaktiken } from "@/lib/db/taktik";
+import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { parse } from "node-html-parser";
 import { spieltagLage } from "@/lib/spieltag";
 import { quotenJeBereich } from "@/lib/db/wertspiel";
@@ -77,6 +79,7 @@ export function diagnose(db: Database.Database) {
       quoten: { elf: quotenJeBereich(db, "elf"), feld: quotenJeBereich(db, "feld") },
       verlauf: l.verlauf ? { fenster: l.verlauf.fenster, gewichtet: l.verlauf.gewichtet, fehlend: l.verlauf.fehlend, quelleEigen: l.verlauf.quelleEigen } : null,
       elfWerte: l.elfWerte,
+      archiv: ladeTaktiken(db).map((t) => { try { const x = parseTaktikXml(t.xml); return { reiter: t.reiter, gespeichert: t.gespeichert, quelle: t.quelle, elf: x.pos.map((p) => p.pid), bank: x.subs.map((b) => b.pid), regeln: x.regeln.length }; } catch { return { reiter: t.reiter, fehler: true }; } }),
       taktikCheck: taktikCheck(db).map((c) => ({ reiter: c.reiter, ok: c.ok, gewinn: c.gewinn, punkte: checkKurz(c), fehler: c.fehler })),
       liga: l.liga ? { reiter: l.liga.reiter, kurz: l.liga.kurz, bank: l.liga.bank, feld: l.liga.feld.map((p) => `${p.label} ${p.x}/${p.y}`), hinweise: l.liga.hinweise } : null,
       ligaStatus: l.ligaStatus,
