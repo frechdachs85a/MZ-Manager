@@ -7,6 +7,7 @@ import { portfolioAnalyse, regelcheck, stilSchluessel, type StilEintrag } from "
 import { istAussen, STURM_Y } from "@/lib/mz/taktik/pruefer";
 import { archivLaden } from "@/lib/taktik-archiv";
 import { istAltersreiter, ladeEditorReiter } from "@/lib/db/taktik";
+import { FREUND } from "@/lib/freund-check";
 import { spiegelX } from "@/lib/mz/taktik/gegner-gewichte";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
@@ -84,7 +85,12 @@ export function nameWiderspruch(name: string, schluessel: string, feld: { x: num
   if (seite) {
     const ecke = feld.filter((p) => p.y <= STURM_Y && istAussen(p.x));
     const passt = ecke.some((p) => (seite === "r" ? p.x >= 104 : p.x < 104));
-    if (!passt) w.push(ecke.length ? `Name sagt Eckstürmer ${seite === "r" ? "rechts" : "links"}, er steht ${seite === "r" ? "links" : "rechts"}` : `Name sagt Eckstürmer ${seite === "r" ? "rechts" : "links"}, es gibt keinen`);
+    if (!passt)
+      w.push(
+        ecke.length
+          ? `Name sagt Eckstürmer ${seite === "r" ? "rechts" : "links"}, er steht ${seite === "r" ? "links" : "rechts"}`
+          : `Name sagt Eckstürmer ${seite === "r" ? "rechts" : "links"}, es gibt keinen`,
+      );
   }
   return w;
 }
@@ -146,7 +152,8 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     .filter((a) => a.taktik && imEditor(a.reiter) && !/^liga$/i.test(a.reiter))
     .sort((a, b) => a.gespeichert.localeCompare(b.gespeichert));
   const jugend = alle.filter((a) => altersreiter(a.reiter)).map((a) => a.reiter);
-  const archiv = alle.filter((a) => !altersreiter(a.reiter));
+  // freund wird getrennt betrachtet (Marcus, 31.10.2026: Freundschaftsspiele, eigener Stil; freund-check.ts)
+  const archiv = alle.filter((a) => !altersreiter(a.reiter) && !FREUND.test(a.reiter));
   const p = portfolioAnalyse(db);
 
   // 1. Doppelte
@@ -176,12 +183,24 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     )?.reiter;
   for (const a of archiv) {
     const t = a.taktik!;
-    const sig = JSON.stringify([t.team.tactics, t.team.playstyle, t.team.aggression, t.pos.map((x) => `${x.pid}@${Math.round(x.start.x / 5)},${Math.round(x.start.y / 5)}`).sort()]);
+    const sig = JSON.stringify([
+      t.team.tactics,
+      t.team.playstyle,
+      t.team.aggression,
+      t.pos.map((x) => `${x.pid}@${Math.round(x.start.x / 5)},${Math.round(x.start.y / 5)}`).sort(),
+    ]);
     const st = stilSchluessel(formation(t.pos.filter((x) => x.pos === "normal").map((x) => x.start)).text, t.team.tactics, t.team.playstyle);
     stilJe.set(a.reiter, st);
     if (signatur.has(sig)) doppelt.push({ reiter: a.reiter, wie: signatur.get(sig)!, art: "identisch" });
     else if (spiegelVon(t)) doppelt.push({ reiter: a.reiter, wie: spiegelVon(t)!, art: "gespiegelt" });
-    else if (stil.has(st)) doppelt.push({ reiter: a.reiter, wie: stil.get(st)!, art: "gleicher Stil" });
+    else if (stil.has(st)) {
+      // Gleicher Stil, aber Angriff über die andere Seite (außenR/außenL): gewollte Seitenvariante, kein Duplikat
+      const andere = gesehen.find((g) => g.reiter === stil.get(st))!;
+      const s1 = eckSeite(t.pos.filter((x) => x.pos === "normal").map((x) => x.start));
+      const s2 = eckSeite(andere.t.pos.filter((x) => x.pos === "normal").map((x) => x.start));
+      const seiten = (s1 === "rechts" && s2 === "links") || (s1 === "links" && s2 === "rechts");
+      doppelt.push({ reiter: a.reiter, wie: stil.get(st)!, art: seiten ? "gespiegelt" : "gleicher Stil" });
+    }
     if (!signatur.has(sig)) signatur.set(sig, a.reiter);
     if (!stil.has(st)) stil.set(st, a.reiter);
     gesehen.push({ reiter: a.reiter, t });
@@ -192,15 +211,25 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   const abdeckung: Abdeckung[] = p.klassen.map((k) => {
     const bewaehrt = k.stile.filter((s) => s.bewaehrt);
     const dein = k.stile.filter((s) => s.imArchiv.length).sort((a, b) => b.quote - a.quote)[0];
-    return { klasse: k.klasse, spiele: k.spiele, reiter: [...new Set(bewaehrt.flatMap((s) => s.imArchiv))], bester: kurzStil(bewaehrt[0]), dein: kurzStil(dein) };
+    return {
+      klasse: k.klasse,
+      spiele: k.spiele,
+      reiter: [...new Set(bewaehrt.flatMap((s) => s.imArchiv))],
+      bester: kurzStil(bewaehrt[0]),
+      dein: kurzStil(dein),
+    };
   });
 
   // 3. Freie Reiter (doppelt, keine Jugend) mit Lücken und klar besseren Stilen füllen
-  const frei = doppelt.filter((d) => d.art !== "gespiegelt" && !FEST.test(d.reiter)).sort((a, b) => Number(ZWECK.test(a.reiter)) - Number(ZWECK.test(b.reiter)) || (a.art === b.art ? 0 : a.art === "identisch" ? -1 : 1));
+  const frei = doppelt
+    .filter((d) => d.art !== "gespiegelt" && !FEST.test(d.reiter))
+    .sort((a, b) => Number(ZWECK.test(a.reiter)) - Number(ZWECK.test(b.reiter)) || (a.art === b.art ? 0 : a.art === "identisch" ? -1 : 1));
   const kandidaten = abdeckung
     .map((a) => ({
       a,
-      stile: p.fehlend.filter((f) => f.klasse === a.klasse && (!a.reiter.length || !a.dein || f.quote >= a.dein.quote + BESSER)).sort((x, y) => y.quote - x.quote || y.spiele - x.spiele),
+      stile: p.fehlend
+        .filter((f) => f.klasse === a.klasse && (!a.reiter.length || !a.dein || f.quote >= a.dein.quote + BESSER))
+        .sort((x, y) => y.quote - x.quote || y.spiele - x.spiele),
     }))
     .filter((k) => k.stile.length)
     .sort((x, y) => Number(!!x.a.reiter.length) - Number(!!y.a.reiter.length) || y.a.spiele - x.a.spiele);
@@ -228,8 +257,20 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     const m = s.schluessel.match(/^\S+ (\S+)\/(\S+)$/);
     const kapitaen = Number(archiv.find((a) => a.reiter === d.reiter)?.taktik?.team.captain) || undefined;
     try {
-      const e = erzeugeTaktik({ feld: s.beispiel.feld, torwart: s.beispiel.torwart, tactics: m?.[1], playstyle: m?.[2], aggression: s.haerte[0]?.[0], kader, spieltag, kapitaenPid: kapitaen });
-      const name = nameFuer(s.schluessel, [...namen].filter((n) => n !== d.reiter));
+      const e = erzeugeTaktik({
+        feld: s.beispiel.feld,
+        torwart: s.beispiel.torwart,
+        tactics: m?.[1],
+        playstyle: m?.[2],
+        aggression: s.haerte[0]?.[0],
+        kader,
+        spieltag,
+        kapitaenPid: kapitaen,
+      });
+      const name = nameFuer(
+        s.schluessel,
+        [...namen].filter((n) => n !== d.reiter),
+      );
       namen.add(name);
       vorschlaege.push({
         reiter: d.reiter,
@@ -258,7 +299,13 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     if (kopien.has(a.reiter)) return false;
     const seite = seiteJe.get(a.reiter);
     if (seite !== "rechts" && seite !== "links") return false;
-    return !archiv.some((b) => b.reiter !== a.reiter && !kopien.has(b.reiter) && stilJe.get(b.reiter) === stilJe.get(a.reiter) && seiteJe.get(b.reiter) === (seite === "rechts" ? "links" : "rechts"));
+    return !archiv.some(
+      (b) =>
+        b.reiter !== a.reiter &&
+        !kopien.has(b.reiter) &&
+        stilJe.get(b.reiter) === stilJe.get(a.reiter) &&
+        seiteJe.get(b.reiter) === (seite === "rechts" ? "links" : "rechts"),
+    );
   });
   const belegt = new Set(vorschlaege.map((v) => v.reiter));
   const nochFrei = frei.filter((d) => !belegt.has(d.reiter) && !ohneGegenstueck.some((o) => o.reiter === d.reiter));
@@ -267,9 +314,13 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     if (!d) break;
     const andere = seiteJe.get(o.reiter) === "rechts" ? "L" : "R";
     const vergeben = (n: string) => [...namen].some((x) => x !== d.reiter && x.toLowerCase() === n.toLowerCase());
-    const name = /^au(ß|ss)en[rl]$/i.test(o.reiter) && !vergeben(o.reiter.slice(0, -1) + andere)
-      ? o.reiter.slice(0, -1) + andere
-      : nameFuer(stilJe.get(o.reiter)!, [...namen].filter((n) => n !== d.reiter)).slice(0, NAME_MAX - 1) + andere;
+    const name =
+      /^au(ß|ss)en[rl]$/i.test(o.reiter) && !vergeben(o.reiter.slice(0, -1) + andere)
+        ? o.reiter.slice(0, -1) + andere
+        : nameFuer(
+            stilJe.get(o.reiter)!,
+            [...namen].filter((n) => n !== d.reiter),
+          ).slice(0, NAME_MAX - 1) + andere;
     namen.add(name);
     vorschlaege.push({
       reiter: d.reiter,
@@ -307,10 +358,14 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     // außenR und kupass behalten ihren Namen: widerspricht der Inhalt, ist eher der Archiv-Eintrag falsch
     const kopie = doppelt.find((d) => d.reiter === a.reiter && d.art === "identisch");
     // Identische Kopie: nicht umbenennen, sondern mit einem neuen Stil überschreiben (sobald es eine Lücke gibt)
-    if (probleme.length && FEST.test(a.reiter)) hinweise.push("Name bleibt (Faustregel nutzt ihn); stimmt der Archiv-Eintrag? Reiter neu exportieren und einfügen");
+    if (probleme.length && FEST.test(a.reiter))
+      hinweise.push("Name bleibt (Faustregel nutzt ihn); stimmt der Archiv-Eintrag? Reiter neu exportieren und einfügen");
     else if (probleme.length && kopie) hinweise.push(`identisch mit ${kopie.wie}: wird beim nächsten passenden Stil überschrieben statt umbenannt`);
     else if (probleme.length) {
-      name = nameFuer(st, [...namen].filter((n) => n !== a.reiter));
+      name = nameFuer(
+        st,
+        [...namen].filter((n) => n !== a.reiter),
+      );
       namen.add(name);
     }
     sinn.push({ reiter: a.reiter, stil: st, probleme, name, hinweise });
@@ -322,4 +377,4 @@ export const vorschlagText = (v: PortfolioVorschlag) =>
   v.art === "seite"
     ? `${v.reiter} (${v.grund}) überschreiben mit ${v.vorlage} gespiegelt, neuer Name ${v.name}: Angriff über die andere Seite, damit sich der Gegner nicht auf eine Seite einstellen kann`
     : `${v.reiter} (${v.grund}) überschreiben mit ${v.stil}, neuer Name ${v.name}: bei den Top 10 gegen „${v.klasse}“ ${prozent(v.quote)} Punktquote in ${v.spiele} Spielen` +
-  (v.statt ? ` (dein bisher bester Stil dort, ${v.statt.schluessel}: ${prozent(v.statt.quote)} in ${v.statt.spiele})` : " (bisher kein Reiter dafür)");
+      (v.statt ? ` (dein bisher bester Stil dort, ${v.statt.schluessel}: ${prozent(v.statt.quote)} in ${v.statt.spiele})` : " (bisher kein Reiter dafür)");

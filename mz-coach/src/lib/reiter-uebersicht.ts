@@ -70,8 +70,9 @@ export function reiterUebersicht(db: Database.Database): ReiterUebersicht {
           : FREUND.test(r.name)
             ? "freund"
             : "offiziell";
+  // freund soll einen Stil spielen, den kein anderer Reiter hat (Marcus, 31.10.2026): verglichen mit allen übrigen Reitern
   const offizielleStile = liste
-    .filter((r) => art(r, finde(r.name)) === "offiziell")
+    .filter((r) => !["freund", "leer"].includes(art(r, finde(r.name))))
     .map((r) => ({ reiter: r.name, stil: stilVon(finde(r.name)) }))
     .filter((x): x is { reiter: string; stil: string } => !!x.stil);
   const namen = liste.map((r) => r.name);
