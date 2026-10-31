@@ -182,7 +182,7 @@ export default async function Markt() {
 
           <Section
             title="Dein Rahmen"
-            footer={`${rahmen ? `Zuletzt geändert ${datumZeit(rahmen.geaendert)}. ` : ""}Die Zahlen stehen oben im Gebotsfenster von ManagerZone. Ein Ausländer mit Arbeitsbewilligung zählt nicht als ausländischer Spieler; ist kein Ausländerplatz frei, braucht ein neuer Ausländer eine Arbeitsbewilligung (Kosten kommen dazu).`}
+            footer={`${rahmen ? `Zuletzt geändert ${datumZeit(rahmen.geaendert)}. ` : ""}Liest die Seite bei jeder Marktsuche selbst aus dem Gebotsfenster von ManagerZone (verfügbarer Saldo, Ausländer, Arbeitsbewilligungen); von Hand ändern geht weiterhin. Ein Ausländer mit Arbeitsbewilligung zählt nicht als ausländischer Spieler; ist kein Ausländerplatz frei, braucht ein neuer Ausländer eine Arbeitsbewilligung (Kosten kommen dazu).`}
           >
             <RahmenForm werte={r} />
           </Section>
