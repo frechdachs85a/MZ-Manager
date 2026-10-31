@@ -11,6 +11,7 @@ import { TEAM } from "@/lib/wissen/startbasis";
 
 export type ArchivEintrag = {
   reiter: string;
+  xml: string;
   gespeichert: string;
   quelle: string;
   taktik: Taktik | null;

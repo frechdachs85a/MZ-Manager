@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import { ladeKader } from "@/lib/db/kader";
-import { ladeTaktiken } from "@/lib/db/taktik";
+import { ALTER_FREI, istAltersreiter, ladeEditorReiter, ladeTaktiken } from "@/lib/db/taktik";
 import { heuteInBerlin } from "@/lib/format";
 import { mzWert, type Position } from "@/lib/mz/formel";
 import { rolle } from "@/lib/mz/analyse/markt";
@@ -21,6 +21,13 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 // - Ausdauer unter 8 ohne Zeitwechsel: Wechselregel in der WECHSEL_MINUTE mit dem besten Bankspieler für die Rolle,
 //   höchstens bis 3 Zeitwechsel insgesamt (niedrigste Ausdauer zuerst); wer leer ausgeht, wird als Schwachstelle gemeldet.
 // Vorschlag nur; übernommen wird erst, wenn Marcus es anklickt (abruf/liga.ts, taktikUebernehmen).
+// Altersreiter (Altersregler im Editor, z. B. U18 = 16 bis 18; Marcus 31.10.2026): nur Spieler in diesem Alter. Spieler mit
+// Rückennummer 100 bis 150 gehören dort aufs Feld, damit sie Spielpraxis bekommen (PRIO_BONUS sorgt dafür, dass sie vor allen
+// anderen gewählt werden; der Platz innerhalb der Elf richtet sich weiter nach dem MZ-Wert).
+export const PRIO_NR = { von: 100, bis: 150 };
+export const PRIO_BONUS = 100;
+export type AlterGrenze = { von: number; bis: number };
+const istPrio = (s: SpielerDaten) => s.nr !== undefined && s.nr >= PRIO_NR.von && s.nr <= PRIO_NR.bis;
 export const BONUS_JETZT = 0.05;
 export const MIN_GEWINN = 0.2;
 export const WECHSEL_MINUTE = 70;
@@ -54,23 +61,27 @@ function tausche(xml: string, a: number, b: number): string {
 }
 
 // Prüft eine Taktik gegen den aktuellen Kader und schlägt die angepasste XML vor
-export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: SpielerDaten[], spieltag: Date): TaktikCheck {
+export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: SpielerDaten[], spieltag: Date, alter?: AlterGrenze): TaktikCheck {
   const t = parseTaktikXml(xml);
   const nachPid = new Map(kader.map((s) => [s.pid, s]));
-  const { ja } = verfuegbar(kader, spieltag);
+  const imAlter = (s: SpielerDaten) => !alter || (s.alter !== undefined && s.alter >= alter.von && s.alter <= alter.bis);
+  const ja = verfuegbar(kader, spieltag).ja.filter(imAlter);
   const verfuegbarPids = new Set(ja.map((s) => s.pid));
   const plaetze = t.pos.map((p) => ({ pid: p.pid, x: p.start.x, y: p.start.y, rolle: rolle({ pid: p.pid, x: p.start.x, y: p.start.y, torwart: p.pos === "goalie" }) }));
   // Kandidaten: aufstellbar und mit bekannten Skills
   const kandidaten = ja.filter((s) => plaetze.some((p) => wertIn(s, p.rolle) !== undefined));
   if (kandidaten.length < plaetze.length) return { reiter, ok: true, aenderungen: [], wechselregeln: [], gewinn: 0, xml, fehler: "Zu wenige aufstellbare Spieler mit bekannten Skills." };
-  const kosten = plaetze.map((p) => kandidaten.map((s) => -((wertIn(s, p.rolle) ?? -100) + (s.pid === p.pid ? BONUS_JETZT : 0))));
+  const prio = (s: SpielerDaten) => (alter && istPrio(s) ? PRIO_BONUS : 0);
+  const kosten = plaetze.map((p) => kandidaten.map((s) => -((wertIn(s, p.rolle) ?? -100) + (s.pid === p.pid ? BONUS_JETZT : 0) + prio(s))));
   const zu = zuordnen(kosten);
   const neu = plaetze.map((p, i) => kandidaten[zu[i]]);
   // Gewinn mit den echten MZ-Werten vorher (auch nicht aufstellbare Spieler zählen mit ihrem Wert)
   const altSumme = plaetze.reduce((n, p) => n + (wertIn(nachPid.get(p.pid), p.rolle) ?? 0), 0);
   const neuSumme = plaetze.reduce((n, p, i) => n + (wertIn(neu[i], p.rolle) ?? 0), 0);
   const gewinn = Math.round((neuSumme - altSumme) * 100) / 100;
-  const erzwungen = plaetze.some((p) => !verfuegbarPids.has(p.pid));
+  // Erzwungen: ein Spieler ist nicht aufstellbar (oder zu alt/jung) oder ein Spieler mit Vorrang fehlt in der Elf
+  const fehltPrio = alter ? neu.filter((s) => istPrio(s) && !plaetze.some((p) => p.pid === s.pid)) : [];
+  const erzwungen = plaetze.some((p) => !verfuegbarPids.has(p.pid)) || fehltPrio.length > 0;
 
   const aenderungen: PlatzAenderung[] = [];
   let out = xml;
@@ -101,7 +112,13 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
         altWert: wertIn(alt, p.rolle),
         neu: kurz(neu[i]),
         neuWert: wertIn(neu[i], p.rolle) ?? 0,
-        grund: verfuegbarPids.has(p.pid) ? undefined : "nicht aufstellbar",
+        grund: verfuegbarPids.has(p.pid)
+          ? istPrio(neu[i]) && fehltPrio.includes(neu[i])
+            ? `Nr. ${neu[i].nr} soll Spielpraxis bekommen`
+            : undefined
+          : alt && !imAlter(alt)
+            ? `nicht im Alter ${alter!.von} bis ${alter!.bis}`
+            : "nicht aufstellbar",
       });
     });
   }
@@ -139,13 +156,24 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
   return { reiter, ok: !aenderungen.length && !neueRegeln.length && !wechselregeln.length, aenderungen, wechselregeln, gewinn: umstellen ? gewinn : 0, xml: out };
 }
 
+// Altersgrenze eines Reiters: Altersregler aus dem Editor; ohne Editor-Stand bei Namen U18/U21/U23 bis zu diesem Alter
+export function alterGrenze(db: Database.Database, reiter: string): AlterGrenze | undefined {
+  const r = ladeEditorReiter(db)?.reiter.find((x) => x.name.toLowerCase() === reiter.toLowerCase());
+  if (r) return istAltersreiter(r) ? { von: r.alterVon, bis: r.alterBis } : undefined;
+  const u = reiter.match(/^u(18|21|23)\b/i);
+  return u ? { von: ALTER_FREI.von, bis: Number(u[1]) } : undefined;
+}
+
 // Alle Taktiken im Archiv prüfen (gegen den Kader und die Aufstellbarkeit am nächsten Ligaspieltag)
 export function taktikCheck(db: Database.Database): TaktikCheck[] {
   const kader = ladeKader(db);
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
-  return ladeTaktiken(db).map((t) => {
+  // Nur Reiter, die es im Editor gibt (sobald der Editor einmal gelesen wurde); „Liga“ schreibt die Seite selbst
+  const editor = ladeEditorReiter(db);
+  const da = (r: string) => !/^liga$/i.test(r) && (!editor || editor.reiter.some((e) => e.name.toLowerCase() === r.toLowerCase()));
+  return ladeTaktiken(db).filter((t) => da(t.reiter)).map((t) => {
     try {
-      return pruefeTaktikGegenKader(t.reiter, t.xml, kader, spieltag);
+      return pruefeTaktikGegenKader(t.reiter, t.xml, kader, spieltag, alterGrenze(db, t.reiter));
     } catch (e) {
       return { reiter: t.reiter, ok: true, aenderungen: [], wechselregeln: [], gewinn: 0, xml: t.xml, fehler: e instanceof Error ? e.message : String(e) };
     }

@@ -5,10 +5,12 @@ import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { pruefeTaktikGegenKader } from "./taktik-check";
 
 // Erfundene Spieler und Taktik (keine echten Daten)
-const sp = (pid: number, staerke: number, opt: { ausdauer?: number; kegel?: boolean } = {}) =>
+const sp = (pid: number, staerke: number, opt: { ausdauer?: number; kegel?: boolean; alter?: number; nr?: number } = {}) =>
   ({
     pid,
     name: `Test ${pid}`,
+    alter: opt.alter ?? 17,
+    nr: opt.nr,
     status: { aufstellbar: !opt.kegel },
     skills: Object.fromEntries(FORMEL_SKILLS.map((s) => [s, { wert: s === "ausdauer" ? (opt.ausdauer ?? staerke) : staerke }])),
   }) as unknown as SpielerDaten;
@@ -81,5 +83,21 @@ describe("Taktik-Check: höchstens 3 Wechsel", () => {
     const imSpiel = parseTaktikXml(r.xml).pos.filter((p) => p.pos === "normal" && aus(p.pid) < 8).map((p) => p.pid).sort((a, b) => aus(a) - aus(b));
     expect(neu.map((g) => Number(g.out_player)).sort()).toEqual(imSpiel.slice(0, 2).sort());
     expect(r.wechselregeln.filter((w) => w.includes("kein Wechsel mehr frei"))).toHaveLength(imSpiel.length - 2);
+  });
+
+  it("Altersreiter: nur Spieler im Alter, Nr. 100 bis 150 zuerst aufs Feld", () => {
+    const k = basis();
+    k[4] = sp(5, 9, { ausdauer: 9, alter: 19 }); // zu alt für U18
+    const jung = sp(13, 5, { ausdauer: 9, nr: 120 }); // schwächer, aber Vorrang
+    const r = pruefeTaktikGegenKader("U18", xml(), [...k, sp(12, 6), jung], tag, { von: 16, bis: 18 });
+    const elf = parseTaktikXml(r.xml).pos.map((p) => p.pid);
+    expect(elf).not.toContain(5);
+    expect(elf).toContain(13);
+    expect(r.aenderungen.some((a) => a.grund === "nicht im Alter 16 bis 18")).toBe(true);
+  });
+
+  it("ohne Altersgrenze kein Vorrang für Nr. 100 bis 150", () => {
+    const r = pruefeTaktikGegenKader("a", xml(), [...basis(), sp(13, 5, { ausdauer: 9, nr: 120 })], tag);
+    expect(r.ok).toBe(true);
   });
 });
