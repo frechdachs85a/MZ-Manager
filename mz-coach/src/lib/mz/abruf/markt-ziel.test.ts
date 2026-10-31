@@ -22,7 +22,7 @@ describe("gezielte Marktsuche", () => {
     const z = suchZiele([s("MF", 8.4, "A"), s("TW", 8.1, "B"), s("MF", 8.2, "C"), s("VT", 8.6, "D")]);
     expect(z.map((x) => x.rolle)).toEqual(["TW", "MF", "VT"]);
     expect(z[0].hauptskill).toBe("torwart");
-    expect(z[0].filter(9)).toEqual({ s0a: 9, s1a: 9, s6a: 9, s6b: 9 });
+    expect(z[0].filter(9)).toEqual({ s0a: 8, s1a: 8, s6a: 9, s6b: 9 });
     expect(z[0].stufen[0]).toBe(10);
   });
 });

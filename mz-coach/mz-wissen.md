@@ -333,6 +333,7 @@ Taktik-Portfolio (Hauptaufgabe, 30./31.10.2026)
 
 Transfermarkt (31.10.2026)
 - Schwachstellen = Startelf des letzten Ligaspiels. Einwechselspieler (z. B. Kaupa) stehen nicht drin; für sie spielt Ausdauer kaum eine Rolle (Marcus).
+- Ab 31.10.2026 gelockert: Marcus hat selbst auf Spieler mit Sprint 8/Ausdauer 9 und Sprint 9/Ausdauer 8 geboten (Jonsson, Arnold, Di Pietro, Astafiei), die die strenge 99-Regel aussortiert hatte. Die Seite verlangt jetzt Sprint und Ausdauer je 8+ und zusammen 17+ (höchstens einer der beiden 8) und schreibt einen Vorbehalt dazu. Unlesbare Nationalität schließt ohne Rahmen nicht mehr aus.
 - Ohne eingetragenen Rahmen (Kapital, Ausländer, Arbeitsbewilligungen) zeigte die Seite keinen Spieler. Seit 31.10.2026 zeigt sie Kandidaten trotzdem, mit dem Vorbehalt, dass diese Grenzen nicht geprüft sind.
 
 Arbeitsweise
