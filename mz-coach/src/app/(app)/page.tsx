@@ -1,5 +1,5 @@
 // Zentrale (Startseite): alles Wichtige kurz gebündelt (Marcus, 30.10.2026): Warnungen, nächstes Spiel in einer
-// Zeile (Details im Reiter Spieltag), Verfügbarkeit, Aufgaben, Ball-Bilanz, Tabelle.
+// Zeile (Details im Reiter Spieltag), Verfügbarkeit, Aufgaben, Ball-Bilanz (Tabelle steht unter Saison).
 
 import Link from "next/link";
 import { connection } from "next/server";
@@ -13,7 +13,8 @@ import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { spieltagCheckliste } from "@/lib/checkliste";
 
-import { LigaTabelle } from "@/components/liga-tabelle";
+import { ZoomFeld } from "@/components/zoom-feld";
+import { SpielerProfil } from "@/components/spieler-profil";
 import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
@@ -32,6 +33,7 @@ export default async function Uebersicht() {
     (k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag,
   ).length;
   const kader = ladeKader(db);
+  const kaderNach = new Map(kader.map((s) => [s.pid, s]));
   const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
   const taktikStand = kader
     .map((s) => s.statusStand?.aufstellbar)
@@ -233,7 +235,31 @@ export default async function Uebersicht() {
               {bilanz.map((b) => (
                 <Row
                   key={b.pid}
-                  title={b.name}
+                  title={
+                    <ZoomFeld
+                      inline
+                      titel={b.name}
+                      klein={b.name}
+                      gross={
+                        <div className="space-y-3 text-[13.5px]">
+                          <div>
+                            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-label-3">Änderungen der letzten 14 Tage</div>
+                            <ul className="space-y-0.5">
+                              {b.aenderungen.map((a, i) => (
+                                <li key={i} className={a.neu > a.alt ? "text-green" : "text-red"}>
+                                  {a.skill}: {a.alt} → {a.neu} <span className="text-label-3">({datumZeit(a.datum)})</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          {kaderNach.get(b.pid) && <SpielerProfil skills={kaderNach.get(b.pid)!.skills} scout={kaderNach.get(b.pid)!.scoutSterne ? { ...kaderNach.get(b.pid)!.scoutSterne, training: kaderNach.get(b.pid)!.scoutTraining } : undefined} />}
+                          <Link href={`/kader/${b.pid}`} className="inline-block text-[13px] font-semibold text-tint hover:underline">
+                            Zur Spielerseite →
+                          </Link>
+                        </div>
+                      }
+                    />
+                  }
                   detail={b.aenderungen.map((a) => `${a.skill} ${a.alt}→${a.neu}`).join(" · ")}
                   value={
                     <span className="display text-[16px] font-bold tabular-nums">
@@ -249,7 +275,6 @@ export default async function Uebersicht() {
             <Unavailable title="Bälle" reason="In den letzten 14 Tagen keine Skill-Änderung in den Kaderabrufen." />
           )}
         </Section>
-        <LigaTabelle db={db} />
       </div>
     </>
   );
