@@ -82,3 +82,14 @@ export async function reiterLoeschenAktion(_prev: UebernahmeState, formData: For
   refresh();
   return r;
 }
+
+// Reiter löschen (leeren und Namen entfernen), nur auf Klick
+export async function reiterLoeschenAktion(_prev: UebernahmeState, formData: FormData): Promise<UebernahmeState> {
+  const reiter = String(formData.get("reiter") ?? "");
+  if (!reiter) return { meldung: "Reiter fehlt." };
+  const { reiterLoeschen } = await import("@/lib/mz/abruf/liga");
+  const r = await reiterLoeschen(getDb(), reiter);
+  revalidatePath("/");
+  revalidatePath("/taktik");
+  return r;
+}
