@@ -9,6 +9,7 @@ import {
   freundVorschlagUebernehmen,
   portfolioVorschlagUebernehmen,
   reiterFreiUmbenennen,
+  reiterLoeschenAktion,
   reiterUmbenennenAktion,
   vorschlagUebernehmen,
   type UebernahmeState,
@@ -142,6 +143,35 @@ export function ReiterNameForm({ reiter, vorschlag }: { reiter: string; vorschla
         {pending ? "Wird umbenannt …" : "Umbenennen"}
       </button>
       {vorschlag && <span className="text-[12px] text-label-3">Vorschlag: {vorschlag}</span>}
+      {state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
+    </form>
+  );
+}
+
+// Reiter löschen: im Editor „Alles zurücksetzen“, speichern, Namen entfernen (erst auf Klick, mit Rückfrage)
+export function ReiterLoeschenKnopf({ reiter }: { reiter: string }) {
+  const [state, action, pending] = useActionState<UebernahmeState, FormData>(reiterLoeschenAktion, {});
+  return (
+    <form
+      action={action}
+      className="flex flex-wrap items-center gap-2"
+      onSubmit={(e) => {
+        if (
+          !confirm(
+            `Reiter „${reiter}“ in ManagerZone löschen? Aufstellung und Regeln werden zurückgesetzt, der Name entfernt. Die XML bleibt hier als Sicherung.`,
+          )
+        )
+          e.preventDefault();
+      }}
+    >
+      <input type="hidden" name="reiter" value={reiter} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="pressable rounded-md border border-red/40 px-2.5 py-1 text-[12.5px] font-semibold text-red disabled:opacity-50"
+      >
+        {pending ? "Wird gelöscht …" : "Löschen"}
+      </button>
       {state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
     </form>
   );

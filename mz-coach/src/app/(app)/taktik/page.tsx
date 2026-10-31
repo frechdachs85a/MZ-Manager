@@ -7,7 +7,7 @@ import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld, type FeldSpieler } from "@/components/spielfeld";
 import { DateiKnopf } from "@/components/datei-knopf";
-import { ReiterNameForm, TaktikCheckKarte } from "@/components/taktik-check-karte";
+import { ReiterLoeschenKnopf, ReiterNameForm, TaktikCheckKarte } from "@/components/taktik-check-karte";
 import { Badge, Card, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
@@ -87,6 +87,7 @@ export default async function Taktik() {
                     <div className="flex flex-wrap items-center gap-3">
                       {k.archiv && <DateiKnopf text={k.archiv.xml} dateiname={`${k.name}.xml`.replace(/[^\w.-]+/g, "_")} label="XML" />}
                       {k.art !== "liga" && <ReiterNameForm reiter={k.name} vorschlag={k.nameVorschlag} />}
+                      {k.art !== "liga" && k.slot !== "a" && <ReiterLoeschenKnopf reiter={k.name} />}
                     </div>
                   </div>
                 )}
@@ -95,6 +96,15 @@ export default async function Taktik() {
           </div>
         </Section>
 
+        {karten.some((k) => k.art === "leer") && (
+          <p className="-mt-2 mb-4 text-[13px] text-label-2">
+            Leere Reiter (frei für neue Stile oder Seitenvarianten):{" "}
+            {karten
+              .filter((k) => k.art === "leer")
+              .map((k) => k.name)
+              .join(", ")}
+          </p>
+        )}
         <Section
           title="Deckst du alles ab?"
           footer="Bewährt = bei den Top 10 mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Nur offizielle Reiter zählen."

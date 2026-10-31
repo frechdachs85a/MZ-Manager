@@ -15,7 +15,7 @@ import { ladeKombis, scoutEinstufung } from "@/lib/scout";
 // (Login-Ergebnis mit Bildschirmfoto und Antwortverlauf, Scoutbericht, transfer.js, challenges.js, Marktsuche), und
 // je Spieler Scout-Sterne, wörtlicher Text und Einstufung. Enthält KEINE Zugangsdaten, Cookies oder Schlüssel
 // (Tabelle einstellung und geheimnisse.json werden nicht gelesen).
-export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "unbekannt", "spielplan", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche", "kader-fremd", "weltliga", "gebotsformular", "gebot-suche", "weltliga-tabelle", "skript-taktik", "liga-xml", "skript-mz", "gebot-antwort", "spieler-fremd"];
+export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "unbekannt", "spielplan", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche", "kader-fremd", "weltliga", "gebotsformular", "gebot-suche", "weltliga-tabelle", "skript-taktik", "liga-xml", "skript-mz", "gebot-antwort", "spieler-fremd", "taktik-geloescht"];
 
 // Diagnose für den Fernzugriff (ohne Zugangsdaten)
 export function diagnose(db: Database.Database) {

@@ -64,7 +64,8 @@ export function pruefeFreund(opt: {
       `Wechselregel bringt wichtige Spieler aufs Feld: ${rein.map((r) => `${r.time}. ${kurz(wichtig.find((w) => String(w.pid) === r.in_player_id)!.name)}`).join(", ")}`,
     );
   const gleich = opt.offizielleStile.filter((o) => o.stil === opt.stil);
-  if (gleich.length) probleme.push(`Gleicher Stil wie ${gleich.map((g) => g.reiter).join(", ")} (${opt.stil}): freund soll eine komplett andere Taktik sein`);
+  if (gleich.length)
+    probleme.push(`Gleicher Stil wie ${gleich.map((g) => g.reiter).join(", ")} (${opt.stil}): freund soll eine Taktik spielen, die es sonst nirgends gibt`);
 
   let xml: string | undefined;
   if (aufFeld.length || nichtBank.length || rein.length) {

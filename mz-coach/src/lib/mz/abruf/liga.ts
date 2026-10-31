@@ -21,7 +21,10 @@ type Soll = { feld: number[]; torwart: number; bank: number[]; tactics?: string;
 function sollAus(xml: string): Soll {
   const t = parseTaktikXml(xml);
   return {
-    feld: t.pos.filter((p) => p.pos === "normal").map((p) => p.pid).sort(),
+    feld: t.pos
+      .filter((p) => p.pos === "normal")
+      .map((p) => p.pid)
+      .sort(),
     torwart: t.pos.find((p) => p.pos === "goalie")?.pid ?? 0,
     bank: t.subs.map((s) => s.pid).sort(),
     tactics: t.team.tactics,
@@ -40,7 +43,9 @@ const reiterSuchen = (page: Page, name: string) =>
     return null;
   }, name);
 
-type Ist = { slot: string; feld: number[]; torwart: number; bank: number[]; tactics?: string; playstyle?: string; aggression?: string; alter?: string } | { fehler: string };
+type Ist =
+  | { slot: string; feld: number[]; torwart: number; bank: number[]; tactics?: string; playstyle?: string; aggression?: string; alter?: string }
+  | { fehler: string };
 
 // Belegung eines Reiters im Editor (tacticsDataLocal; direkt nach dem Laden = gespeicherter Stand. tacticsData enthält
 // die Reiter nicht unter demselben Index, gesehen 26.10.2026)
@@ -48,7 +53,10 @@ const belegung = (page: Page, slot: string, quelle: "tacticsData" | "tacticsData
   page.evaluate(
     ([s, q]) => {
       const w = window as unknown as { teamTactic?: Record<string, unknown> };
-      const tt = w.teamTactic as { tacticsIndexedArr: Record<string, number> } & Record<string, { Tactic: { TacticPlayer?: { "@attributes": Record<string, string> }[]; "@attributes": Record<string, string> }[] }>;
+      const tt = w.teamTactic as { tacticsIndexedArr: Record<string, number> } & Record<
+        string,
+        { Tactic: { TacticPlayer?: { "@attributes": Record<string, string> }[]; "@attributes": Record<string, string> }[] }
+      >;
       if (!tt) return { fehler: "teamTactic fehlt auf der Seite." };
       const t = tt[q]?.Tactic?.[tt.tacticsIndexedArr[s]];
       if (!t) return { fehler: `Reiter ${s} nicht in ${q}.` };
@@ -56,9 +64,15 @@ const belegung = (page: Page, slot: string, quelle: "tacticsData" | "tacticsData
       const a = t["@attributes"];
       return {
         slot: s,
-        feld: sp.filter((p) => p.pos === "on field").map((p) => Number(p.playerId)).sort(),
+        feld: sp
+          .filter((p) => p.pos === "on field")
+          .map((p) => Number(p.playerId))
+          .sort(),
         torwart: Number(sp.find((p) => p.pos === "gk")?.playerId ?? 0),
-        bank: sp.filter((p) => String(p.pos).startsWith("subst")).map((p) => Number(p.playerId)).sort(),
+        bank: sp
+          .filter((p) => String(p.pos).startsWith("subst"))
+          .map((p) => Number(p.playerId))
+          .sort(),
         tactics: a?.tactics,
         playstyle: a?.playstyle,
         aggression: a?.aggression,
@@ -146,7 +160,8 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
   const ist = neu.extra as Ist;
   const ab = abweichung(soll, ist);
   if (ab) throw new MzFehler(`Gespeichert, aber beim Neuladen anders: ${ab}.`);
-  if (x.alter && !("fehler" in ist) && ist.alter !== x.alter) throw new MzFehler(`Gespeichert, aber der Altersregler hat sich geändert (vorher ${x.alter}, jetzt ${ist.alter}). Bitte im Editor prüfen.`);
+  if (x.alter && !("fehler" in ist) && ist.alter !== x.alter)
+    throw new MzFehler(`Gespeichert, aber der Altersregler hat sich geändert (vorher ${x.alter}, jetzt ${ist.alter}). Bitte im Editor prüfen.`);
   return x.slot;
 }
 
@@ -154,14 +169,16 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
 // "Umbenennen" (#rename_tactics_button), Name ins Feld #tactic_name (maxlength 6), "Speichern"
 // (#save_rename_tactics_button, POST ajax.php?p=tactics&sub=rename mit tactic_name und key). Ohne Clubmitgliedschaft
 // lässt der Editor nur Reiter A umbenennen. Danach neu laden und prüfen, dass der Reiter den neuen Namen trägt.
+// neu = "" setzt den Namen zurück: der Editor zeigt dann den Buchstaben des Reiters (tactics.js, renameTactic success).
 async function reiterUmbenennen(s: MzSitzung, alt: string, neu: string): Promise<string> {
-  if (!neu || neu.length > 6) throw new MzFehler(`Name „${neu}“ ungültig (1 bis 6 Zeichen).`);
+  if (neu.length > 6) throw new MzFehler(`Name „${neu}“ ungültig (höchstens 6 Zeichen).`);
   const seite = await s.holeSeite(TAKTIK_PFAD, {
     warteAuf: 'dd[id^="n_"]',
     aufSeite: async (page) => {
       const slot = await reiterSuchen(page, alt);
       if (!slot) return { fehler: `Kein Reiter „${alt}“ im Editor: nicht umbenannt.` };
-      if (alt.toLowerCase() !== neu.toLowerCase() && (await reiterSuchen(page, neu))) return { fehler: `Name „${neu}“ ist schon vergeben: nicht umbenannt.` };
+      if (neu && alt.toLowerCase() !== neu.toLowerCase() && (await reiterSuchen(page, neu)))
+        return { fehler: `Name „${neu}“ ist schon vergeben: nicht umbenannt.` };
       await page.evaluate((x) => (document.querySelector(`#tacticTab_${x} a`) as HTMLElement | null)?.click(), slot);
       await page.waitForTimeout(1500);
       const aktiv = await page.evaluate(() => (document.querySelector("#current_tab") as HTMLInputElement | null)?.value);
@@ -181,9 +198,91 @@ async function reiterUmbenennen(s: MzSitzung, alt: string, neu: string): Promise
   const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
   if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
   if ("fehler" in x) throw new MzFehler(x.fehler);
-  const neuGeladen = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => reiterSuchen(page, neu) });
+  const neuGeladen = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => reiterSuchen(page, neu || x.slot.toUpperCase()) });
   if (neuGeladen.extra !== x.slot) throw new MzFehler(`Umbenennen nicht bestätigt (Antwort: ${x.antwort}).`);
   return x.slot;
+}
+
+// Reiter löschen wie von Hand (Marcus, 31.10.2026): Reiter wählen, „Alles zurücksetzen“ (#clearb, clearAll(): Feld und
+// Regeln leeren), „Speicher aktuellen Tab“, dann den Namen entfernen (leerer Name = Buchstabe). Nach dem Neuladen geprüft:
+// keine Spieler mehr im Reiter, Name = Buchstabe. Reiter A darf laut Editor nicht leer sein (allowEmpty false).
+async function reiterLeeren(s: MzSitzung, reiter: string): Promise<string> {
+  const seite = await s.holeSeite(TAKTIK_PFAD, {
+    warteAuf: 'dd[id^="n_"]',
+    aufSeite: async (page) => {
+      const slot = await reiterSuchen(page, reiter);
+      if (!slot) return { fehler: `Kein Reiter „${reiter}“ im Editor: nichts gelöscht.` };
+      if (slot === "a") return { fehler: "Reiter A darf in ManagerZone nicht leer sein: nichts gelöscht." };
+      await page.evaluate((x) => (document.querySelector(`#tacticTab_${x} a`) as HTMLElement | null)?.click(), slot);
+      await page.waitForTimeout(1500);
+      const aktiv = await page.evaluate(() => (document.querySelector("#current_tab") as HTMLInputElement | null)?.value);
+      if (aktiv !== slot) return { fehler: `Reiter ${slot} ließ sich nicht wählen (aktiv: ${aktiv ?? "?"}): nichts gelöscht.` };
+      await page.evaluate(() => (document.querySelector("#clearb") as HTMLElement | null)?.click());
+      await page.waitForTimeout(2000);
+      const rest = await page.evaluate((x) => {
+        const w = window as unknown as {
+          teamTactic?: { tacticsIndexedArr: Record<string, number>; tacticsDataLocal: { Tactic: { TacticPlayer?: unknown[] }[] } };
+        };
+        const t = w.teamTactic?.tacticsDataLocal?.Tactic?.[w.teamTactic.tacticsIndexedArr[x]];
+        return Array.isArray(t?.TacticPlayer) ? t!.TacticPlayer!.length : 0;
+      }, slot);
+      if (rest > 0) return { fehler: `Nach „Alles zurücksetzen“ noch ${rest} Spieler im Reiter: nicht gespeichert.` };
+      const antwort = page.waitForResponse((r) => r.url().includes("p=tactics") && r.url().includes("sub=save"), { timeout: 30_000 });
+      await page.evaluate(() => (document.querySelector("#savecurrentb") as HTMLElement).click());
+      const r = await antwort;
+      return { slot, antwort: (await r.text()).slice(0, 300) };
+    },
+  });
+  const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
+  if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
+  if ("fehler" in x) throw new MzFehler(x.fehler);
+  const neu = await s.holeSeite(TAKTIK_PFAD, {
+    warteAuf: 'dd[id^="n_"]',
+    aufSeite: (page) =>
+      page.evaluate((sl) => {
+        const w = window as unknown as {
+          teamTactic?: { tacticsIndexedArr: Record<string, number>; tacticsDataLocal: { Tactic: { TacticPlayer?: unknown[] }[] } };
+        };
+        const t = w.teamTactic?.tacticsDataLocal?.Tactic?.[w.teamTactic.tacticsIndexedArr[sl]];
+        return Array.isArray(t?.TacticPlayer) ? t!.TacticPlayer!.length : 0;
+      }, x.slot),
+  });
+  if (neu.extra !== 0) throw new MzFehler(`Leeren nicht bestätigt: nach dem Neuladen ${String(neu.extra)} Spieler im Reiter (Antwort: ${x.antwort}).`);
+  return x.slot;
+}
+
+// Reiter löschen (nur auf Klick): XML vorher als Sicherung speichern, leeren, Namen entfernen, Archiv-Eintrag löschen
+export async function reiterLoeschen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  if (/^liga$/i.test(reiter)) return { ok: false, meldung: "Den Reiter „Liga“ braucht die Seite." };
+  const log = abrufBeginnen(db, "taktik-check");
+  try {
+    const sicherung = ladeTaktiken(db).find((t) => t.reiter === reiter);
+    if (sicherung) speichereRohseite(db, { art: "taktik-geloescht", url: `reiter:${reiter}`, status: null, htmlRoh: sicherung.xml, htmlDom: null });
+    const slot = await mitMzSitzung(
+      db,
+      async (s) => {
+        const sl = await reiterLeeren(s, reiter);
+        await reiterUmbenennen(s, reiter, "");
+        return sl;
+      },
+      { manuell: true },
+    );
+    loescheTaktik(db, reiter);
+    const { ladeEditorReiter, speichereEditorReiter } = await import("@/lib/db/taktik");
+    const ed = ladeEditorReiter(db);
+    if (ed)
+      speichereEditorReiter(
+        db,
+        ed.reiter.map((r) => (r.slot === slot ? { ...r, name: slot.toUpperCase(), spieler: 0 } : r)),
+      );
+    const meldung = `Reiter ${slot.toUpperCase()} („${reiter}“) geleert und Name entfernt (nach Neuladen geprüft). Die XML ist als Sicherung gespeichert.`;
+    abrufBeenden(db, log, true, meldung);
+    return { ok: true, meldung };
+  } catch (e) {
+    const meldung = `Löschen ${reiter}: ${meldungAus(e)}`;
+    abrufBeenden(db, log, false, meldung);
+    return { ok: false, meldung };
+  }
 }
 
 // Archiv-Eintrag unter dem neuen Namen führen
