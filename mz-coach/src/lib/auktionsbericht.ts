@@ -17,10 +17,15 @@ export function auktionsBericht(db: Database.Database, pid: number, ergebnis: st
   const hoechstes = gebote.length ? Math.max(...gebote.map((g) => g.betrag)) : undefined;
   const bekommen = ergebnis.includes("du warst zuletzt Höchstbietender");
   const verloren = ergebnis.includes("ein anderer Verein war zuletzt Höchstbietender");
-  const titel = bekommen ? `✅ ${name}: Spieler bekommen` : verloren ? `❌ ${name}: nicht bekommen` : `⚠️ ${name}: Bietomat beendet`;
+  // Bekommen: dein letztes (höchstes) Gebot ist der Kaufpreis, du warst ja zuletzt Höchstbietender
+  const titel = bekommen
+    ? `✅ ${name} bekommen${hoechstes !== undefined ? ` für ${euro(hoechstes)}` : ""}`
+    : verloren
+      ? `❌ ${name}: nicht bekommen`
+      : `⚠️ ${name}: Bietomat beendet`;
   const teile = [
     bekommen
-      ? "Du warst am Ende Höchstbietender. Bitte den Kauf in ManagerZone prüfen."
+      ? `Du warst am Ende Höchstbietender${hoechstes !== undefined ? `, Preis ${euro(hoechstes)}` : ""}. Bitte den Kauf in ManagerZone prüfen.`
       : verloren
         ? "Ein anderer Verein hat zuletzt höher geboten."
         : ergebnis,
