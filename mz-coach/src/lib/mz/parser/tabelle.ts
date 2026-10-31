@@ -9,8 +9,14 @@ export type Tabelle = { kopf: string[]; zeilen: { zellen: string[]; eigen: boole
 
 // Ligatabelle lesen (Zeile des eigenen Teams markiert)
 export function tabelleAus(html: string, teamName: string): Tabelle | null {
+  // Zuerst eine Tabelle mit Spalte "Pkt" (die Rangliste; im selben Reiter stehen auch die Paarungen des Spieltags)
+  return tabelleSuchen(html, teamName, true) ?? tabelleSuchen(html, teamName, false);
+}
+
+function tabelleSuchen(html: string, teamName: string, nurMitPunkten: boolean): Tabelle | null {
   const doc = parse(html);
   for (const t of doc.querySelectorAll("table")) {
+    if (nurMitPunkten && !t.querySelectorAll("th").some((th) => text(th) === "Pkt")) continue;
     if (!text(t).includes(teamName)) continue;
     // Verschachtelte Tabellen überspringen: die innerste mit dem Teamnamen nehmen
     if (t.querySelectorAll("table").some((innen) => text(innen).includes(teamName))) continue;
