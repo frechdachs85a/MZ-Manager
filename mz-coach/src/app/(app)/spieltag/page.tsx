@@ -15,6 +15,8 @@ import { TEAM } from "@/lib/wissen/startbasis";
 import { SpieltagKnopf } from "./abruf-knopf";
 import { SpieltagReiter } from "./reiter";
 import { ScoutKnopf } from "../gegner/[tid]/scout-knopf";
+import { LueckeKarte } from "@/components/luecke-karte";
+import { stilDe } from "@/lib/mz/analyse/gegner";
 
 const anstossText = (iso: string) =>
   new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
@@ -47,6 +49,28 @@ export default async function Spieltag() {
             <SpieltagKnopf />
           </span>
         </div>
+        {l.luecke && (
+          <div id="luecke" className="scroll-mt-20">
+          <Card className="mt-4 border-l-4 border-orange p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-orange">Dir fehlt ein bewährter Stil gegen {gName}</div>
+            <p className="mt-1 text-[14px]">
+              Gegen „{l.luecke.klasse}“ gewinnen die Top 10 mit <b>{stilDe(l.luecke.stil.schluessel)}</b>: {l.luecke.stil.S} S / {l.luecke.stil.U} U /{" "}
+              {l.luecke.stil.N} N in {l.luecke.stil.spiele} Spielen ({Math.round(l.luecke.stil.quote * 100)} % Punktquote; {l.luecke.stil.teams.join(", ")}).{" "}
+              {l.luecke.deinBester
+                ? `Dein bester Stil gegen diesen Typ: ${stilDe(l.luecke.deinBester.schluessel)} (${l.luecke.deinBester.reiter.join(", ")}) mit ${Math.round(l.luecke.deinBester.quote * 100)} % bei den Top 10.`
+                : "Diesen Typ deckt noch kein Reiter von dir mit einem bewährten Stil ab."}
+            </p>
+            <p className="mt-1 text-[12.5px] text-label-2">
+              Aufstellung: Startelf von {l.luecke.stil.beispiel.team} beim {l.luecke.stil.beispiel.tore} gegen {l.luecke.stil.beispiel.gegner}, besetzt mit deinen besten aufstellbaren Spielern (MZ-Wert der Elf{" "}
+              {l.luecke.summe.toFixed(2).replace(".", ",")}). Die Empfehlung oben bleibt davon unberührt.
+              {l.luecke.hinweise.length > 0 && ` ${l.luecke.hinweise.join(" ")}`}
+            </p>
+            <div className="mt-3">
+              <LueckeKarte name={l.luecke.name} xml={l.luecke.xml} reiter={l.luecke.reiter} />
+            </div>
+          </Card>
+          </div>
+        )}
         {lauf?.gegnerTid && (
           <div className="mt-4 max-w-[520px]">
             <ScoutKnopf tid={lauf.gegnerTid} text={`Scoutspiele gegen ${gName} einlesen und auswerten`} />

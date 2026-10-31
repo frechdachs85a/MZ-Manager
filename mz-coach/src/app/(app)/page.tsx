@@ -13,6 +13,7 @@ import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { baelleFolgen, type TaktikFolge } from "@/lib/baelle-taktik";
 import { posDe } from "@/lib/mz/formel";
+import { stilDe } from "@/lib/mz/analyse/gegner";
 import { spieltagCheckliste } from "@/lib/checkliste";
 
 import { ZoomFeld } from "@/components/zoom-feld";
@@ -94,6 +95,20 @@ export default async function Uebersicht() {
               ))}
             </ul>
           </Card>
+        </div>
+      )}
+
+      {st.luecke && (
+        <div className="seite mt-6">
+          <Link href="/spieltag#luecke" className="zeile-hover block">
+            <Card className="border-l-4 border-l-orange p-4">
+              <div className="text-[13px] font-bold uppercase tracking-wider text-orange">Taktik-Lücke gegen {st.lauf?.gegnerName ?? "den nächsten Gegner"}</div>
+              <p className="mt-1 text-[14px]">
+                Gegen „{st.luecke.klasse}“ ist bei den Top 10 <b>{stilDe(st.luecke.stil.schluessel)}</b> bewährt ({Math.round(st.luecke.stil.quote * 100)} % in{" "}
+                {st.luecke.stil.spiele} Spielen), den hast du nicht. Fertige Aufstellung auf der Spieltag-Seite übernehmen →
+              </p>
+            </Card>
+          </Link>
         </div>
       )}
 

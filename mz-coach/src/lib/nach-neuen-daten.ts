@@ -36,8 +36,11 @@ function vorAnstoss(db: Database.Database, jetzt = Date.now()): boolean {
 export async function taktikenNachNeuenDaten(db: Database.Database, anlass: string): Promise<string> {
   const teile: string[] = [];
   try {
-    const v = spieltagLage(db).vorschlag;
+    const lage = spieltagLage(db);
+    const v = lage.vorschlag;
     if (v) teile.push(`Empfohlene Taktik: ${v.taktik} (${v.quelle}).`);
+    // Portfolio-Lücke gegen den nächsten Gegner (nur Hinweis, übernommen wird auf Klick)
+    if (lage.luecke) teile.push(`Lücke: gegen „${lage.luecke.klasse}“ ist ${lage.luecke.stil.schluessel} bei den Top 10 bewährt, fehlt dir.`);
   } catch (e) {
     teile.push(`Empfehlung: ${e instanceof Error ? e.message : String(e)}`);
   }
