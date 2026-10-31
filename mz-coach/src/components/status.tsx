@@ -8,10 +8,12 @@ export function StatusBadges({ s }: { s: SpielerDaten }) {
   const sperrArten = [...new Set((s.sperren ?? []).map((x) => x.art))];
   return (
     <>
-      {st.aufstellbar === false && <Badge tone="red">nicht aufstellbar</Badge>}
+      {/* Nur den Grund zeigen (Marcus, 31.10.2026): Trainingslager, verletzt oder gesperrt heißt schon nicht aufstellbar;
+          "nicht aufstellbar" steht nur, wenn kein Grund bekannt ist */}
+      {st.aufstellbar === false && !st.verletzt && !st.gesperrt && !st.trainingslager && <Badge tone="red">nicht aufstellbar</Badge>}
       {st.verletzt && <Badge tone="red">verletzt</Badge>}
       {st.gesperrt && <Badge tone="red">gesperrt{sperrArten.length ? `: ${sperrArten.join(", ")}` : ""}</Badge>}
-      {st.trainingslager && <Badge tone="orange">Trainingslager</Badge>}
+      {st.trainingslager && <Badge tone={st.aufstellbar === false ? "red" : "orange"}>Trainingslager</Badge>}
       {st.transfermarkt && <Badge tone="tint">Markt</Badge>}
     </>
   );
