@@ -16,7 +16,7 @@ const komma = (n: number) => n.toFixed(2).replace(".", ",");
 function Balken({ label, wert, max = 10, ton }: { label: string; wert: number; max?: number; ton: "alt" | "neu" | "pot" }) {
   const farbe = ton === "neu" ? "bg-tint" : ton === "pot" ? "bg-tint/35" : "bg-label-3";
   return (
-    <div className="grid grid-cols-[minmax(0,11rem)_1fr_2.8rem] items-center gap-2 text-[12.5px]">
+    <div className="grid grid-cols-[minmax(0,13rem)_1fr_2.8rem] items-center gap-2 text-[12.5px]">
       <span className="truncate text-label-2">{label}</span>
       <span className="h-2 overflow-hidden rounded-full bg-fill">
         <span className={`block h-full rounded-full ${farbe}`} style={{ width: `${(wert / max) * 100}%` }} />
@@ -59,14 +59,15 @@ export function VorschlagKarte({ b, verkauf, imBietomat, rang }: { b: Bewertung;
       </header>
 
       <div className="space-y-1.5 px-4 pt-1">
-        <Balken label={`Jetzt: ${b.ziel.spieler.name.split(" ").at(-1)}`} wert={b.ziel.wert} ton="alt" />
-        <Balken label={`Neu: ${k.name.split(" ").at(-1)}`} wert={b.neu} ton="neu" />
-        {p.plusEins !== undefined && p.plusEins > b.neu && <Balken label="Neu mit Training" wert={p.plusEins} ton="pot" />}
+        <div className="text-[11px] text-label-3">MZ-Wert als {posDe(b.ziel.rolle)} (0 bis 10)</div>
+        <Balken label={`Dein Spieler: ${b.ziel.spieler.name.split(" ").at(-1)}`} wert={b.ziel.wert} ton="alt" />
+        <Balken label={`Vorschlag: ${k.name.split(" ").at(-1)}`} wert={b.neu} ton="neu" />
+        {p.plusEins !== undefined && p.plusEins > b.neu && <Balken label="Vorschlag nach Training" wert={p.plusEins} ton="pot" />}
         <div className="text-[12px] text-label-2">
           {p.trainierbar.length ? (
-            <>Potenzial: noch trainierbar in dieser Rolle: {p.trainierbar.join(", ")}</>
+            <>„Nach Training“ = je ein Ball mehr in diesen noch trainierbaren Skills: {p.trainierbar.join(", ")}</>
           ) : (
-            "Potenzial: alle Skills dieser Rolle ausgemaxt"
+            "Alle Skills dieser Rolle sind ausgemaxt, keine Steigerung durch Training"
           )}
         </div>
       </div>
