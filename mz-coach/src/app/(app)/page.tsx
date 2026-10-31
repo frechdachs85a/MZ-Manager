@@ -8,7 +8,7 @@ import { Card, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { spieltagLage } from "@/lib/spieltag";
 import { WertDiff } from "@/components/elf-wert";
-import { TaktikCheckKarte } from "@/components/taktik-check-karte";
+import { ReiterNameKnopf, TaktikCheckKarte } from "@/components/taktik-check-karte";
 import { checkKurz, taktikCheck, MIN_GEWINN } from "@/lib/taktik-check";
 import { portfolioPlan, vorschlagText } from "@/lib/portfolio-plan";
 import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
@@ -117,14 +117,41 @@ export default async function Uebersicht() {
                   punkte={[vorschlagText(v), `Topteams: ${v.teams.slice(0, 3).join(", ")}`, `Mit deiner besten Elf: MZ-Wert ${v.summe.toFixed(2).replace(".", ",")}`]}
                   gewinn={0}
                   xml={v.xml}
+                  neuerName={v.name}
                 />
               ))}
             </div>
           )}
+          {plan.sinn.length > 0 && (
+            <div className="border-t border-separator px-4 py-3 text-[13px]">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">Passen Name und Inhalt?</div>
+              <ul className="mt-1.5 space-y-2">
+                {plan.sinn.map((x) => (
+                  <li key={x.reiter}>
+                    <div>
+                      <span className="font-semibold">{x.reiter}</span> <span className="text-label-3">({x.stil})</span>
+                    </div>
+                    {[...x.probleme, ...x.hinweise].map((t) => (
+                      <div key={t} className="text-label-2">
+                        • {t}
+                      </div>
+                    ))}
+                    {x.name && (
+                      <div className="mt-1">
+                        <ReiterNameKnopf reiter={x.reiter} name={x.name} />
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <p className="px-4 py-2 text-[11.5px] leading-relaxed text-label-3">
-            Ziel: jeder Reiter eine andere, für dein Team optimale Taktik, zusammen eine Antwort auf jeden Gegnertyp. Bewährt = bei den Top 10
+            Namen: Formation + Taktik + Spielweise, höchstens 6 Zeichen (Grenze des Editors), z. B. 532flo = 5-3-2 Flügel offensiv; fl = Flügel,
+            kp = Kurzpass, lb = lange Bälle, o = offensiv, d = defensiv, ohne Buchstaben = normal. außenR und kupass behalten ihren Namen
+            (Faustregel). Ziel: jeder Reiter eine andere, für dein Team optimale Taktik, zusammen eine Antwort auf jeden Gegnertyp. Bewährt = bei den Top 10
             mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Doppelte Reiter werden mit Lücken und mit Stilen belegt,
-            die bei den Top 10 mindestens 10 Prozentpunkte mehr holen als dein bester, reihum je Gegnerklasse, wichtigste zuerst; Jugend-Reiter (U18) bleiben. Den Namen des Reiters im Editor selbst anpassen. Übernommen wird nur auf Klick.
+            die bei den Top 10 mindestens 10 Prozentpunkte mehr holen als dein bester, reihum je Gegnerklasse, wichtigste zuerst; Jugend-Reiter (U18) bleiben. Übernommen und umbenannt wird nur auf Klick.
           </p>
         </Card>
       </div>

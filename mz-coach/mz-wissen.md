@@ -1,6 +1,6 @@
 # MZ-Wissensbasis FC Toho
 
-Stand: 25.10.2026. Alles hier ist entweder von Marcus vorgegeben oder aus echten ManagerZone-Daten belegt. Nichts davon ist geschätzt. Diese Datei ist die Startbasis für die KI der Webseite und wird laufend erweitert.
+Stand: 31.10.2026. Alles hier ist entweder von Marcus vorgegeben oder aus echten ManagerZone-Daten belegt. Nichts davon ist geschätzt. Diese Datei ist die Startbasis für die KI der Webseite und wird laufend erweitert.
 
 ---
 
@@ -144,6 +144,8 @@ Standards, Form, Alter, Größe zählen nicht.
 | freund | Freundschaftsspiel-Taktik | Form halten |
 | U18 | 5-2-1-2 Kurzpass defensiv aus Profi-Bausteinen (Lyon-Fünferkette, Raureni-Spielmacher und Sturm) | Jugend, nicht aktiv betreut |
 
+Stand der Tabelle: 25.10.2026, Beschreibung von Marcus. Das Archiv der Seite vom 26.10.2026 passt nicht dazu (siehe Abschnitt 17), Reiter neu exportieren. Namen und Inhalt prüft das Taktik-Portfolio (Abschnitt 17).
+
 Gemeinsame Regeln in außenR/außenL/3313of/532de: 50. Hyuga raus, Ishizaki rein (Eckstürmer früh frisch); 60. Kaupa für Nazarov und Rodekamp für Cytrynski (532de: Salzer für Nazarov); ab 60. bei 1 Tor Rückstand offensiv + aggressiv; ab 65. bei 2 Toren Rückstand Kurzpass + Alternative 2 + aggressiv; ab 70. bei Führung Spielweise normal (nur außenR und außenL); ab 80. bei Gleichstand offensiv + aggressiv; Rot: nur Umstellung auf Alternative 1 (Flügel bzw. Kurzpass bei kupass/indivi), KEIN Spielerwechsel (seit 25.10.2026, wie Lyon; vorher kollidierte "Schobel raus, Kaupa rein" mit dem Kaupa-Wechsel in der 60.). Gilt in allen Taktiken inkl. kupass, indivi, freund.
 
 Template-Koordinaten außenR (Editor): Abwehr 26/224, 76/224, 125/224, 175/224; Sechser 101/183 und 151/183; Spielmacher 101/135; Sturm 129/95, 82/77; Ecke 200/63.
@@ -274,10 +276,12 @@ Weitere Beobachtungen von Marcus zu Sydney (Ligaspiele): Gegentore bekam Sydney 
 - Kurz vor Schluss bieten (Wunsch: 3 bis 2 Minuten vor Ende), aber nur, wenn man nicht selbst Höchstbietender ist.
 - Laut Marcus verlängert ein Gebot kurz vor Schluss die Auktion. Ziel ist also nicht ein Gebot, sondern am Ende allein Höchstbietender zu sein: nach jedem Gebot und bis zum tatsächlichen Ende das Auktionsende und das Höchstgebot neu lesen; wird man überboten (auch in der Verlängerung), erneut bieten, solange der Endpreis reicht.
 - Immer nur eine Stufe höher bieten (das kleinste zulässige Gebot über dem aktuellen Höchstgebot), nie direkt den Endpreis. Beispiel Marcus: Endpreis 3 Mio, Spieler für 1 Mio zu haben -> nicht höher als nötig bieten. Der Endpreis ist nur die Obergrenze.
-- Laut Marcus muss ein neues Gebot um einen bestimmten Prozentsatz über dem vorigen liegen; die Stufen werden dadurch mit steigendem Preis größer. Den Prozentsatz liest die Seite aus dem Gebotsfenster von ManagerZone (noch nicht geprüft), statt ihn anzunehmen.
+- Laut Marcus muss ein neues Gebot um einen bestimmten Prozentsatz über dem vorigen liegen. Gebotsfenster (ajax.php?p=transfer&sub=bid-form&pid=…, gelesen 26.10.2026): ManagerZone füllt das kleinste zulässige Gebot in der Währung des Verkäufers vor (#buyform_bid_player_currency); die Seite bietet genau diesen Betrag, rechnet ihn mit den Kursen der Seite in Euro um und prüft gegen den Endpreis. Danach Rückfrage „Bist Du sicher??“, gelegentlich ein Warnhinweis mit Häkchen (#transferBidConfirm), Knopf #transfer_place_bid_button.
 - Harte Grenze: kein Gebot über dem Endpreis, auch nicht um 1 Euro. Liegt die nächste zulässige Stufe darüber, wird nicht geboten (Protokoll: "Endpreis erreicht").
-- Wie lange MZ verlängert, ist hier noch nicht geprüft: die Seite liest das Ende jedes Mal neu von ManagerZone, statt eine Dauer anzunehmen.
-- Zeitpunkt fest (kein bewusst zufälliger Zeitpunkt). Erst scharf nach Prüfung des Gebotsfensters und einem Testgebot mit Zustimmung von Marcus.
+- Verlängerung (Text im Gebotsfenster, gelesen 26.10.2026): jedes Gebot in den letzten 3 Minuten verlängert die Auktion um 3 Minuten. Die Seite liest das Ende trotzdem jedes Mal neu.
+- Zeitpunkt fest (kein bewusst zufälliger Zeitpunkt).
+- Marcus will keine Spieler zum Testen kaufen: keine Testgebote, keine selbst angelegten Aufträge. Aufträge legt nur Marcus an.
+- Endpreis muss mindestens das Startgebot und mehr als das aktuelle Gebot sein. Spieler lassen sich per Spielernummer oder Name aufnehmen. Angezeigt werden Skills wie im Kader (Balken, gemaxt, Scout-Stärken/Schwächen), MZ-Werte, Alter, Nationalität, aktuelles Gebot, Ende, Startgebot, letzter Verkaufspreis (Transfers-Box der Spielerseite, Preis in EUR). Ist die Auktion vorbei, steht der Spieler nicht mehr auf dem Markt.
 - Heiße Phase hat Vorrang (Marcus, 26.10.2026): Solange ein Gebot läuft, pausieren alle anderen Abrufe (Spieltag, Top 10, Wertscan, Markt, Liga). Technischer Grund zusätzlich: die Seite lässt nur eine ManagerZone-Sitzung gleichzeitig zu, ein laufender Scan würde das Gebot sonst blockieren. Umsetzung: keine neuen Abrufe starten, wenn eine Auktion mit aktivem Auftrag bald endet; lange Abrufe prüfen zwischen ihren Schritten und warten, bis der Bietomat fertig ist.
 - Keine Zeitgrenze (Marcus, 26.10.2026): "bieten bis" abgeschafft. Geboten wird bis zum Endpreis, egal wie oft und wie lange sich die Auktion verlängert.
 
@@ -288,3 +292,33 @@ Weitere Beobachtungen von Marcus zu Sydney (Ligaspiele): Gegentore bekam Sydney 
 - Teamwert immer als ein Wert je Team: jeder Spieler anteilig nach seinen Spielminuten (keine Tabelle je Zeitfenster).
 - Taktik-Check (Marcus, 30.10.2026): Nach jedem Kaderabruf prüfen, ob die Taktiken im Archiv noch optimal besetzt sind (Skills ändern sich). Vorschlag mit XML; übernommen wird nur auf Klick, nie automatisch.
 - Höchstens 3 Wechsel je Spiel. Brauchen mehr Startspieler wegen Ausdauer unter 8 einen Wechsel, bekommen ihn die mit der niedrigsten Ausdauer zuerst; wer leer ausgeht, ist eine Schwachstelle mit Vorrang beim Transfermarkt (Marcus, 30.10.2026).
+
+## 17. Vorgaben von Marcus zur Seite (26. bis 31.10.2026)
+
+Spielfelder und Werte
+- Heatmap mit festen Grenzen für alle Teams (nicht relativ zum Team): bis 0,3 Mio hellgrün, 0,7 Mio dunkelgrün, 1,0 Mio gelb, 1,25 Mio rot, ab 1,5 Mio dunkelrot (dazwischen fließend). Legende unter jedem Feld.
+- Alle Spielfelder sind dieselbe Karte (eine Komponente). Spieler als kleine Punkte, damit die Aufstellung präzise zu sehen ist (verkleinert 31.10.2026).
+- Letztes Ligaspiel: ein Feld mit beiden Teams (seine Spieler als Rauten, gespiegelt), je eigenem Spieler ✓/✗, ob er sein Duell mit dem wertvolleren Spieler bestritten hat („getroffen?“).
+- Teamwert: ein Wert je Team, jeder Spieler anteilig nach seinen Spielminuten (überall, keine Tabellen je Zeitfenster).
+
+Formation Liga (26.10.2026)
+- Nach jeder Spieltag-Analyse (5 Stunden nach dem Ligaspiel) automatisch die Aufstellung gegen den nächsten Gegner in den Editor-Reiter „Liga“ schreiben und nach Neuladen prüfen. Welcher Reiter im Spiel gilt und was am Ende gespielt wird, entscheidet Marcus selbst.
+- Grundlage ist die getestete Taktik aus dem Archiv (Spieler, Bank, Wechsel- und Taktikregeln bleiben). Angepasst wird nur: stärkste Verteidiger gegen seine stärksten Angreifer, Innenverteidiger mit dem meisten Kopfball, wenn er über außen spielt, Angriff auf seiner schwächeren Abwehrseite (sonst spiegeln).
+- Sperren gelten je Wettbewerb: Pokal- oder Freundschaftsspiel-Sperre sperrt nicht für die Liga.
+
+Zentrale
+- Warnung bei Skillverlust (vor allem Ausdauer unter 8), Übersicht „Bälle der letzten 14 Tage“ (wer hat Bälle bekommen oder verloren). Taktik fürs nächste Spiel nur kompakt.
+- Täglicher Taktik-Check und Taktik-Portfolio: Vorschläge mit Begründung und XML; in ManagerZone übernommen wird nur auf Klick von Marcus, nie automatisch (Ausnahme: Formation Liga, siehe oben).
+
+Taktik-Portfolio (Hauptaufgabe, 30./31.10.2026)
+- Die 8 Reiter sollen ein Portfolio sein: für das eigene Team optimal besetzt, abwechslungsreich, mit einer guten Antwort auf jeden Gegnertyp. Laufend prüfen und Umgestaltungen vorschlagen.
+- Überschreiben vorschlagen, wenn ein Reiter identisch mit einem anderen ist oder ein anderer Stil klar besser ist. Eigene Setzung der Seite: „klar besser“ = bei den Top 10 gegen dieselbe Gegnerklasse mindestens 10 Prozentpunkte mehr Punktquote; bewährt = mindestens 3 Spiele und 60 % Punktquote.
+- Gespiegelte Reiter (außenR/außenL) sind eine gewollte Seitenvariante, kein Duplikat. U18 (Jugend), Liga, außenR und kupass werden nicht überschrieben (außenR und kupass nennt die Faustregel beim Namen).
+- Sinnhaftigkeit prüfen, nicht nur Duplikate: Name und Inhalt müssen zusammenpassen. Spielt ein Reiter etwas anderes, als der Name sagt (Beispiel Marcus: „532de“, aber keine 5-3-2), wird er umbenannt (Vorschlag mit Knopf, nur auf Klick).
+- Namensschema der Seite: Formation + Taktik + Spielweise, höchstens 6 Zeichen, z. B. 532flo = 5-3-2 Flügel offensiv, 343kp = 3-4-3 Kurzpass normal (fl Flügel, kp Kurzpass, lb lange Bälle, o offensiv, d defensiv, nichts = normal).
+- Umbenennen im Editor (tactics.js, gelesen 31.10.2026): Reiter wählen, „Umbenennen“ (#rename_tactics_button), Name ins Feld #tactic_name (maxlength 6), Speichern (POST ajax.php?p=tactics&sub=rename mit tactic_name und key). Ohne Clubmitgliedschaft nur Reiter A.
+- Stand Archiv 31.10.2026: 7 Reiter enthalten dieselbe Elf, dieselbe Bank und dieselben 8 Regeln (außenR gespiegelt), alle eingefügt am 26.10.2026 zwischen 12:26 und 12:31 UTC. Wahrscheinlich beim Einfügen jedes Mal dieselbe XML erwischt: jeden Reiter einzeln exportieren und neu einfügen, bevor Portfolio-Vorschläge übernommen werden.
+
+Arbeitsweise
+- Alles, was besprochen wird, in dieser Datei festhalten und vor neuen Aufgaben hier nachsehen, damit nichts doppelt besprochen werden muss.
+- Antworten kurz, in Stichpunkten, nur belegte Inhalte.

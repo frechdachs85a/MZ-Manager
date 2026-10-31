@@ -5,10 +5,10 @@
 
 import { useActionState } from "react";
 import { DateiKnopf } from "@/components/datei-knopf";
-import { portfolioVorschlagUebernehmen, vorschlagUebernehmen, type UebernahmeState } from "@/app/(app)/taktik-check-actions";
+import { portfolioVorschlagUebernehmen, reiterUmbenennenAktion, vorschlagUebernehmen, type UebernahmeState } from "@/app/(app)/taktik-check-actions";
 
 // art portfolio: Reiter wird mit einem neuen Stil überschrieben (anderer Knopf-Text, andere Aktion)
-export function TaktikCheckKarte({ reiter, punkte, gewinn, xml, art = "check" }: { reiter: string; punkte: string[]; gewinn: number; xml: string; art?: "check" | "portfolio" }) {
+export function TaktikCheckKarte({ reiter, punkte, gewinn, xml, art = "check", neuerName }: { reiter: string; punkte: string[]; gewinn: number; xml: string; art?: "check" | "portfolio"; neuerName?: string }) {
   const [state, action, pending] = useActionState<UebernahmeState, FormData>(art === "portfolio" ? portfolioVorschlagUebernehmen : vorschlagUebernehmen, {});
   return (
     <div className="px-4 py-3">
@@ -31,16 +31,37 @@ export function TaktikCheckKarte({ reiter, punkte, gewinn, xml, art = "check" }:
         <form
           action={action}
           onSubmit={(e) => {
-            if (!confirm(art === "portfolio" ? `Reiter „${reiter}“ in ManagerZone mit dem neuen Stil überschreiben? Die bisherige Taktik in diesem Reiter geht verloren.` : `Vorschlag für „${reiter}“ in ManagerZone in den gleichnamigen Reiter schreiben?`)) e.preventDefault();
+            if (!confirm(art === "portfolio" ? `Reiter „${reiter}“ in ManagerZone mit dem neuen Stil überschreiben${neuerName && neuerName !== reiter ? ` und in „${neuerName}“ umbenennen` : ""}? Die bisherige Taktik in diesem Reiter geht verloren.` : `Vorschlag für „${reiter}“ in ManagerZone in den gleichnamigen Reiter schreiben?`)) e.preventDefault();
           }}
         >
           <input type="hidden" name="reiter" value={reiter} />
           <button type="submit" disabled={pending} className="pressable rounded-md bg-tint px-3 py-1.5 text-[13px] font-semibold text-auf-akzent disabled:opacity-50">
-            {pending ? "Wird übernommen …" : art === "portfolio" ? `${reiter} überschreiben` : "In ManagerZone übernehmen"}
+            {pending ? "Wird übernommen …" : art === "portfolio" ? `${reiter} überschreiben${neuerName && neuerName !== reiter ? ` → ${neuerName}` : ""}` : "In ManagerZone übernehmen"}
           </button>
         </form>
       </div>
       {state.meldung && <p className={`mt-1 text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</p>}
     </div>
+  );
+}
+
+// Nur den Namen eines Reiters ändern (Name passt nicht zum Inhalt), erst auf Klick mit Rückfrage
+export function ReiterNameKnopf({ reiter, name }: { reiter: string; name: string }) {
+  const [state, action, pending] = useActionState<UebernahmeState, FormData>(reiterUmbenennenAktion, {});
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <form
+        action={action}
+        onSubmit={(e) => {
+          if (!confirm(`Reiter „${reiter}“ in ManagerZone in „${name}“ umbenennen? Der Inhalt bleibt gleich.`)) e.preventDefault();
+        }}
+      >
+        <input type="hidden" name="reiter" value={reiter} />
+        <button type="submit" disabled={pending} className="pressable rounded-md bg-tint px-2.5 py-1 text-[12.5px] font-semibold text-auf-akzent disabled:opacity-50">
+          {pending ? "Wird umbenannt …" : `In „${name}“ umbenennen`}
+        </button>
+      </form>
+      {state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
+    </span>
   );
 }

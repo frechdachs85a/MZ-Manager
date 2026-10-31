@@ -29,3 +29,15 @@ export async function portfolioVorschlagUebernehmen(_prev: UebernahmeState, form
   revalidatePath("/portfolio");
   return r;
 }
+
+// Reiter nur umbenennen (Name passt nicht zum Inhalt)
+export async function reiterUmbenennenAktion(_prev: UebernahmeState, formData: FormData): Promise<UebernahmeState> {
+  const reiter = String(formData.get("reiter") ?? "");
+  if (!reiter) return { meldung: "Reiter fehlt." };
+  const { reiterNameUebernehmen } = await import("@/lib/mz/abruf/liga");
+  const r = await reiterNameUebernehmen(getDb(), reiter);
+  revalidatePath("/");
+  revalidatePath("/taktik");
+  revalidatePath("/portfolio");
+  return r;
+}

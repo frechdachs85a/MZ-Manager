@@ -6,7 +6,7 @@ import { spieltagLage } from "@/lib/spieltag";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { TAKTIK_PFAD, meldungAus, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
-import { speichereTaktikXml } from "@/lib/db/taktik";
+import { ladeTaktiken, loescheTaktik, speichereTaktikXml } from "@/lib/db/taktik";
 
 // Formation "Liga" in ManagerZone hinterlegen (Auftrag Marcus, 26.10.2026): nach jeder Spieltag-Analyse die berechnete
 // Aufstellung gegen den nächsten Gegner in den Editor-Reiter mit dem Namen "Liga" schreiben. Welcher Reiter im Spiel
@@ -144,6 +144,70 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
   return x.slot;
 }
 
+// Reiter im Editor umbenennen, wie von Hand (tactics.js, renameTactic, gelesen 31.10.2026): Reiter anklicken,
+// "Umbenennen" (#rename_tactics_button), Name ins Feld #tactic_name (maxlength 6), "Speichern"
+// (#save_rename_tactics_button, POST ajax.php?p=tactics&sub=rename mit tactic_name und key). Ohne Clubmitgliedschaft
+// lässt der Editor nur Reiter A umbenennen. Danach neu laden und prüfen, dass der Reiter den neuen Namen trägt.
+async function reiterUmbenennen(s: MzSitzung, alt: string, neu: string): Promise<string> {
+  if (!neu || neu.length > 6) throw new MzFehler(`Name „${neu}“ ungültig (1 bis 6 Zeichen).`);
+  const seite = await s.holeSeite(TAKTIK_PFAD, {
+    warteAuf: 'dd[id^="n_"]',
+    aufSeite: async (page) => {
+      const slot = await reiterSuchen(page, alt);
+      if (!slot) return { fehler: `Kein Reiter „${alt}“ im Editor: nicht umbenannt.` };
+      if (alt.toLowerCase() !== neu.toLowerCase() && (await reiterSuchen(page, neu))) return { fehler: `Name „${neu}“ ist schon vergeben: nicht umbenannt.` };
+      await page.evaluate((x) => (document.querySelector(`#tacticTab_${x} a`) as HTMLElement | null)?.click(), slot);
+      await page.waitForTimeout(1500);
+      const aktiv = await page.evaluate(() => (document.querySelector("#current_tab") as HTMLInputElement | null)?.value);
+      if (aktiv !== slot) return { fehler: `Reiter ${slot} ließ sich nicht wählen (aktiv: ${aktiv ?? "?"}): nicht umbenannt.` };
+      const club = await page.evaluate(() => (window as unknown as { clubMember?: number | string }).clubMember);
+      if (Number(club) === 0 && slot !== "a") return { fehler: "Ohne Clubmitgliedschaft lässt ManagerZone nur Reiter A umbenennen." };
+      await page.evaluate(() => (document.querySelector("#rename_tactics_button") as HTMLElement | null)?.click());
+      const feld = await page.waitForSelector("#tactic_name", { timeout: 10_000 }).catch(() => null);
+      if (!feld) return { fehler: "Namensfeld erschien nicht: nicht umbenannt." };
+      await feld.fill(neu);
+      const antwort = page.waitForResponse((r) => r.url().includes("p=tactics") && r.url().includes("sub=rename"), { timeout: 30_000 });
+      await page.evaluate(() => (document.querySelector("#save_rename_tactics_button") as HTMLElement | null)?.click());
+      const r = await antwort;
+      return { slot, antwort: (await r.text()).slice(0, 300) };
+    },
+  });
+  const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
+  if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
+  if ("fehler" in x) throw new MzFehler(x.fehler);
+  const neuGeladen = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => reiterSuchen(page, neu) });
+  if (neuGeladen.extra !== x.slot) throw new MzFehler(`Umbenennen nicht bestätigt (Antwort: ${x.antwort}).`);
+  return x.slot;
+}
+
+// Archiv-Eintrag unter dem neuen Namen führen
+function archivUmbenennen(db: Database.Database, alt: string, neu: string, xml?: string) {
+  const t = ladeTaktiken(db).find((x) => x.reiter === alt);
+  const inhalt = xml ?? t?.xml;
+  if (!inhalt) return;
+  speichereTaktikXml(db, neu, inhalt, `${t?.quelle ?? "Archiv"}; umbenannt von ${alt} ${new Date().toISOString()}`);
+  if (alt !== neu) loescheTaktik(db, alt);
+}
+
+// Nur umbenennen (Sinnhaftigkeit: Name passt nicht zum Inhalt), auf Klick
+export async function reiterNameUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  const { portfolioPlan } = await import("@/lib/portfolio-plan");
+  const v = portfolioPlan(db).sinn.find((x) => x.reiter === reiter && x.name);
+  if (!v?.name) return { ok: false, meldung: `Für Reiter „${reiter}“ gibt es keinen Namensvorschlag mehr.` };
+  const log = abrufBeginnen(db, "taktik-check");
+  try {
+    const slot = await mitMzSitzung(db, (s) => reiterUmbenennen(s, reiter, v.name!), { manuell: true });
+    archivUmbenennen(db, reiter, v.name);
+    const meldung = `Reiter ${slot.toUpperCase()} heißt jetzt „${v.name}“ statt „${reiter}“ (nach Neuladen geprüft).`;
+    abrufBeenden(db, log, true, meldung);
+    return { ok: true, meldung };
+  } catch (e) {
+    const meldung = `Umbenennen ${reiter}: ${meldungAus(e)}`;
+    abrufBeenden(db, log, false, meldung);
+    return { ok: false, meldung };
+  }
+}
+
 // Eine XML auf Klick in den gleichnamigen Editor-Reiter schreiben, prüfen und danach auch im Archiv dieser Seite speichern
 async function xmlUebernehmen(db: Database.Database, reiter: string, xml: string, was: string): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "taktik-check");
@@ -175,5 +239,14 @@ export async function portfolioUebernehmen(db: Database.Database, reiter: string
   const { portfolioPlan } = await import("@/lib/portfolio-plan");
   const v = portfolioPlan(db).vorschlaege.find((x) => x.reiter === reiter);
   if (!v) return { ok: false, meldung: `Für Reiter „${reiter}“ gibt es keinen Portfolio-Vorschlag mehr.` };
-  return xmlUebernehmen(db, reiter, v.xml, `Portfolio: ${v.stil} gegen ${v.klasse}`);
+  const r = await xmlUebernehmen(db, reiter, v.xml, `Portfolio: ${v.stil} gegen ${v.klasse}`);
+  if (!r.ok || v.name === reiter) return r;
+  // Danach den Reiter nach seinem neuen Inhalt benennen
+  try {
+    await mitMzSitzung(db, (s) => reiterUmbenennen(s, reiter, v.name), { manuell: true });
+    archivUmbenennen(db, reiter, v.name);
+    return { ok: true, meldung: `${r.meldung} Neuer Name: „${v.name}“.` };
+  } catch (e) {
+    return { ok: true, meldung: `${r.meldung} Umbenennen in „${v.name}“ fehlgeschlagen (${meldungAus(e)}), bitte im Editor von Hand.` };
+  }
 }
