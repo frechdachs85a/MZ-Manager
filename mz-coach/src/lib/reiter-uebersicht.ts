@@ -37,7 +37,9 @@ export type ReiterKarte = {
 export type ReiterUebersicht = { karten: ReiterKarte[]; plan: PortfolioPlan; stand?: string; wichtig: Wichtig[] };
 
 const stilVon = (a?: ArchivEintrag) =>
-  a?.taktik ? stilSchluessel(formation(a.taktik.pos.filter((x) => x.pos === "normal").map((x) => x.start)).text, a.taktik.team.tactics, a.taktik.team.playstyle) : undefined;
+  a?.taktik
+    ? stilSchluessel(formation(a.taktik.pos.filter((x) => x.pos === "normal").map((x) => x.start)).text, a.taktik.team.tactics, a.taktik.team.playstyle)
+    : undefined;
 
 export function reiterUebersicht(db: Database.Database): ReiterUebersicht {
   const editor = ladeEditorReiter(db);
@@ -108,11 +110,22 @@ export function reiterUebersicht(db: Database.Database): ReiterUebersicht {
           const m = s.schluessel.match(/^\S+(?: oder \S+)? (\S+)\/(\S+)$/);
           try {
             const ohne = kader.filter((x) => !wichtig.slice(0, a.taktik!.subs.length).some((w) => w.pid === x.pid));
-            const e = erzeugeTaktik({ feld: s.beispiel.feld, torwart: s.beispiel.torwart, tactics: m?.[1], playstyle: m?.[2], aggression: s.haerte[0]?.[0], kader: ohne, spieltag });
+            const e = erzeugeTaktik({
+              feld: s.beispiel.feld,
+              torwart: s.beispiel.torwart,
+              tactics: m?.[1],
+              playstyle: m?.[2],
+              aggression: s.haerte[0]?.[0],
+              kader: ohne,
+              spieltag,
+            });
             stilVorschlag = {
               stil: s.schluessel,
               xml: bankMitWichtigen(e.xml, wichtig.slice(0, a.taktik!.subs.length)),
-              name: nameFuer(s.schluessel, namen.filter((n) => n !== r.name)),
+              name: nameFuer(
+                s.schluessel,
+                namen.filter((n) => n !== r.name),
+              ),
               grund: `bei den Top 10 bewährt (${Math.round(s.quote * 100)} % in ${s.spiele} Spielen), in keinem offiziellen Reiter`,
             };
           } catch {

@@ -95,14 +95,20 @@ export default async function Taktik() {
           </div>
         </Section>
 
-        <Section title="Deckst du alles ab?" footer="Bewährt = bei den Top 10 mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Nur offizielle Reiter zählen.">
+        <Section
+          title="Deckst du alles ab?"
+          footer="Bewährt = bei den Top 10 mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Nur offizielle Reiter zählen."
+        >
           <Card className="px-4 py-3 text-[13px]">
             <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
               {plan.abdeckung.map((a) => (
                 <li key={a.klasse} className="flex gap-2">
-                  <span className={`font-bold ${a.reiter.length ? "text-green" : a.bester ? "text-red" : "text-label-3"}`}>{a.reiter.length ? "✓" : a.bester ? "✗" : "–"}</span>
+                  <span className={`font-bold ${a.reiter.length ? "text-green" : a.bester ? "text-red" : "text-label-3"}`}>
+                    {a.reiter.length ? "✓" : a.bester ? "✗" : "–"}
+                  </span>
                   <span>
-                    {a.klasse}: {a.reiter.length ? a.reiter.join(", ") : a.bester ? `Lücke (bewährt: ${stilDe(a.bester.schluessel)})` : "kein bewährter Stil bekannt"}
+                    {a.klasse}:{" "}
+                    {a.reiter.length ? a.reiter.join(", ") : a.bester ? `Lücke (bewährt: ${stilDe(a.bester.schluessel)})` : "kein bewährter Stil bekannt"}
                     {a.dein && (
                       <span className="text-label-3">
                         {" "}
@@ -127,7 +133,10 @@ export default async function Taktik() {
         </Section>
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-x-10 lg:items-start">
-          <Section title="Taktik von Hand ins Archiv" footer="Nur nötig für Reiter, die der Kaderabruf nicht liest. Sonst kommt jeder Reiter automatisch aus dem Editor.">
+          <Section
+            title="Taktik von Hand ins Archiv"
+            footer="Nur nötig für Reiter, die der Kaderabruf nicht liest. Sonst kommt jeder Reiter automatisch aus dem Editor."
+          >
             <ArchivForm reiter={TAKTIKEN.map((t) => t.name)} />
           </Section>
           <Section
@@ -147,8 +156,15 @@ function Inhalt({ k, wichtig }: { k: ReiterKarte; wichtig: string[] }) {
   const punkte: { text: string; ton?: "rot" | "grau" }[] = [];
   if (k.art === "liga") punkte.push({ text: "Schreibt die Seite nach jeder Spieltag-Analyse selbst (Aufstellung gegen den nächsten Gegner).", ton: "grau" });
   if (k.art === "jugend")
-    punkte.push({ text: `Eine Aufstellung für alles: nur Spieler im Alter, Nr. ${PRIO_NR.von} bis ${PRIO_NR.bis} zuerst aufs Feld (Spielpraxis).`, ton: "grau" });
-  if (k.art === "freund") punkte.push({ text: `Wichtigste Spieler auf die Bank (Form und Erfahrung ohne Verletzungsgefahr): ${wichtig.slice(0, 5).join(", ") || "Startelf unbekannt"}.`, ton: "grau" });
+    punkte.push({
+      text: `Eine Aufstellung für alles: nur Spieler im Alter, Nr. ${PRIO_NR.von} bis ${PRIO_NR.bis} zuerst aufs Feld (Spielpraxis).`,
+      ton: "grau",
+    });
+  if (k.art === "freund")
+    punkte.push({
+      text: `Wichtigste Spieler auf die Bank (Form und Erfahrung ohne Verletzungsgefahr): ${wichtig.slice(0, 5).join(", ") || "Startelf unbekannt"}.`,
+      ton: "grau",
+    });
   if (k.doppelt && k.doppelt.art !== "gespiegelt") punkte.push({ text: `Kann weg: ${k.doppelt.art} wie ${k.doppelt.wie}.`, ton: "rot" });
   if (k.doppelt?.art === "gespiegelt") punkte.push({ text: `Seitenvariante zu ${k.doppelt.wie} (gewollt).`, ton: "grau" });
   for (const p of k.sinn?.probleme ?? []) punkte.push({ text: p, ton: "rot" });
@@ -169,13 +185,7 @@ function Inhalt({ k, wichtig }: { k: ReiterKarte; wichtig: string[] }) {
       </ul>
       {k.check && !k.check.ok && (
         <div className="-mx-4 border-t border-separator">
-          <TaktikCheckKarte
-            reiter={k.name}
-            titel="Besetzung und Wechsel"
-            punkte={k.checkPunkte}
-            gewinn={k.check.gewinn}
-            xml={k.check.xml}
-          />
+          <TaktikCheckKarte reiter={k.name} titel="Besetzung und Wechsel" punkte={k.checkPunkte} gewinn={k.check.gewinn} xml={k.check.xml} />
         </div>
       )}
       {k.portfolio && (
@@ -188,7 +198,11 @@ function Inhalt({ k, wichtig }: { k: ReiterKarte; wichtig: string[] }) {
             punkte={
               k.portfolio.art === "seite"
                 ? [vorschlagText(k.portfolio)]
-                : [vorschlagText(k.portfolio), `Topteams: ${k.portfolio.teams.slice(0, 3).join(", ")}`, `Mit deiner besten Elf: MZ-Wert ${komma(k.portfolio.summe)}`]
+                : [
+                    vorschlagText(k.portfolio),
+                    `Topteams: ${k.portfolio.teams.slice(0, 3).join(", ")}`,
+                    `Mit deiner besten Elf: MZ-Wert ${komma(k.portfolio.summe)}`,
+                  ]
             }
             gewinn={0}
             xml={k.portfolio.xml}

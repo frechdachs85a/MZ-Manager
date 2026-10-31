@@ -59,7 +59,10 @@ export function pruefeFreund(opt: {
   if (aufFeld.length) probleme.push(`Wichtige Spieler auf dem Feld (Verletzungsgefahr): ${aufFeld.map((w) => kurz(w.name)).join(", ")}`);
   if (nichtBank.length) hinweise.push(`Nicht auf der Bank (bekommen keine Erfahrung/Form): ${nichtBank.map((w) => kurz(w.name)).join(", ")}`);
   const rein = t.regeln.filter((r) => /^\d+$/.test(r.in_player_id ?? "") && wichtig.some((w) => String(w.pid) === r.in_player_id));
-  if (rein.length) probleme.push(`Wechselregel bringt wichtige Spieler aufs Feld: ${rein.map((r) => `${r.time}. ${kurz(wichtig.find((w) => String(w.pid) === r.in_player_id)!.name)}`).join(", ")}`);
+  if (rein.length)
+    probleme.push(
+      `Wechselregel bringt wichtige Spieler aufs Feld: ${rein.map((r) => `${r.time}. ${kurz(wichtig.find((w) => String(w.pid) === r.in_player_id)!.name)}`).join(", ")}`,
+    );
   const gleich = opt.offizielleStile.filter((o) => o.stil === opt.stil);
   if (gleich.length) probleme.push(`Gleicher Stil wie ${gleich.map((g) => g.reiter).join(", ")} (${opt.stil}): freund soll eine komplett andere Taktik sein`);
 
