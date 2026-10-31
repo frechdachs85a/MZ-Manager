@@ -13,9 +13,26 @@ export type GebotAuftrag = {
   status: GebotStatus;
   erstellt: string;
   geaendert: string;
+  // Endstand laut Gebotsübersicht von ManagerZone (Migration 25)
+  ende?: { preis?: number; tid?: number; team?: string; arbeitsbewilligung?: number; stand: string };
 };
 
-type Zeile = { pid: number; name: string | null; maximum: number; bieten_bis: string | null; auktion_ende: string | null; spieler_json: string | null; status: GebotStatus; erstellt: string; geaendert: string };
+type Zeile = {
+  pid: number;
+  name: string | null;
+  maximum: number;
+  bieten_bis: string | null;
+  auktion_ende: string | null;
+  spieler_json: string | null;
+  status: GebotStatus;
+  erstellt: string;
+  geaendert: string;
+  end_preis?: number | null;
+  end_tid?: number | null;
+  end_team?: string | null;
+  arbeitsbewilligung?: number | null;
+  end_stand?: string | null;
+};
 const aus = (z: Zeile): GebotAuftrag => ({
   pid: z.pid,
   name: z.name ?? undefined,
@@ -26,7 +43,30 @@ const aus = (z: Zeile): GebotAuftrag => ({
   status: z.status,
   erstellt: z.erstellt,
   geaendert: z.geaendert,
+  ende: z.end_stand
+    ? {
+        preis: z.end_preis ?? undefined,
+        tid: z.end_tid ?? undefined,
+        team: z.end_team ?? undefined,
+        arbeitsbewilligung: z.arbeitsbewilligung ?? undefined,
+        stand: z.end_stand,
+      }
+    : undefined,
 });
+
+// Endstand aus der Gebotsübersicht bei den passenden Aufträgen eintragen (nur bei beendeten Auktionen)
+export function speichereEndstand(
+  db: Database.Database,
+  liste: { pid: number; letztesGebot?: number; tid?: number; team?: string; arbeitsbewilligung?: number }[],
+  zeit = new Date().toISOString(),
+): number {
+  const u = db.prepare(
+    "UPDATE gebot_auftrag SET end_preis = ?, end_tid = ?, end_team = ?, arbeitsbewilligung = ?, end_stand = ? WHERE pid = ? AND status != 'aktiv'",
+  );
+  let n = 0;
+  for (const g of liste) n += u.run(g.letztesGebot ?? null, g.tid ?? null, g.team ?? null, g.arbeitsbewilligung ?? null, zeit, g.pid).changes;
+  return n;
+}
 
 // Auftrag anlegen oder ersetzen
 export function speichereAuftrag(db: Database.Database, a: Omit<GebotAuftrag, "erstellt" | "geaendert">, zeit = new Date().toISOString()) {

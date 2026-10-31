@@ -6,6 +6,8 @@ import { berlinZuUtc } from "@/lib/mz/parser/kader";
 import { MARKT_PFAD, suchParameter } from "./markt";
 import { mitFiltern } from "./markt-ziel";
 import { meldungAus } from "./kader";
+import { eigeneGebote } from "@/lib/mz/parser/eigene-gebote";
+import { speichereEndstand } from "@/lib/db/gebot";
 import { mitMzSitzung } from "./sitzung";
 import { verkaufLaden } from "./verkauf";
 import type { Verkauf } from "@/lib/mz/parser/verkauf";
@@ -119,7 +121,9 @@ export async function gebotsuebersichtLesen(db: Database.Database): Promise<{ ok
         // (gesehen 31.10.2026 im Seiten-HTML; mz.getAjaxLink = "ajax.php?p=" + … + "&sport=" + ajaxSport)
         const g = await s.holeText(GEBOTE_AJAX);
         speichereRohseite(db, { art: "gebote-eigene", url: g.url, status: g.status, htmlRoh: g.text, htmlDom: null });
-        return `Gebotsübersicht gelesen (Seite ${(seite.htmlDom ?? seite.htmlRoh ?? "").length} Zeichen, Gebote ${g.text.length} Zeichen), nichts geändert.`;
+        const liste = eigeneGebote(g.text);
+        const n = speichereEndstand(db, liste);
+        return `${liste.length} Gebot(e) in der Übersicht, Endstand bei ${n} beendeten Auktion(en) eingetragen. Gebotsübersicht gelesen (Seite ${(seite.htmlDom ?? seite.htmlRoh ?? "").length} Zeichen, Gebote ${g.text.length} Zeichen), nichts geändert.`;
       },
       { manuell: true },
     );

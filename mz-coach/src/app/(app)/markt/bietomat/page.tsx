@@ -107,7 +107,7 @@ export default async function BietomatSeite() {
         <div id="beendet" className="scroll-mt-20">
           <Section
             title={`Beendete Auktionen${beendet.length ? ` · ${beendet.length}` : ""}`}
-            footer="Was der Bietomat am Ende gesehen hat: wer zuletzt Höchstbietender war, deine Gebote und dein Maximum. Ob der Kauf in ManagerZone abgeschlossen ist, prüft er nicht."
+            footer="Endpreis, Mannschaft und Arbeitsbewilligung aus der Gebotsübersicht von ManagerZone (direkt nach Auktionsende gelesen); fehlt sie, das, was der Bietomat am Ende gesehen hat."
           >
             {beendet.length ? (
               <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -117,12 +117,30 @@ export default async function BietomatSeite() {
                     e.art === "bekommen"
                       ? { cls: "bg-green/12 text-green", text: `✅ Bekommen${e.preis !== undefined ? ` für ${euro(e.preis)}` : ""}` }
                       : e.art === "nicht-bekommen"
-                        ? { cls: "bg-red/12 text-red", text: "❌ Nicht bekommen" }
+                        ? { cls: "bg-red/12 text-red", text: `❌ Nicht bekommen${e.kaeufer ? ` (an ${e.kaeufer}${e.preis !== undefined ? ` für ${euro(e.preis)}` : ""})` : ""}` }
                         : { cls: "bg-orange/12 text-orange", text: `⚠️ Beendet (${a.status})` };
                   const info = (
                     <div className="space-y-1 text-[13px]">
                       <div className={`rounded-[10px] px-3 py-2 text-[15px] font-bold ${kopf.cls}`}>{kopf.text}</div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-label-2">
+                        {e.preis !== undefined && (
+                          <>
+                            <span>Endpreis</span>
+                            <span className="text-right font-semibold tabular-nums text-label">{euro(e.preis)}</span>
+                          </>
+                        )}
+                        {e.kaeufer && (
+                          <>
+                            <span>Geht an</span>
+                            <span className="text-right text-label">{e.kaeufer}</span>
+                          </>
+                        )}
+                        {e.arbeitsbewilligung !== undefined && (
+                          <>
+                            <span>Arbeitsbewilligung</span>
+                            <span className="text-right tabular-nums text-label">{euro(e.arbeitsbewilligung)}</span>
+                          </>
+                        )}
                         <span>Auktionsende</span>
                         <span className="text-right tabular-nums text-label">{a.auktionEnde ? datumZeit(a.auktionEnde) : "unbekannt"}</span>
                         <span>Deine Gebote</span>
@@ -132,7 +150,10 @@ export default async function BietomatSeite() {
                         <span>Dein Maximum</span>
                         <span className="text-right tabular-nums text-label">{euro(e.maximum)}</span>
                       </div>
-                      <p className="text-[12px] text-label-3">{e.grund}</p>
+                      <p className="text-[12px] text-label-3">
+                        {e.quelle === "gebotsuebersicht" && a.ende ? `Endstand laut Gebotsübersicht von ManagerZone, gelesen ${datumZeit(a.ende.stand)}. ` : ""}
+                        {e.grund}
+                      </p>
                     </div>
                   );
                   return a.spieler ? (

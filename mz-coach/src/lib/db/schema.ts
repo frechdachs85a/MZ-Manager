@@ -342,6 +342,14 @@ const MIGRATIONEN: string[] = [
     erstellt TEXT NOT NULL
   );
   `,
+  // 25: Endstand einer Auktion aus der Gebotsübersicht von ManagerZone (Marcus, 31.10.2026: für wie viel und an wen)
+  `
+  ALTER TABLE gebot_auftrag ADD COLUMN end_preis INTEGER;
+  ALTER TABLE gebot_auftrag ADD COLUMN end_tid INTEGER;
+  ALTER TABLE gebot_auftrag ADD COLUMN end_team TEXT;
+  ALTER TABLE gebot_auftrag ADD COLUMN arbeitsbewilligung INTEGER;
+  ALTER TABLE gebot_auftrag ADD COLUMN end_stand TEXT;
+  `,
 ];
 
 // Schema auf den neuesten Stand bringen (Migrationen der Reihe nach)
