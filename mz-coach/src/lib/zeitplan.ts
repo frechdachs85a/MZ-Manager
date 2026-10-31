@@ -4,7 +4,7 @@ import { letzterLauf } from "@/lib/db/spieltag";
 import { aufraeumen, sichereDatenbank } from "@/lib/archiv";
 import { marktAbrufen, marktFaellig } from "@/lib/mz/abruf/markt";
 import { ligaHinterlegen, ligaKontrolle } from "@/lib/mz/abruf/liga";
-import { hatVorschlag, reiterUebersicht } from "@/lib/reiter-uebersicht";
+import { taktikenNachNeuenDaten, taktikenPruefen } from "@/lib/nach-neuen-daten";
 import { kaderAbrufen, kaderFaellig } from "@/lib/mz/abruf/kader";
 import { spieltagAbrufen, spieltagFaellig } from "@/lib/mz/abruf/spieltag";
 import { topAbrufen, topFaellig } from "@/lib/mz/abruf/top";
@@ -20,23 +20,6 @@ import { bietomatTakt } from "@/lib/mz/abruf/bietomat-lauf";
 // 5 Stunden nach jedem Ligaspiel: Spieltag (Spielbericht, nächster Gegner, Taktikvorschlag), sonst täglich der Spielplan
 // danach: Aufräumen täglich, Sicherung der Datenbank wöchentlich
 const TAKT_MS = 15 * 60 * 1000;
-
-// Tägliche Prüfung aller Reiter (Besetzung, Wechsel, doppelt, Name, freund, U18) mit dem neuen Kaderstand; übernommen wird
-// nichts, die Vorschläge stehen auf der Taktikseite
-function taktikenPruefen(db: Database.Database): string {
-  const log = abrufBeginnen(db, "taktik-pruefung");
-  try {
-    const karten = reiterUebersicht(db).karten.filter((k) => k.art !== "leer" && k.art !== "liga");
-    const mit = karten.filter(hatVorschlag);
-    const meldung = `${karten.length} Reiter geprüft: ${mit.length ? `Vorschläge für ${mit.map((k) => k.name).join(", ")}` : "keine Änderung nötig"}.`;
-    abrufBeenden(db, log, true, meldung);
-    return meldung;
-  } catch (e) {
-    const meldung = `Taktikprüfung: ${e instanceof Error ? e.message : String(e)}`;
-    abrufBeenden(db, log, false, meldung);
-    return meldung;
-  }
-}
 
 // Formation Liga fällig? Nur vor dem Anstoß des nächsten Ligaspiels. nachKader: direkt nach einem Kaderabruf immer;
 // sonst nur, wenn der letzte Versuch fehlschlug und mindestens 60 Minuten her ist.
@@ -100,7 +83,7 @@ async function takt() {
         console.log(`[zeitplan] ${l.meldung.slice(0, 300)}`);
       }
       // Und alle anderen Reiter prüfen (Marcus, 31.10.2026): Ergebnis ins Protokoll, Vorschläge auf der Taktikseite
-      if (r.ok) console.log(`[zeitplan] ${taktikenPruefen(db)}`);
+      if (r.ok) console.log(`[zeitplan] ${taktikenPruefen(db, "Kaderabruf")}`);
     }
     // Liga darf nie leer oder veraltet bleiben: nach einem Fehler stündlich erneut versuchen
     if (ligaFaellig(db, false)) {
@@ -115,6 +98,8 @@ async function takt() {
       if (r.ok) {
         const l = await ligaHinterlegen(db);
         console.log(`[zeitplan] ${l.meldung.slice(0, 300)}`);
+        // Mit den neuen Gegnerdaten auch alle anderen Reiter prüfen (Marcus, 31.10.2026)
+        console.log(`[zeitplan] ${taktikenPruefen(db, "Spieltag-Analyse")}`);
       }
     }
     if (topFaellig(db)) {

@@ -53,10 +53,10 @@ export async function scoutspieleAuswerten(tid: number): Promise<HolState> {
   const r = await scoutspieleAbrufen(db, { manuell: true, gegnerTid: tid });
   let meldung = r.meldung;
   const { letzterLauf } = await import("@/lib/db/spieltag");
+  // Neue Infos: Taktiken kontrollieren (Marcus, 31.10.2026), Liga nur gegen den nächsten Gegner
   if (r.ok && letzterLauf(db, true)?.gegnerTid === tid) {
-    const { ligaKontrolle } = await import("@/lib/mz/abruf/liga");
-    const l = await ligaKontrolle(db);
-    meldung += ` ${l.meldung}`;
+    const { taktikenNachNeuenDaten } = await import("@/lib/nach-neuen-daten");
+    meldung += ` ${await taktikenNachNeuenDaten(db, "Scoutspielen")}`;
   }
   revalidatePath(`/gegner/${tid}`);
   revalidatePath("/taktik");

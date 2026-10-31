@@ -352,3 +352,6 @@ Transfermarkt (31.10.2026)
 Arbeitsweise
 - Alles, was besprochen wird, in dieser Datei festhalten und vor neuen Aufgaben hier nachsehen, damit nichts doppelt besprochen werden muss.
 - Antworten kurz, in Stichpunkten, nur belegte Inhalte.
+- Scoutspiele nach Tag (Marcus, 31.10.2026): Ausgewertet werden nur die Scoutspiele des neuesten Scout-Tags gegen den Gegner („am heutigen Tag“); ältere werden angezeigt, aber nicht gezählt.
+- Nach neuen Infos Taktiken kontrollieren (Marcus, 31.10.2026): Nach Kaderabruf, Spieltag-Analyse, Scoutspielen und Ligatabelle die empfohlene Taktik neu berechnen, die Formation Liga prüfen (geschrieben nur bei Änderung, nur vor dem Anstoß) und alle übrigen Reiter prüfen (nur Vorschläge).
+- Weltrang eines Teams = „Rang“ auf der Teamseite ?p=team&tid= (Marcus, 31.10.2026). Ligatabelle zeigt dazu den Startelf-Wert (Marktwerte der Elf aus dem letzten Ligaspiel des Teams) und ist nach Punkten, Startelf-Wert und Weltrang sortierbar.

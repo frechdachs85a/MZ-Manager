@@ -84,7 +84,7 @@ export default async function GegnerSeite(props: PageProps<"/gegner/[tid]">) {
             >
               {scout && (
                 <Card className="mb-3 p-4 text-[14px]">
-                  <div className="text-[15px] font-semibold">{scout.spiele.length} Scoutspiele ausgewertet</div>
+                  <div className="text-[15px] font-semibold">{scout.spiele.length} Scoutspiele vom {scout.tag.split("-").reverse().join(".")} ausgewertet{scout.aeltere > 0 ? ` (${scout.aeltere} ältere nicht gezählt)` : ""}</div>
                   <table className="mt-2 w-full text-[13.5px]">
                     <thead>
                       <tr className="text-left text-[11px] uppercase tracking-wider text-label-3">

@@ -23,6 +23,15 @@ export async function POST(request: Request) {
   const db = getDb();
   const bremse = fernAbrufFrei(db, art);
   if (!bremse.frei) return Response.json({ gestartet: false, grund: `Bremse: nächster Abruf ab ${bremse.ab}` }, { status: 429 });
-  void ABRUFE[art as keyof typeof ABRUFE](db, { manuell: true }).catch(() => {});
+  // Nach neuen Infos die Taktiken kontrollieren (Marcus, 31.10.2026); nicht nach dem Markt, Liga oder Gebotsformular
+  const danach = ["kader", "spieltag", "scoutspiele", "tabelle"].includes(art);
+  void ABRUFE[art as keyof typeof ABRUFE](db, { manuell: true })
+    .then(async (r) => {
+      if (r.ok && danach) {
+        const { taktikenNachNeuenDaten } = await import("@/lib/nach-neuen-daten");
+        await taktikenNachNeuenDaten(db, `Fernabruf ${art}`);
+      }
+    })
+    .catch(() => {});
   return Response.json({ gestartet: true, art });
 }
