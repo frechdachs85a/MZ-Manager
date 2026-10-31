@@ -420,7 +420,7 @@ export async function taktikUebernehmen(db: Database.Database, reiter: string): 
   const { taktikCheck } = await import("@/lib/taktik-check");
   const c = taktikCheck(db).find((x) => x.reiter === reiter);
   if (!c) return { ok: false, meldung: `Reiter „${reiter}“ nicht im Archiv.` };
-  if (c.ok) return { ok: false, meldung: `Reiter „${reiter}“ braucht keine Änderung.` };
+  if (!c.aenderbar) return { ok: false, meldung: `Reiter „${reiter}“ braucht keine Änderung.` };
   return xmlUebernehmen(db, reiter, c.xml, "Vorschlag des Taktik-Checks");
 }
 

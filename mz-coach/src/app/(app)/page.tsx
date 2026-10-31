@@ -8,7 +8,7 @@ import { Card, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { spieltagLage } from "@/lib/spieltag";
 import { WertDiff } from "@/components/elf-wert";
-import { reiterUebersicht } from "@/lib/reiter-uebersicht";
+import { hatVorschlag, reiterUebersicht } from "@/lib/reiter-uebersicht";
 import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { spieltagCheckliste } from "@/lib/checkliste";
@@ -31,7 +31,7 @@ export default async function Uebersicht() {
   const { bilanz, warnungen: verlust } = skillBilanz(db, 14);
   // Reiter, bei denen die Taktikseite eine Änderung vorschlägt (Besetzung/Wechsel, überschreiben, Name, freund)
   const taktikReiter = reiterUebersicht(db)
-    .karten.filter((k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag)
+    .karten.filter(hatVorschlag)
     .map((k) => k.name);
   const taktikVorschlaege = taktikReiter.length;
   const kader = ladeKader(db);
@@ -140,8 +140,8 @@ export default async function Uebersicht() {
           titel="Taktik-Vorschläge"
           ton={taktikVorschlaege ? "gold" : "tint"}
           wert={taktikVorschlaege}
-          unten={taktikVorschlaege ? `Änderungsvorschlag für ${taktikReiter.join(", ")}` : "Alle Reiter passen, keine Vorschläge"}
-          href="/taktik"
+          unten={taktikVorschlaege ? `Zu übernehmen: ${taktikReiter.join(", ")}` : "Alles übernommen, keine Vorschläge"}
+          href={taktikVorschlaege ? "/taktik?vorschlaege=1" : "/taktik"}
         />
       </div>
 

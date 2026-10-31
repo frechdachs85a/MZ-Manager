@@ -148,3 +148,7 @@ export const nameErlaubt = (neu: string, alt: string, namen: string[]) => {
   if (namen.some((x) => x !== alt && x.toLowerCase() === n.toLowerCase())) return `„${n}“ gibt es schon.`;
   return null;
 };
+
+// Hat der Reiter einen Vorschlag, den man übernehmen kann? (Marcus, 31.10.2026: die Zahl auf der Zentrale soll 0 sein,
+// wenn alles übernommen ist; reine Hinweise wie "kein Wechsel mehr frei" zählen nicht)
+export const hatVorschlag = (k: ReiterKarte) => !!(k.check?.aenderbar || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag);

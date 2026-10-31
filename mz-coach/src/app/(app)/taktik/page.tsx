@@ -18,7 +18,7 @@ import { letzterAbruf } from "@/lib/db/abruf";
 import { datumZeit } from "@/lib/format";
 import { stilDe } from "@/lib/mz/analyse/gegner";
 import { PRIO_NR } from "@/lib/taktik-check";
-import { reiterUebersicht, type ReiterKarte } from "@/lib/reiter-uebersicht";
+import { hatVorschlag, reiterUebersicht, type ReiterKarte } from "@/lib/reiter-uebersicht";
 import { vorschlagText } from "@/lib/portfolio-plan";
 import { TAKTIKEN } from "@/lib/wissen/startbasis";
 import { ArchivForm } from "./archiv-form";
@@ -34,7 +34,7 @@ const ART: Record<ReiterKarte["art"], { text: string; ton: "neutral" | "green" |
 
 const komma = (n: number) => n.toFixed(2).replace(".", ",");
 
-export default async function Taktik() {
+export default async function Taktik(props: PageProps<"/taktik">) {
   await connection();
   const db = getDb();
   const { karten, plan, stand, wichtig } = reiterUebersicht(db);
@@ -49,11 +49,20 @@ export default async function Taktik() {
   const name = (pid: number) => kader.get(pid)?.name.split(" ").at(-1) ?? String(pid);
   // Groß: mit Marktwert-Heatmap
   const feldMitWert = (k: ReiterKarte): FeldSpieler[] =>
-    (k.archiv?.taktik?.pos ?? []).map((p) => ({ x: p.start.x, y: p.start.y, label: name(p.pid), wert: kader.get(p.pid)?.marktwert, torwart: p.pos === "goalie" }));
+    (k.archiv?.taktik?.pos ?? []).map((p) => ({
+      x: p.start.x,
+      y: p.start.y,
+      label: name(p.pid),
+      wert: kader.get(p.pid)?.marktwert,
+      torwart: p.pos === "goalie",
+    }));
   const feld = (k: ReiterKarte): FeldSpieler[] =>
     (k.archiv?.taktik?.pos ?? []).map((p) => ({ x: p.start.x, y: p.start.y, label: name(p.pid), torwart: p.pos === "goalie" }));
   const genutzt = karten.filter((k) => k.art !== "leer");
-  const vorschlaege = karten.filter((k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag).length;
+  // ?vorschlaege=1 (Kachel auf der Zentrale): nur Reiter mit einem Vorschlag, den man übernehmen kann
+  const nurVorschlaege = (await props.searchParams).vorschlaege === "1";
+  const sichtbar = nurVorschlaege ? genutzt.filter(hatVorschlag) : genutzt;
+  const vorschlaege = karten.filter(hatVorschlag).length;
 
   return (
     <>
@@ -72,12 +81,27 @@ export default async function Taktik() {
             {letzte!.ok ? "✓" : "✗"} {letzte!.aufgabe}: {letzte!.text} ({datumZeit(letzte!.beginn)})
           </p>
         )}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[13px]">
+          <Link
+            href="/taktik"
+            className={`rounded-full border px-2.5 py-0.5 ${!nurVorschlaege ? "border-tint bg-tint/10 text-tint" : "border-separator text-label-2 hover:text-label"}`}
+          >
+            Alle Reiter {genutzt.length}
+          </Link>
+          <Link
+            href={nurVorschlaege ? "/taktik" : "/taktik?vorschlaege=1"}
+            className={`rounded-full border px-2.5 py-0.5 ${nurVorschlaege ? "border-tint bg-tint/10 text-tint" : "border-separator text-label-2 hover:text-label"}`}
+          >
+            Nur mit Vorschlägen {vorschlaege}
+          </Link>
+        </div>
+        {nurVorschlaege && sichtbar.length === 0 && <p className="mb-4 text-[14px] text-green">✓ Alle Vorschläge sind übernommen.</p>}
         <Section
           title="Deine Reiter"
           footer="Stand: wie beim letzten Kaderabruf im Editor (täglich, nur gelesen). Vorschläge übernimmt die Seite erst auf Klick, mit Rückfrage, und prüft danach durch Neuladen. Namen höchstens 6 Zeichen (Grenze des Editors)."
         >
           <div className="grid gap-4 lg:grid-cols-2">
-            {karten.map((k) => (
+            {sichtbar.map((k) => (
               <Card key={k.slot ?? k.name} className="flex flex-col">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-separator px-4 py-3">
                   <span className="flex items-center gap-2">
@@ -101,7 +125,11 @@ export default async function Taktik() {
                 ) : (
                   <div className="grid gap-3 px-4 py-3 sm:grid-cols-[150px_1fr]">
                     {k.art === "liga" && lage.liga ? (
-                      <ZoomFeld titel={`${k.name}: Formation Liga`} klein={<Spielfeld spieler={lage.liga.feld} />} gross={<Spielfeld spieler={lage.liga.feld} heatmap />} />
+                      <ZoomFeld
+                        titel={`${k.name}: Formation Liga`}
+                        klein={<Spielfeld spieler={lage.liga.feld} />}
+                        gross={<Spielfeld spieler={lage.liga.feld} heatmap />}
+                      />
                     ) : k.archiv?.taktik ? (
                       <ZoomFeld
                         titel={`${k.name}${k.stil ? ` · ${stilDe(k.stil)}` : ""}`}
@@ -112,7 +140,11 @@ export default async function Taktik() {
                       <div />
                     )}
                     <div className="space-y-2 text-[13px]">
-                      {k.art === "liga" ? <LigaInhalt lage={lage} kontrolle={kontrolle} /> : <Inhalt k={k} wichtig={wichtig.map((w) => w.name.split(" ").at(-1)!)} />}
+                      {k.art === "liga" ? (
+                        <LigaInhalt lage={lage} kontrolle={kontrolle} />
+                      ) : (
+                        <Inhalt k={k} wichtig={wichtig.map((w) => w.name.split(" ").at(-1)!)} />
+                      )}
                     </div>
                   </div>
                 )}
@@ -241,7 +273,8 @@ function LigaInhalt({ lage, kontrolle }: { lage: ReturnType<typeof spieltagLage>
         <div className="text-red">Noch keine Formation Liga berechnet (kein Gegner oder zu wenige aufstellbare Spieler).</div>
       )}
       <div className="text-label-3">
-        Neu berechnet nach jeder Spieltag-Analyse und bei jedem täglichen Kaderabruf bis zum Anstoß geprüft; in ManagerZone geschrieben nur, wenn sich etwas ändert.
+        Neu berechnet nach jeder Spieltag-Analyse und bei jedem täglichen Kaderabruf bis zum Anstoß geprüft; in ManagerZone geschrieben nur, wenn sich etwas
+        ändert.
       </div>
     </>
   );
@@ -268,7 +301,9 @@ function Inhalt({ k, wichtig }: { k: ReiterKarte; wichtig: string[] }) {
   for (const p of k.freund?.probleme ?? []) punkte.push({ text: p, ton: "rot" });
   for (const p of k.freund?.hinweise ?? []) punkte.push({ text: p });
   if (k.check?.fehler) punkte.push({ text: `Check nicht möglich: ${k.check.fehler}`, ton: "grau" });
-  const ok = !punkte.some((p) => p.ton !== "grau") && (!k.check || k.check.ok) && !k.portfolio;
+  // Hinweise ohne Änderung (z. B. "kein Wechsel mehr frei"): nur Info, nichts zu übernehmen
+  if (k.check && !k.check.aenderbar) for (const w of k.check.wechselregeln) punkte.push({ text: w });
+  const ok = !punkte.some((p) => p.ton !== "grau") && !hatVorschlag(k);
   return (
     <>
       <ul className="space-y-1">
@@ -279,7 +314,7 @@ function Inhalt({ k, wichtig }: { k: ReiterKarte; wichtig: string[] }) {
         ))}
         {ok && <li className="text-green">✓ Besetzung, Wechsel und Name passen.</li>}
       </ul>
-      {k.check && !k.check.ok && (
+      {k.check?.aenderbar && (
         <div className="-mx-4 border-t border-separator">
           <TaktikCheckKarte reiter={k.name} titel="Besetzung und Wechsel" punkte={k.checkPunkte} gewinn={k.check.gewinn} xml={k.check.xml} />
         </div>
