@@ -56,9 +56,9 @@ export function VorschlagKarte({ b, verkauf, imBietomat, rang }: { b: Bewertung;
       </header>
 
       <div className="space-y-1.5 px-4 pt-1">
-        <Balken label={b.ziel.spieler.name.split(" ").at(-1)!} wert={b.ziel.wert} ton="alt" />
-        <Balken label={k.name.split(" ").at(-1)!} wert={b.neu} ton="neu" />
-        {p.plusEins !== undefined && p.plusEins > b.neu && <Balken label="Potenzial" wert={p.plusEins} ton="pot" />}
+        <Balken label={`Jetzt: ${b.ziel.spieler.name.split(" ").at(-1)}`} wert={b.ziel.wert} ton="alt" />
+        <Balken label={`Neu: ${k.name.split(" ").at(-1)}`} wert={b.neu} ton="neu" />
+        {p.plusEins !== undefined && p.plusEins > b.neu && <Balken label="Neu mit Training" wert={p.plusEins} ton="pot" />}
         <div className="text-[12px] text-label-2">
           {p.trainierbar.length ? (
             <>Potenzial: noch trainierbar in dieser Rolle: {p.trainierbar.join(", ")}</>
