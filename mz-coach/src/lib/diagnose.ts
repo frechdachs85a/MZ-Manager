@@ -51,6 +51,7 @@ export const ARTEN = [
   "team-seite",
   "scoutspiele-liste",
   "gebotsuebersicht",
+  "gebote-eigene",
 ];
 
 // Diagnose für den Fernzugriff (ohne Zugangsdaten)

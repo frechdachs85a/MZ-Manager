@@ -106,6 +106,7 @@ export async function gebotsformularLesen(db: Database.Database): Promise<{ ok: 
 // nach der Auktion, für wie viel der Spieler rausging und an welche Mannschaft). Nur lesen und als Rohseite sichern,
 // damit der Aufbau geprüft werden kann, bevor ein Parser entsteht.
 export const GEBOTSUEBERSICHT_PFAD = "/?p=transfer&sub=yourplayers";
+export const GEBOTE_AJAX = "/ajax.php?p=transfer&sub=your-bids&sport=soccer";
 export async function gebotsuebersichtLesen(db: Database.Database): Promise<{ ok: boolean; meldung: string }> {
   const log = abrufBeginnen(db, "gebotsuebersicht");
   try {
@@ -114,7 +115,11 @@ export async function gebotsuebersichtLesen(db: Database.Database): Promise<{ ok
       async (s) => {
         const seite = await s.holeSeite(GEBOTSUEBERSICHT_PFAD);
         speichereRohseite(db, { art: "gebotsuebersicht", url: seite.url, status: seite.status, htmlRoh: seite.htmlRoh, htmlDom: seite.htmlDom });
-        return `Gebotsübersicht gelesen (${(seite.htmlDom ?? seite.htmlRoh ?? "").length} Zeichen), nichts geändert.`;
+        // Der Block „Deine Gebote“ kommt per $.getJSON(mz.getAjaxLink("transfer&sub=your-bids")) als {content: HTML}
+        // (gesehen 31.10.2026 im Seiten-HTML; mz.getAjaxLink = "ajax.php?p=" + … + "&sport=" + ajaxSport)
+        const g = await s.holeText(GEBOTE_AJAX);
+        speichereRohseite(db, { art: "gebote-eigene", url: g.url, status: g.status, htmlRoh: g.text, htmlDom: null });
+        return `Gebotsübersicht gelesen (Seite ${(seite.htmlDom ?? seite.htmlRoh ?? "").length} Zeichen, Gebote ${g.text.length} Zeichen), nichts geändert.`;
       },
       { manuell: true },
     );
