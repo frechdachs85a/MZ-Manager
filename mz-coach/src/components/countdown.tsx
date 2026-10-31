@@ -7,9 +7,13 @@ import { useEffect, useState } from "react";
 export function Countdown({ ende }: { ende?: string }) {
   const [jetzt, setJetzt] = useState<number | null>(null);
   useEffect(() => {
-    setJetzt(Date.now());
+    // Erst nach dem Einbinden die Uhrzeit setzen (gleiches HTML auf Server und Browser)
+    const start = setTimeout(() => setJetzt(Date.now()), 0);
     const t = setInterval(() => setJetzt(Date.now()), 30_000);
-    return () => clearInterval(t);
+    return () => {
+      clearTimeout(start);
+      clearInterval(t);
+    };
   }, []);
   if (!ende) return <span className="text-label-3">Ende unbekannt</span>;
   const ziel = Date.parse(ende);
