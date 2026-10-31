@@ -8,6 +8,8 @@ import { Card, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { spieltagLage } from "@/lib/spieltag";
 import { WertDiff } from "@/components/elf-wert";
+import { TaktikCheckKarte } from "@/components/taktik-check-karte";
+import { checkKurz, taktikCheck, MIN_GEWINN } from "@/lib/taktik-check";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { spieltagCheckliste } from "@/lib/checkliste";
 import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
@@ -26,6 +28,8 @@ export default async function Uebersicht() {
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
   const db = getDb();
   const { bilanz, warnungen: verlust } = skillBilanz(db, 14);
+  const checks = taktikCheck(db);
+  const anpassen = checks.filter((c) => !c.ok && !c.fehler);
   const kader = ladeKader(db);
   const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
   const taktikStand = kader.map((s) => s.statusStand?.aufstellbar).filter(Boolean).sort().at(-1);
@@ -70,6 +74,35 @@ export default async function Uebersicht() {
           </Card>
         </div>
       )}
+
+      {/* Taktik-Check: deine Taktiken gegen den heutigen Kader (Skills, Ausdauer, Aufstellbarkeit) */}
+      <div className="seite mt-6">
+        <Card>
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-separator px-4 py-3">
+            <span className="text-[15px] font-bold">Taktik-Check</span>
+            <span className="text-[12.5px] text-label-2">
+              {checks.length === 0
+                ? "Noch keine Taktik im Archiv"
+                : anpassen.length
+                  ? `${anpassen.length} von ${checks.length} Taktiken anpassen`
+                  : `Alle ${checks.length} Taktiken passen zum heutigen Kader`}
+            </span>
+          </div>
+          {anpassen.length > 0 && (
+            <div className="divide-y divide-separator">
+              {anpassen.map((c) => (
+                <TaktikCheckKarte key={c.reiter} reiter={c.reiter} punkte={checkKurz(c)} gewinn={c.gewinn} xml={c.xml} />
+              ))}
+            </div>
+          )}
+          <p className="px-4 py-2 text-[11.5px] leading-relaxed text-label-3">
+            Täglich mit dem Kaderabruf neu berechnet: Plätze bleiben, Besetzung nach MZ-Wert der Rolle aus Elf, Bank und allen
+            aufstellbaren Spielern. Vorgeschlagen ab +{MIN_GEWINN.toFixed(1).replace(".", ",")} MZ-Wert in der Elf oder wenn ein Spieler
+            nicht aufstellbar ist; Startspieler mit Ausdauer unter 8 ohne Zeitwechsel bekommen einen Wechsel in der 70. Übernommen wird
+            nur auf Klick.
+          </p>
+        </Card>
+      </div>
 
       {/* Nächstes Spiel kurz; Taktik und Analyse im Reiter Spieltag */}
       <div className="seite mt-6">
