@@ -13,6 +13,7 @@ import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
 import { letzteEditorAktion } from "@/lib/db/taktik";
 import { spieltagLage } from "@/lib/spieltag";
+import { letzterAbruf } from "@/lib/db/abruf";
 import { datumZeit } from "@/lib/format";
 import { stilDe } from "@/lib/mz/analyse/gegner";
 import { PRIO_NR } from "@/lib/taktik-check";
@@ -40,6 +41,7 @@ export default async function Taktik() {
   const letzte = letzteEditorAktion(db);
   // Formation Liga: was die Seite für das nächste Ligaspiel hinterlegt hat (spieltag.ts, abruf/liga.ts)
   const lage = spieltagLage(db);
+  const kontrolle = letzterAbruf(db, "liga-kontrolle");
   const zeigeLetzte = !!letzte;
   const kader = new Map(ladeKader(db).map((s) => [s.pid, s]));
   const name = (pid: number) => kader.get(pid)?.name.split(" ").at(-1) ?? String(pid);
@@ -90,7 +92,7 @@ export default async function Taktik() {
                   <div className="grid gap-3 px-4 py-3 sm:grid-cols-[150px_1fr]">
                     {k.art === "liga" && lage.liga ? <Spielfeld spieler={lage.liga.feld} /> : k.archiv?.taktik ? <Spielfeld spieler={feld(k)} /> : <div />}
                     <div className="space-y-2 text-[13px]">
-                      {k.art === "liga" ? <LigaInhalt lage={lage} /> : <Inhalt k={k} wichtig={wichtig.map((w) => w.name.split(" ").at(-1)!)} />}
+                      {k.art === "liga" ? <LigaInhalt lage={lage} kontrolle={kontrolle} /> : <Inhalt k={k} wichtig={wichtig.map((w) => w.name.split(" ").at(-1)!)} />}
                     </div>
                   </div>
                 )}
@@ -175,7 +177,7 @@ export default async function Taktik() {
 }
 
 // Reiter Liga: Gegner, Grundlage, was angepasst wurde, Bank und Stand in ManagerZone
-function LigaInhalt({ lage }: { lage: ReturnType<typeof spieltagLage> }) {
+function LigaInhalt({ lage, kontrolle }: { lage: ReturnType<typeof spieltagLage>; kontrolle: ReturnType<typeof letzterAbruf> }) {
   const l = lage.liga;
   const st = lage.ligaStatus;
   const gegner = lage.lauf?.gegnerName;
@@ -189,6 +191,11 @@ function LigaInhalt({ lage }: { lage: ReturnType<typeof spieltagLage> }) {
       {st && (
         <div className={st.ok ? "text-green" : "text-red"}>
           {st.ok ? "✓" : "✗"} {st.meldung} ({datumZeit(st.beendet ?? st.gestartet)})
+        </div>
+      )}
+      {kontrolle && (
+        <div className={kontrolle.ok ? "text-label-2" : "text-red"}>
+          Zuletzt geprüft {datumZeit(kontrolle.beendet ?? kontrolle.gestartet)}: {kontrolle.meldung}
         </div>
       )}
       {l ? (
@@ -214,7 +221,7 @@ function LigaInhalt({ lage }: { lage: ReturnType<typeof spieltagLage> }) {
         <div className="text-red">Noch keine Formation Liga berechnet (kein Gegner oder zu wenige aufstellbare Spieler).</div>
       )}
       <div className="text-label-3">
-        Neu berechnet und in ManagerZone geschrieben nach jeder Spieltag-Analyse und jedem täglichen Kaderabruf bis zum Anstoß.
+        Neu berechnet nach jeder Spieltag-Analyse und bei jedem täglichen Kaderabruf bis zum Anstoß geprüft; in ManagerZone geschrieben nur, wenn sich etwas ändert.
       </div>
     </>
   );

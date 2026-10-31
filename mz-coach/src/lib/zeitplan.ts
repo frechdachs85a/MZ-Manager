@@ -3,7 +3,7 @@ import { abrufBeenden, abrufBeginnen, letzterAbruf } from "@/lib/db/abruf";
 import { letzterLauf } from "@/lib/db/spieltag";
 import { aufraeumen, sichereDatenbank } from "@/lib/archiv";
 import { marktAbrufen, marktFaellig } from "@/lib/mz/abruf/markt";
-import { ligaHinterlegen } from "@/lib/mz/abruf/liga";
+import { ligaHinterlegen, ligaKontrolle } from "@/lib/mz/abruf/liga";
 import { kaderAbrufen, kaderFaellig } from "@/lib/mz/abruf/kader";
 import { spieltagAbrufen, spieltagFaellig } from "@/lib/mz/abruf/spieltag";
 import { topAbrufen, topFaellig } from "@/lib/mz/abruf/top";
@@ -75,9 +75,10 @@ async function takt() {
     if (kaderFaellig(db)) {
       const r = await kaderAbrufen(db);
       console.log(`[zeitplan] ${r.meldung.slice(0, 300)}`);
-      // Liga mit dem neuen Kaderstand (Verletzung, Sperre, Trainingslager, Skills) neu hinterlegen (Marcus, 31.10.2026)
+      // Im selben Zug die Liga prüfen (Marcus, 31.10.2026): mit dem neuen Kaderstand (Verletzung, Sperre, Trainingslager,
+      // Skills) neu berechnen; geschrieben wird nur, wenn sich etwas ändert
       if (r.ok && ligaFaellig(db, true)) {
-        const l = await ligaHinterlegen(db);
+        const l = await ligaKontrolle(db);
         console.log(`[zeitplan] ${l.meldung.slice(0, 300)}`);
       }
     }

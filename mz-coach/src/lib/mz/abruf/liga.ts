@@ -1,7 +1,7 @@
 import "server-only";
 import type Database from "better-sqlite3";
 import type { Page } from "playwright";
-import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
+import { abrufBeenden, abrufBeginnen, ladeRohseite, letzteRohseite, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
 import { spieltagLage } from "@/lib/spieltag";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { TAKTIK_PFAD, meldungAus, type Ergebnis } from "./kader";
@@ -119,6 +119,28 @@ export async function ligaHinterlegen(db: Database.Database, opt = { manuell: fa
     abrufBeenden(db, log, false, meldung);
     return { ok: false, meldung };
   }
+}
+
+// Liga-Kontrolle (Marcus, 31.10.2026): bis zum Ligaspiel regelmäßig prüfen, ob die hinterlegte Formation noch die beste
+// ist (Verletzung, Sperre, Trainingslager, Skills, neue Gegnerdaten). Neu berechnen; nur wenn sich die XML gegenüber der
+// zuletzt geschriebenen ändert oder das letzte Schreiben fehlschlug, in ManagerZone schreiben. Protokoll "liga-kontrolle".
+export async function ligaKontrolle(db: Database.Database): Promise<Ergebnis> {
+  const log = abrufBeginnen(db, "liga-kontrolle");
+  const lage = spieltagLage(db);
+  const neu = lage.liga?.xml;
+  const zuletzt = letzteRohseite(db, "liga-xml");
+  const alt = zuletzt ? ladeRohseite(db, zuletzt.id, "roh")?.html : undefined;
+  const letzterOk = letzterAbruf(db, "liga")?.ok === 1;
+  const gegner = lage.lauf?.gegnerName ?? "nächster Gegner";
+  if (neu && alt && neu.trim() === alt.trim() && letzterOk && zuletzt?.url === `liga:${gegner}`) {
+    const meldung = `Liga gegen ${gegner} geprüft: weiterhin die beste Aufstellung, nichts geändert.`;
+    abrufBeenden(db, log, true, meldung);
+    return { ok: true, meldung };
+  }
+  const r = await ligaHinterlegen(db);
+  const meldung = `Liga gegen ${gegner} geprüft: ${neu && alt ? "Änderung gefunden, neu geschrieben" : "neu geschrieben"}. ${r.meldung}`;
+  abrufBeenden(db, log, r.ok, meldung);
+  return { ok: r.ok, meldung };
 }
 
 // Eine XML in den Editor-Reiter mit dem Namen `reiterName` schreiben, wie von Hand: Reiter wählen, importieren, Import
