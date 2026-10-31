@@ -1,3 +1,4 @@
+import { ausdauerPlan } from "@/lib/skill-bilanz";
 import { GEWICHTE, mzWert, type Position } from "@/lib/mz/formel";
 import { FORMEL_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
 import type { SpielerDaten } from "@/lib/mz/spieler";
@@ -28,9 +29,12 @@ export function rolle(s: Slot): Position {
   return s.y <= STURM_Y ? "Sturm" : "MF";
 }
 
-export type Schwachstelle = { slot: Slot; rolle: Position; spieler: SpielerDaten; wert: number };
+// ohneWechsel: Startspieler mit Ausdauer unter 8, für den keiner der 3 Wechsel mehr frei ist (Marcus, 30.10.2026)
+export type Schwachstelle = { slot: Slot; rolle: Position; spieler: SpielerDaten; wert: number; ohneWechsel?: boolean };
 
-// Jeder Startplatz mit dem MZ-Wert seines Spielers in dieser Rolle, schwächster zuerst.
+// Jeder Startplatz mit dem MZ-Wert seines Spielers in dieser Rolle, schwächster zuerst. Vorrang haben Plätze, deren
+// Spieler wegen Ausdauer unter 8 ausgewechselt werden müsste, wenn dafür keiner der 3 Wechsel mehr frei ist
+// (ausdauerPlan, niedrigste Ausdauer bekommt zuerst einen Wechsel).
 // Plätze, deren Spieler nicht im Kader steht oder deren Skills fehlen, werden mit Grund gemeldet.
 export function schwachstellen(elf: Slot[], kader: SpielerDaten[]): { liste: Schwachstelle[]; fehlt: string[] } {
   const nachPid = new Map(kader.map((s) => [s.pid, s]));
@@ -50,7 +54,9 @@ export function schwachstellen(elf: Slot[], kader: SpielerDaten[]): { liste: Sch
     }
     liste.push({ slot, rolle: r, spieler, wert: w.wert });
   }
-  return { liste: liste.sort((a, b) => a.wert - b.wert), fehlt };
+  const ohne = new Set(ausdauerPlan(liste.map((x) => ({ pid: x.spieler.pid, ausdauer: x.spieler.skills.ausdauer?.wert }))).ohneWechsel.map((x) => x.pid));
+  for (const x of liste) if (ohne.has(x.spieler.pid)) x.ohneWechsel = true;
+  return { liste: liste.sort((a, b) => Number(!!b.ohneWechsel) - Number(!!a.ohneWechsel) || a.wert - b.wert), fehlt };
 }
 
 export type MarktRahmen = {

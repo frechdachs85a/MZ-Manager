@@ -57,7 +57,8 @@ export type SuchZiel = {
 export function suchZiele(schwach: Schwachstelle[], anzahl = 3): SuchZiel[] {
   const gesehen = new Set<Position>();
   const ziele: SuchZiel[] = [];
-  for (const s of [...schwach].sort((a, b) => a.wert - b.wert)) {
+  // Vorrang: Ausdauerproblem ohne freien Wechsel, sonst schwächster MZ-Wert zuerst
+  for (const s of [...schwach].sort((a, b) => Number(!!b.ohneWechsel) - Number(!!a.ohneWechsel) || a.wert - b.wert)) {
     if (gesehen.has(s.rolle) || ziele.length >= anzahl) continue;
     gesehen.add(s.rolle);
     const g = GEWICHTE[s.rolle];
@@ -80,7 +81,7 @@ export function suchZiele(schwach: Schwachstelle[], anzahl = 3): SuchZiel[] {
         [`${SKILL_FELD[hauptskill]}a`]: stufe,
         [`${SKILL_FELD[hauptskill]}b`]: stufe,
       }),
-      text: `${s.rolle} (jetzt ${s.spieler.name}, ${s.wert.toFixed(2).replace(".", ",")}): ${SKILL_LABEL[hauptskill]} Stufe für Stufe von ${stufen[0] ?? untergrenze} bis ${untergrenze}; Sprint und Ausdauer ab ${MIN_SPRINT}`,
+      text: `${s.rolle} (jetzt ${s.spieler.name}, ${s.wert.toFixed(2).replace(".", ",")}${s.ohneWechsel ? `, Ausdauer ${s.spieler.skills.ausdauer?.wert} ohne freien Wechsel` : ""}): ${SKILL_LABEL[hauptskill]} Stufe für Stufe von ${stufen[0] ?? untergrenze} bis ${untergrenze}; Sprint und Ausdauer ab ${MIN_SPRINT}`,
     });
   }
   return ziele;
