@@ -10,6 +10,7 @@ import { spieltagLage } from "@/lib/spieltag";
 import { WertDiff } from "@/components/elf-wert";
 import { TaktikCheckKarte } from "@/components/taktik-check-karte";
 import { checkKurz, taktikCheck, MIN_GEWINN } from "@/lib/taktik-check";
+import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
 import { spieltagCheckliste } from "@/lib/checkliste";
 import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
@@ -43,7 +44,8 @@ export default async function Uebersicht() {
   const tabHtml = tabRoh ? ladeRohseite(db, tabRoh.id, "dom") ?? ladeRohseite(db, tabRoh.id, "roh") : null;
   const tabelle = tabHtml ? tabelleAus(tabHtml.html, TEAM.name) : null;
   const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
-  const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.map((s) => s.pid)]).size;
+  // Pokalsperren zählen fürs Ligaspiel nicht
+  const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.filter(sperreGiltFuerLiga).map((s) => s.pid)]).size;
   const kurzDatum = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(spieltag);
   // Warnungen: Ausdauer unter die Grenze gefallen, und Startspieler mit Ausdauer unter der Grenze (halten keine 90 Minuten)
   const nachPid = new Map(kader.map((s) => [s.pid, s]));
