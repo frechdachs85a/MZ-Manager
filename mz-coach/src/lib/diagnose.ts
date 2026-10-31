@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
 import { marktErgebnis } from "@/lib/markt-ergebnis";
+import { bewerteMarkt } from "@/lib/mz/analyse/markt";
 import { mzWert } from "@/lib/mz/formel";
 import { FORMEL_SKILLS } from "@/lib/mz/skills";
 import { checkKurz, taktikCheck } from "@/lib/taktik-check";
@@ -18,20 +19,48 @@ import { ladeKombis, scoutEinstufung } from "@/lib/scout";
 // (Login-Ergebnis mit Bildschirmfoto und Antwortverlauf, Scoutbericht, transfer.js, challenges.js, Marktsuche), und
 // je Spieler Scout-Sterne, wörtlicher Text und Einstufung. Enthält KEINE Zugangsdaten, Cookies oder Schlüssel
 // (Tabelle einstellung und geheimnisse.json werden nicht gelesen).
-export const ARTEN = ["login-verlauf", "login-ergebnis", "login-bild", "nicht-eingeloggt", "unbekannt", "spielplan", "scoutbericht", "skript-transfer", "skript-challenges", "markt-suche", "kader-fremd", "weltliga", "gebotsformular", "gebot-suche", "weltliga-tabelle", "skript-taktik", "liga-xml", "skript-mz", "gebot-antwort", "spieler-fremd", "taktik-geloescht"];
+export const ARTEN = [
+  "login-verlauf",
+  "login-ergebnis",
+  "login-bild",
+  "nicht-eingeloggt",
+  "unbekannt",
+  "spielplan",
+  "scoutbericht",
+  "skript-transfer",
+  "skript-challenges",
+  "markt-suche",
+  "kader-fremd",
+  "weltliga",
+  "gebotsformular",
+  "gebot-suche",
+  "weltliga-tabelle",
+  "skript-taktik",
+  "liga-xml",
+  "skript-mz",
+  "gebot-antwort",
+  "spieler-fremd",
+  "taktik-geloescht",
+];
 
 // Diagnose für den Fernzugriff (ohne Zugangsdaten)
 export function diagnose(db: Database.Database) {
   const abrufe = db.prepare("SELECT art, gestartet, beendet, ok, meldung FROM abruf_log ORDER BY id DESC LIMIT 40").all();
   // Unbekannte Seiten: die letzten drei (verschiedene Seiten), sonst je Art die neueste
   const unbekannte = db.prepare("SELECT id FROM rohseite WHERE art = 'unbekannt' ORDER BY id DESC LIMIT 3").all() as { id: number }[];
-  const rohseiten = ARTEN.flatMap((art): { art: string; id?: number }[] => (art === "unbekannt" && unbekannte.length > 1 ? unbekannte.map((u) => ({ art, id: u.id })) : [{ art, id: undefined }])).map(({ art, id }) => {
-    const r = (id !== undefined
-      ? db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE id = ?").get(id)
-      : // Fremde Spielerseite: das DOM nach den Skripten (Verkaufshistorie wird eventuell nachgeladen)
-        db.prepare(`SELECT art, url, abgerufen, status, ${art === "spieler-fremd" ? "coalesce(html_dom, html_roh)" : "html_roh"} AS inhalt FROM rohseite WHERE art = ? ORDER BY id DESC LIMIT 1`).get(art)) as
-      | { art: string; url: string; abgerufen: string; status: number | null; inhalt: string | null }
-      | undefined;
+  const rohseiten = ARTEN.flatMap((art): { art: string; id?: number }[] =>
+    art === "unbekannt" && unbekannte.length > 1 ? unbekannte.map((u) => ({ art, id: u.id })) : [{ art, id: undefined }],
+  ).map(({ art, id }) => {
+    const r = (
+      id !== undefined
+        ? db.prepare("SELECT art, url, abgerufen, status, html_roh AS inhalt FROM rohseite WHERE id = ?").get(id)
+        : // Fremde Spielerseite: das DOM nach den Skripten (Verkaufshistorie wird eventuell nachgeladen)
+          db
+            .prepare(
+              `SELECT art, url, abgerufen, status, ${art === "spieler-fremd" ? "coalesce(html_dom, html_roh)" : "html_roh"} AS inhalt FROM rohseite WHERE art = ? ORDER BY id DESC LIMIT 1`,
+            )
+            .get(art)
+    ) as { art: string; url: string; abgerufen: string; status: number | null; inhalt: string | null } | undefined;
     if (!r) return { art, fehlt: "noch nicht gespeichert" };
     // Zusätzlich schwärzen (auch für Einträge, die vor dem Schwärzen gespeichert wurden); das Bild bleibt unverändert
     return { ...r, url: schwaerzen(r.url), inhalt: art === "login-bild" || !r.inhalt ? r.inhalt : schwaerzen(r.inhalt) };
@@ -69,7 +98,9 @@ export function diagnose(db: Database.Database) {
   };
   // Spieltag-Automatik: die letzten Läufe ohne Spielplan-JSON
   const spieltag = db
-    .prepare("SELECT id, gestartet, beendet, ok, letztes_mid, naechstes_mid, gegner_tid, gegner_name, anstoss, heim, meldung FROM spieltag_lauf ORDER BY id DESC LIMIT 10")
+    .prepare(
+      "SELECT id, gestartet, beendet, ok, letztes_mid, naechstes_mid, gegner_tid, gegner_name, anstoss, heim, meldung FROM spieltag_lauf ORDER BY id DESC LIMIT 10",
+    )
     .all();
   // Ergebnis der Spieltag-Analyse (zum Abgleich mit ManagerZone): Vorschlag, Kurzfassung, Kaderwerte
   let analyse: unknown = null;
@@ -81,12 +112,41 @@ export function diagnose(db: Database.Database) {
       taktikCode: l.taktikCode ? { art: l.taktikCode.art, geaendert: l.taktikCode.geaendert } : null,
       kurzfassung: l.kurzfassung,
       quoten: { elf: quotenJeBereich(db, "elf"), feld: quotenJeBereich(db, "feld") },
-      verlauf: l.verlauf ? { fenster: l.verlauf.fenster, gewichtet: l.verlauf.gewichtet, fehlend: l.verlauf.fehlend, quelleEigen: l.verlauf.quelleEigen } : null,
+      verlauf: l.verlauf
+        ? { fenster: l.verlauf.fenster, gewichtet: l.verlauf.gewichtet, fehlend: l.verlauf.fehlend, quelleEigen: l.verlauf.quelleEigen }
+        : null,
       elfWerte: l.elfWerte,
-      archiv: ladeTaktiken(db).map((t) => { try { const x = parseTaktikXml(t.xml); return { reiter: t.reiter, gespeichert: t.gespeichert, quelle: t.quelle, elf: x.pos.map((p) => p.pid), bank: x.subs.map((b) => b.pid), regeln: x.regeln.length }; } catch { return { reiter: t.reiter, fehler: true }; } }),
-      portfolio: (() => { const pl = portfolioPlan(db); return { doppelt: pl.doppelt, abdeckung: pl.abdeckung.map((a) => ({ klasse: a.klasse, spiele: a.spiele, reiter: a.reiter, bester: a.bester?.schluessel, dein: a.dein })), vorschlaege: pl.vorschlaege.map(vorschlagText), sinn: pl.sinn, jugend: pl.jugend, editorStand: pl.editorStand, editor: ladeEditorReiter(db)?.reiter }; })(),
+      archiv: ladeTaktiken(db).map((t) => {
+        try {
+          const x = parseTaktikXml(t.xml);
+          return {
+            reiter: t.reiter,
+            gespeichert: t.gespeichert,
+            quelle: t.quelle,
+            elf: x.pos.map((p) => p.pid),
+            bank: x.subs.map((b) => b.pid),
+            regeln: x.regeln.length,
+          };
+        } catch {
+          return { reiter: t.reiter, fehler: true };
+        }
+      }),
+      portfolio: (() => {
+        const pl = portfolioPlan(db);
+        return {
+          doppelt: pl.doppelt,
+          abdeckung: pl.abdeckung.map((a) => ({ klasse: a.klasse, spiele: a.spiele, reiter: a.reiter, bester: a.bester?.schluessel, dein: a.dein })),
+          vorschlaege: pl.vorschlaege.map(vorschlagText),
+          sinn: pl.sinn,
+          jugend: pl.jugend,
+          editorStand: pl.editorStand,
+          editor: ladeEditorReiter(db)?.reiter,
+        };
+      })(),
       taktikCheck: taktikCheck(db).map((c) => ({ reiter: c.reiter, ok: c.ok, gewinn: c.gewinn, punkte: checkKurz(c), fehler: c.fehler })),
-      liga: l.liga ? { reiter: l.liga.reiter, kurz: l.liga.kurz, bank: l.liga.bank, feld: l.liga.feld.map((p) => `${p.label} ${p.x}/${p.y}`), hinweise: l.liga.hinweise } : null,
+      liga: l.liga
+        ? { reiter: l.liga.reiter, kurz: l.liga.kurz, bank: l.liga.bank, feld: l.liga.feld.map((p) => `${p.label} ${p.x}/${p.y}`), hinweise: l.liga.hinweise }
+        : null,
       ligaStatus: l.ligaStatus,
       formationen: l.gegner?.analyse?.spiele.map((x) => ({ mid: x.mid, datum: x.datum, formation: x.formation.text })),
       kaderwert: l.kaderwert ? { eigen: l.kaderwert.eigen?.summe, gegner: l.kaderwert.gegner?.summe } : null,
@@ -97,7 +157,14 @@ export function diagnose(db: Database.Database) {
   }
   // Bietomat: Aufträge (ohne Spielerdaten) und die letzten Protokolleinträge, um Läufe aus der Ferne zu prüfen
   const bietomat = {
-    auftraege: ladeAuftraege(db).map((x) => ({ pid: x.pid, name: x.name, maximum: x.maximum, auktionEnde: x.auktionEnde, status: x.status, geaendert: x.geaendert })),
+    auftraege: ladeAuftraege(db).map((x) => ({
+      pid: x.pid,
+      name: x.name,
+      maximum: x.maximum,
+      auktionEnde: x.auktionEnde,
+      status: x.status,
+      geaendert: x.geaendert,
+    })),
     protokoll: ladeProtokoll(db, undefined, 40),
   };
   // Transfermarkt: warum ein Spieler (Bietomat-Aufträge) vorgeschlagen wurde oder nicht
@@ -109,10 +176,35 @@ export function diagnose(db: Database.Database) {
       suche: m.suche ? { zeit: m.suche.zeit, spieler: m.suche.spieler.length } : null,
       schwach: m.schwach?.liste.map((x) => `${x.rolle} ${x.spieler.name} ${x.wert.toFixed(2)}`),
       vorgeschlagen: m.ergebnis?.alle.length ?? 0,
+      ausgeschlossen: m.ergebnis?.ausgeschlossen,
+      auftraege: ladeAuftraege(db).map((a) => {
+        const k = a.spieler;
+        if (!k || !m.schwach) return { pid: a.pid, fehlt: "keine Spielerdaten im Auftrag" };
+        const e = bewerteMarkt([k], m.schwach.liste, { abgelehnt: new Set(), eigene: new Set(), ohneRahmen: true });
+        return {
+          pid: a.pid,
+          name: k.name,
+          alter: k.alter,
+          nationalitaet: k.nationalitaet,
+          skills: Object.fromEntries(FORMEL_SKILLS.map((x) => [x, k.skills[x]?.wert ?? null])),
+          rollen: m.schwach.liste.map((x) => {
+            const w = mzWert(k.skills, x.rolle);
+            return `${x.rolle}: ${w.ok ? w.wert.toFixed(2) : "?"} (jetzt ${x.spieler.name.split(" ").at(-1)} ${x.wert.toFixed(2)})`;
+          }),
+          ergebnis: e.alle[0] ? { gewinn: e.alle[0].gewinn, ziel: e.alle[0].ziel.rolle, preis: e.alle[0].preis } : { grund: e.grundJe.get(a.pid) },
+          markt: k.markt,
+        };
+      }),
       je: pids.map((pid) => {
         const k = m.suche?.spieler.find((x) => x.pid === pid);
         const b = m.ergebnis?.alle.findIndex((x) => x.kandidat.pid === pid) ?? -1;
-        const best = k && m.schwach ? m.schwach.liste.map((x) => ({ r: x.rolle, w: mzWert(k.skills, x.rolle) })).filter((x) => x.w.ok).sort((a, c) => (c.w.ok ? c.w.wert : 0) - (a.w.ok ? a.w.wert : 0))[0] : undefined;
+        const best =
+          k && m.schwach
+            ? m.schwach.liste
+                .map((x) => ({ r: x.rolle, w: mzWert(k.skills, x.rolle) }))
+                .filter((x) => x.w.ok)
+                .sort((a, c) => (c.w.ok ? c.w.wert : 0) - (a.w.ok ? a.w.wert : 0))[0]
+            : undefined;
         return {
           pid,
           inSuche: !!k,
@@ -129,5 +221,17 @@ export function diagnose(db: Database.Database) {
   } catch (e) {
     marktGruende = { fehler: e instanceof Error ? e.message : String(e) };
   }
-  return { marktGruende, bietomat, analyse, erstellt: new Date().toISOString(), version: process.env.GIT_COMMIT ?? "unbekannt", bestand, abrufe, spieltag, suchformular, rohseiten, scout };
+  return {
+    marktGruende,
+    bietomat,
+    analyse,
+    erstellt: new Date().toISOString(),
+    version: process.env.GIT_COMMIT ?? "unbekannt",
+    bestand,
+    abrufe,
+    spieltag,
+    suchformular,
+    rohseiten,
+    scout,
+  };
 }
