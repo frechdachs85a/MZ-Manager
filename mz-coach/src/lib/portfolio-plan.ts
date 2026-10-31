@@ -28,6 +28,7 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
 export const JUGEND = /^u(18|21|23)\b/i;
 export const BESSER = 0.1;
+export const SPIEGEL_TOLERANZ = 6; // Punkte (eigene Setzung)
 // außenR und kupass nennt die Faustregel (mz-wissen.md, Abschnitt 10) und die Scoutauswertung beim Namen: bleiben
 const FEST = /^(liga|außenr|kupass)$/i;
 const NICHT_ANFASSEN = (r: string) => JUGEND.test(r) || FEST.test(r);
@@ -113,19 +114,31 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   const signatur = new Map<string, string>();
   const stil = new Map<string, string>();
   const stilJe = new Map<string, string>();
+  // Gespiegelt: gleiche Einstellungen, jeder Spieler steht bis auf SPIEGEL_TOLERANZ Punkte auf dem gespiegelten Platz (x -> 208 − x)
+  const gesehen: { reiter: string; t: NonNullable<(typeof archiv)[number]["taktik"]> }[] = [];
+  const spiegelVon = (t: NonNullable<(typeof archiv)[number]["taktik"]>) =>
+    gesehen.find(
+      (g) =>
+        g.t.team.tactics === t.team.tactics &&
+        g.t.team.playstyle === t.team.playstyle &&
+        g.t.pos.length === t.pos.length &&
+        t.pos.some((x) => Math.abs(x.start.x - 104) > SPIEGEL_TOLERANZ) &&
+        t.pos.every((x) => {
+          const y = g.t.pos.find((q) => q.pid === x.pid);
+          return !!y && Math.hypot(208 - x.start.x - y.start.x, x.start.y - y.start.y) <= SPIEGEL_TOLERANZ;
+        }),
+    )?.reiter;
   for (const a of archiv) {
     const t = a.taktik!;
-    const sigAus = (spiegeln: boolean) =>
-      JSON.stringify([t.team.tactics, t.team.playstyle, t.team.aggression, t.pos.map((x) => `${x.pid}@${Math.round((spiegeln ? 208 - x.start.x : x.start.x) / 5)},${Math.round(x.start.y / 5)}`).sort()]);
-    const sig = sigAus(false);
-    const gespiegelt = sigAus(true);
+    const sig = JSON.stringify([t.team.tactics, t.team.playstyle, t.team.aggression, t.pos.map((x) => `${x.pid}@${Math.round(x.start.x / 5)},${Math.round(x.start.y / 5)}`).sort()]);
     const st = stilSchluessel(formation(t.pos.filter((x) => x.pos === "normal").map((x) => x.start)).text, t.team.tactics, t.team.playstyle);
     stilJe.set(a.reiter, st);
     if (signatur.has(sig)) doppelt.push({ reiter: a.reiter, wie: signatur.get(sig)!, art: "identisch" });
-    else if (signatur.has(gespiegelt)) doppelt.push({ reiter: a.reiter, wie: signatur.get(gespiegelt)!, art: "gespiegelt" });
+    else if (spiegelVon(t)) doppelt.push({ reiter: a.reiter, wie: spiegelVon(t)!, art: "gespiegelt" });
     else if (stil.has(st)) doppelt.push({ reiter: a.reiter, wie: stil.get(st)!, art: "gleicher Stil" });
     if (!signatur.has(sig)) signatur.set(sig, a.reiter);
     if (!stil.has(st)) stil.set(st, a.reiter);
+    gesehen.push({ reiter: a.reiter, t });
   }
 
   // 2. Abdeckung je Gegnerklasse (bewährte Stile, die ein Reiter abdeckt)
@@ -208,8 +221,8 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     // außenR und kupass behalten ihren Namen: widerspricht der Inhalt, ist eher der Archiv-Eintrag falsch
     const kopie = doppelt.find((d) => d.reiter === a.reiter && d.art === "identisch");
     // Identische Kopie: nicht umbenennen, sondern mit einem neuen Stil überschreiben (sobald es eine Lücke gibt)
-    if (probleme.length && kopie) hinweise.push(`identisch mit ${kopie.wie}: wird beim nächsten passenden Stil überschrieben statt umbenannt`);
-    else if (probleme.length && FEST.test(a.reiter)) hinweise.push("Name bleibt (Faustregel nutzt ihn); stimmt der Archiv-Eintrag? Reiter neu exportieren und einfügen");
+    if (probleme.length && FEST.test(a.reiter)) hinweise.push("Name bleibt (Faustregel nutzt ihn); stimmt der Archiv-Eintrag? Reiter neu exportieren und einfügen");
+    else if (probleme.length && kopie) hinweise.push(`identisch mit ${kopie.wie}: wird beim nächsten passenden Stil überschrieben statt umbenannt`);
     else if (probleme.length) {
       name = nameFuer(st, [...namen].filter((n) => n !== a.reiter));
       namen.add(name);
