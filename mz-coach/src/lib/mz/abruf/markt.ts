@@ -2,7 +2,7 @@ import "server-only";
 import type Database from "better-sqlite3";
 import { parse } from "node-html-parser";
 import { abrufBeenden, abrufBeginnen, letzteRohseite, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
-import { speichereMarktSuche } from "@/lib/db/markt";
+import { speichereMarktRahmen, speichereMarktSuche } from "@/lib/db/markt";
 import { ladeFreundTeam } from "@/lib/db/freunde";
 import { zugangStatus } from "@/lib/mz/zugang";
 import { parseTransferSuche, type MarktSpieler } from "@/lib/mz/parser/transfer";
@@ -13,6 +13,7 @@ import { mitFiltern, suchZiele } from "./markt-ziel";
 import { meldungAus, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler } from "./sitzung";
 import { verkaufLaden } from "./verkauf";
+import { rahmenAusGebotsformular } from "@/lib/mz/parser/rahmen";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
 import { marktErgebnis } from "@/lib/markt-ergebnis";
 
@@ -116,6 +117,22 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
           }
         }
         const id = speichereMarktSuche(db, { treffer, seiten, spieler: [...spieler.values()] });
+        // Rahmen (Saldo, Ausländer, Arbeitsbewilligungen) selbst aus dem Gebotsfenster eines gefundenen Spielers lesen
+        // (Marcus, 31.10.2026: Ausländer über freie Arbeitsbewilligungen waren möglich). Nur lesen, es wird nicht geboten.
+        const erster = [...spieler.values()][0];
+        if (erster) {
+          try {
+            const f = await s.holeText(`/ajax.php?p=transfer&sub=bid-form&pid=${erster.pid}&sport=soccer`);
+            speichereRohseite(db, { art: "gebotsformular", url: f.url, status: f.status, htmlRoh: f.text, htmlDom: null });
+            const rahmen = rahmenAusGebotsformular(f.text);
+            if (rahmen) {
+              speichereMarktRahmen(db, rahmen);
+              ziel.push(`Rahmen aus dem Gebotsfenster: Saldo ${rahmen.kapital} EUR, Ausländer ${rahmen.auslaender}/${rahmen.auslaenderMax}, Arbeitsbewilligungen ${rahmen.bewilligungen}/${rahmen.bewilligungenMax}`);
+            } else ziel.push("Rahmen im Gebotsfenster nicht gefunden");
+          } catch (e) {
+            ziel.push(`Rahmen nicht gelesen: ${meldungAus(e)}`);
+          }
+        }
         // Letzter Verkauf (Spielerseite, Kasten "Transfers") für die Empfehlung und die nächsten Kandidaten, höchstens
         // VERKAEUFE_JE_SUCHE Seiten; was in den letzten 7 Tagen gelesen wurde, nicht noch einmal
         const e = marktErgebnis(db).ergebnis;
