@@ -11,6 +11,8 @@ import { WertDiff } from "@/components/elf-wert";
 import { hatVorschlag, reiterUebersicht } from "@/lib/reiter-uebersicht";
 import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
+import { baelleFolgen, type TaktikFolge } from "@/lib/baelle-taktik";
+import { posDe } from "@/lib/mz/formel";
 import { spieltagCheckliste } from "@/lib/checkliste";
 
 import { ZoomFeld } from "@/components/zoom-feld";
@@ -36,6 +38,7 @@ export default async function Uebersicht() {
   const taktikVorschlaege = taktikReiter.length;
   const kader = ladeKader(db);
   const kaderNach = new Map(kader.map((s) => [s.pid, s]));
+  const folgen = baelleFolgen(db, bilanz, kader);
   const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
   const taktikStand = kader
     .map((s) => s.statusStand?.aufstellbar)
@@ -228,7 +231,7 @@ export default async function Uebersicht() {
       <div className="seite">
         <Section
           title="Bälle der letzten 14 Tage"
-          footer="Aus den Kaderabrufen: gewonnene (grün) und verlorene (rot) Skill-Bälle je Spieler, ohne Form; meiste Zugewinne zuerst. Name anklicken: alle Skills."
+          footer="Aus den Kaderabrufen: gewonnene (grün) und verlorene (rot) Skill-Bälle je Spieler, ohne Form; meiste Zugewinne zuerst. MZ-Wert vorher → jetzt auf seiner heute besten Position (vorher = heutige Skills ohne die Änderungen). Taktik: Startelf deiner Reiter jetzt gegen den Vorschlag der täglichen Prüfung; Liga: letzte gegen vorletzte geschriebene Formation. Name anklicken: alle Skills."
         >
           {bilanz.length ? (
             <List>
@@ -270,6 +273,23 @@ export default async function Uebersicht() {
                     />
                   }
                   detail={
+                    <>
+                    {(() => {
+                      const f = folgen.get(b.pid);
+                      if (!f) return null;
+                      return (
+                        <span className="mt-0.5 block text-[12.5px] text-label-2">
+                          {f.nr !== undefined && <span className="mr-2 font-semibold tabular-nums text-label">Nr. {f.nr}</span>}
+                          {f.wert && (
+                            <span className="mr-2 tabular-nums">
+                              MZ-Wert {posDe(f.wert.position)}: {komma2(f.wert.vorher)} →{" "}
+                              <b className={f.wert.jetzt > f.wert.vorher ? "text-green" : f.wert.jetzt < f.wert.vorher ? "text-red" : ""}>{komma2(f.wert.jetzt)}</b>
+                            </span>
+                          )}
+                          <FolgenText f={f.folgen} />
+                        </span>
+                      );
+                    })()}
                     <span className="mt-1 flex flex-wrap gap-1">
                       {b.aenderungen.map((a, i) => (
                         <span
@@ -281,6 +301,7 @@ export default async function Uebersicht() {
                         </span>
                       ))}
                     </span>
+                    </>
                   }
                   value={
                     <span className="display text-[16px] font-bold tabular-nums">
@@ -297,6 +318,24 @@ export default async function Uebersicht() {
           )}
         </Section>
       </div>
+    </>
+  );
+}
+
+const komma2 = (n: number) => n.toFixed(2).replace(".", ",");
+
+// Taktik-Folgen einer Skill-Änderung in Worten (neu drin, fällt raus, steht drin)
+function FolgenText({ f }: { f: TaktikFolge[] }) {
+  const neu = f.filter((x) => x.art === "neu" || x.art === "liga-neu");
+  const raus = f.filter((x) => x.art === "raus" || x.art === "liga-raus");
+  const drin = f.filter((x) => x.art === "drin");
+  const mit = (x: TaktikFolge) => `${x.reiter}${x.grund ? ` (${x.grund})` : ""}`;
+  return (
+    <>
+      {neu.length > 0 && <span className="mr-2 font-semibold text-green">schafft es in: {neu.map(mit).join(", ")}</span>}
+      {raus.length > 0 && <span className="mr-2 font-semibold text-red">fällt raus in: {raus.map(mit).join(", ")}</span>}
+      {drin.length > 0 && <span className="mr-2">Stammplatz in: {drin.map((x) => x.reiter).join(", ")}</span>}
+      {!f.length && <span className="text-label-3">in keiner Taktik in der Startelf</span>}
     </>
   );
 }
