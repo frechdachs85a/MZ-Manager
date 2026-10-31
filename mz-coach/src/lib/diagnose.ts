@@ -1,6 +1,8 @@
 import type Database from "better-sqlite3";
 import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
 import { marktErgebnis } from "@/lib/markt-ergebnis";
+import { scoutAuswertung } from "@/lib/scout-auswertung";
+import { letzterLauf } from "@/lib/db/spieltag";
 import { bewerteMarkt } from "@/lib/mz/analyse/markt";
 import { mzWert } from "@/lib/mz/formel";
 import { FORMEL_SKILLS } from "@/lib/mz/skills";
@@ -221,7 +223,16 @@ export function diagnose(db: Database.Database) {
   } catch (e) {
     marktGruende = { fehler: e instanceof Error ? e.message : String(e) };
   }
+  let scoutspiele: unknown = null;
+  try {
+    const tid = letzterLauf(db, true)?.gegnerTid;
+    const sa = tid ? scoutAuswertung(db, tid) : undefined;
+    scoutspiele = sa ? { taktiken: sa.bericht.taktiken, spiele: sa.spiele } : { tid, keine: true };
+  } catch (e) {
+    scoutspiele = { fehler: e instanceof Error ? e.message : String(e) };
+  }
   return {
+    scoutspiele,
     marktGruende,
     bietomat,
     analyse,
