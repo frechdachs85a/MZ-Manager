@@ -11,19 +11,25 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 // damit es gegen jeden Gegnertyp eine gute Antwort gibt). Täglich aus dem Archiv und den Top-10-Spielen:
 // 1. Doppelte: Reiter mit gleicher Aufstellung und Einstellung (identisch) oder gleichem Stil (Formation, Taktik,
 //    Spielweise) wie ein anderer Reiter. Behalten wird der zuerst gespeicherte.
-// 2. Lücken: bei den Top 10 bewährte Stile gegen eine Gegnerklasse (portfolio.ts), die kein Reiter abdeckt.
-// 3. Vorschlag: doppelte Reiter mit Lücken füllen, wichtigste Gegnerklasse zuerst (meiste Top-10-Spiele), je Klasse
-//    höchstens ein Vorschlag. Besetzung: deine beste aufstellbare Elf auf den Plätzen des Topteams (erzeugen.ts).
+// 2. Lücken: bei den Top 10 bewährte Stile gegen eine Gegnerklasse (portfolio.ts), die kein Reiter abdeckt, oder die dort
+//    mindestens BESSER (Punktquote) bringen als der beste Stil, den du schon hast (eigene Setzung, keine MZ-Regel).
+// 3. Vorschlag: doppelte Reiter damit füllen. Reihum je Gegnerklasse ein Stil, wichtigste Klasse zuerst (meiste
+//    Top-10-Spiele), Lücken vor Verbesserungen, jeder Stil nur einmal. Besetzung: deine beste aufstellbare Elf auf den
+//    Plätzen des Topteams (erzeugen.ts).
 // Jugend-Reiter (U18, U21, U23) werden nicht überschrieben: dort spielen andere Spieler.
 // Übernommen wird nur auf Klick (abruf/liga.ts).
 
 export const JUGEND = /^u(18|21|23)\b/i;
+export const BESSER = 0.1;
 
-export type Abdeckung = { klasse: string; spiele: number; reiter: string[]; bester?: { schluessel: string; quote: number; spiele: number } };
+type StilKurz = { schluessel: string; quote: number; spiele: number };
+// reiter: Reiter mit einem bewährten Stil der Klasse; dein: dein bester Stil gegen die Klasse (auch nicht bewährt)
+export type Abdeckung = { klasse: string; spiele: number; reiter: string[]; bester?: StilKurz; dein?: StilKurz };
 export type PortfolioVorschlag = {
   reiter: string; // wird überschrieben
   grund: string; // warum dieser Reiter frei ist
   klasse: string;
+  statt?: StilKurz; // dein bisher bester Stil gegen die Klasse (bei einer Verbesserung)
   stil: string;
   quote: number;
   spiele: number;
@@ -56,28 +62,35 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   }
 
   // 2. Abdeckung je Gegnerklasse (bewährte Stile, die ein Reiter abdeckt)
+  const kurzStil = (x?: StilEintrag): StilKurz | undefined => (x ? { schluessel: x.schluessel, quote: x.quote, spiele: x.spiele } : undefined);
   const abdeckung: Abdeckung[] = p.klassen.map((k) => {
     const bewaehrt = k.stile.filter((s) => s.bewaehrt);
-    return {
-      klasse: k.klasse,
-      spiele: k.spiele,
-      reiter: [...new Set(bewaehrt.flatMap((s) => s.imArchiv))],
-      bester: bewaehrt[0] ? { schluessel: bewaehrt[0].schluessel, quote: bewaehrt[0].quote, spiele: bewaehrt[0].spiele } : undefined,
-    };
+    const dein = k.stile.filter((s) => s.imArchiv.length).sort((a, b) => b.quote - a.quote)[0];
+    return { klasse: k.klasse, spiele: k.spiele, reiter: [...new Set(bewaehrt.flatMap((s) => s.imArchiv))], bester: kurzStil(bewaehrt[0]), dein: kurzStil(dein) };
   });
 
-  // 3. Freie Reiter (doppelt, keine Jugend) mit Lücken füllen
+  // 3. Freie Reiter (doppelt, keine Jugend) mit Lücken und klar besseren Stilen füllen
   const frei = doppelt.filter((d) => !JUGEND.test(d.reiter)).sort((a, b) => (a.art === b.art ? 0 : a.art === "identisch" ? -1 : 1));
-  const luecken: (StilEintrag & { klasse: string })[] = [];
-  const klassenFertig = new Set(abdeckung.filter((a) => a.reiter.length).map((a) => a.klasse));
+  const kandidaten = abdeckung
+    .map((a) => ({
+      a,
+      stile: p.fehlend.filter((f) => f.klasse === a.klasse && (!a.reiter.length || !a.dein || f.quote >= a.dein.quote + BESSER)).sort((x, y) => y.quote - x.quote || y.spiele - x.spiele),
+    }))
+    .filter((k) => k.stile.length)
+    .sort((x, y) => Number(!!x.a.reiter.length) - Number(!!y.a.reiter.length) || y.a.spiele - x.a.spiele);
+  const luecken: (StilEintrag & { klasse: string; statt?: StilKurz })[] = [];
   const stileDrin = new Set<string>();
-  const nachWichtigkeit = [...abdeckung].sort((a, b) => b.spiele - a.spiele);
-  for (const k of nachWichtigkeit) {
-    if (klassenFertig.has(k.klasse)) continue;
-    const s = p.fehlend.filter((f) => f.klasse === k.klasse && !stileDrin.has(f.schluessel)).sort((a, b) => b.quote - a.quote || b.spiele - a.spiele)[0];
-    if (!s) continue;
-    luecken.push(s);
-    stileDrin.add(s.schluessel);
+  for (let runde = 0; luecken.length < frei.length; runde++) {
+    let neu = false;
+    for (const k of kandidaten) {
+      if (luecken.length >= frei.length) break;
+      const s = k.stile.filter((x) => !stileDrin.has(x.schluessel))[0];
+      if (!s || luecken.filter((l) => l.klasse === k.a.klasse).length > runde) continue;
+      luecken.push({ ...s, statt: k.a.reiter.length ? k.a.dein : undefined });
+      stileDrin.add(s.schluessel);
+      neu = true;
+    }
+    if (!neu) break;
   }
   const kader = ladeKader(db);
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
@@ -93,6 +106,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
         reiter: d.reiter,
         grund: d.art === "identisch" ? `identisch mit ${d.wie}` : `gleicher Stil wie ${d.wie}`,
         klasse: s.klasse,
+        statt: s.statt,
         stil: s.schluessel,
         quote: s.quote,
         spiele: s.spiele,
@@ -108,4 +122,5 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
 }
 
 export const vorschlagText = (v: PortfolioVorschlag) =>
-  `${v.reiter} (${v.grund}) überschreiben mit ${v.stil}: bei den Top 10 gegen „${v.klasse}“ ${prozent(v.quote)} Punktquote in ${v.spiele} Spielen`;
+  `${v.reiter} (${v.grund}) überschreiben mit ${v.stil}: bei den Top 10 gegen „${v.klasse}“ ${prozent(v.quote)} Punktquote in ${v.spiele} Spielen` +
+  (v.statt ? ` (dein bisher bester Stil dort, ${v.statt.schluessel}: ${prozent(v.statt.quote)} in ${v.statt.spiele})` : " (bisher kein Reiter dafür)");

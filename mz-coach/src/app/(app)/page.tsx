@@ -98,6 +98,7 @@ export default async function Uebersicht() {
                   <span className={`font-bold ${a.reiter.length ? "text-green" : a.bester ? "text-red" : "text-label-3"}`}>{a.reiter.length ? "✓" : a.bester ? "✗" : "–"}</span>
                   <span>
                     {a.klasse}: {a.reiter.length ? a.reiter.join(", ") : a.bester ? `Lücke (bewährt: ${a.bester.schluessel})` : "kein bewährter Stil bekannt"}
+                    {a.dein && <span className="text-label-3"> · dein Stil {a.dein.schluessel}: {Math.round(a.dein.quote * 100)} % in {a.dein.spiele} Top-10-Spielen</span>}
                   </span>
                 </li>
               ))}
@@ -122,8 +123,8 @@ export default async function Uebersicht() {
           )}
           <p className="px-4 py-2 text-[11.5px] leading-relaxed text-label-3">
             Ziel: jeder Reiter eine andere, für dein Team optimale Taktik, zusammen eine Antwort auf jeden Gegnertyp. Bewährt = bei den Top 10
-            mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Doppelte Reiter werden mit den Lücken belegt, wichtigste
-            Gegnerklasse zuerst; Jugend-Reiter (U18) bleiben. Den Namen des Reiters im Editor selbst anpassen. Übernommen wird nur auf Klick.
+            mindestens 3 Spiele und 60 % Punktquote gegen diese Gegnerklasse. Doppelte Reiter werden mit Lücken und mit Stilen belegt,
+            die bei den Top 10 mindestens 10 Prozentpunkte mehr holen als dein bester, reihum je Gegnerklasse, wichtigste zuerst; Jugend-Reiter (U18) bleiben. Den Namen des Reiters im Editor selbst anpassen. Übernommen wird nur auf Klick.
           </p>
         </Card>
       </div>
