@@ -26,15 +26,16 @@ export function LigaTabelle({ db, titel = "Tabelle" }: { db: Database.Database; 
   const tabelle = tabHtml ? tabelleAus(tabHtml.html, TEAM.name) : null;
   return (
     <Section title={titel} footer={tabRoh ? `Stand ${datumZeit(tabRoh.abgerufen)}, so wie ManagerZone sie zeigt.` : undefined}>
-      {tabelle && (() => {
-        const eigen = tabelle.zeilen.find((z) => z.eigen);
-        return eigen ? (
-          <p className="mb-2 text-[14px]">
-            <b>{TEAM.name}</b> steht auf Platz <b>{eigen.zellen[0]}</b>
-            {tabelle.kopf.includes("Pkt") ? ` mit ${eigen.zellen[tabelle.kopf.indexOf("Pkt")]} Punkten` : ""} ({tabelle.zeilen.length} Teams).
-          </p>
-        ) : null;
-      })()}
+      {tabelle &&
+        (() => {
+          const eigen = tabelle.zeilen.find((z) => z.eigen);
+          return eigen ? (
+            <p className="mb-2 text-[14px]">
+              <b>{TEAM.name}</b> steht auf Platz <b>{eigen.zellen[0]}</b>
+              {tabelle.kopf.includes("Pkt") ? ` mit ${eigen.zellen[tabelle.kopf.indexOf("Pkt")]} Punkten` : ""} ({tabelle.zeilen.length} Teams).
+            </p>
+          ) : null;
+        })()}
       {tabelle ? (
         <Card className="!overflow-x-auto">
           <table className="w-full text-[13.5px]">
@@ -52,11 +53,29 @@ export function LigaTabelle({ db, titel = "Tabelle" }: { db: Database.Database; 
             <tbody className="divide-y divide-separator">
               {tabelle.zeilen.map((z, i) => (
                 <tr key={i} className={z.eigen ? "bg-tint/[0.12] font-semibold text-label" : "text-label-2"}>
-                  {z.zellen.map((c, j) => (
-                    <td key={j} className="px-3 py-1.5 tabular-nums first:pl-4 last:pr-4">
-                      {c}
-                    </td>
-                  ))}
+                  {z.zellen.map((c, j) =>
+                    tabelle.kopf[j] === "Letzte 6 Spiele" && z.letzte ? (
+                      <td key={j} className="px-3 py-1.5 last:pr-4">
+                        <span className="flex gap-1">
+                          {z.letzte.map((l, k) => (
+                            <span
+                              key={k}
+                              title={l.titel}
+                              className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold text-white ${
+                                l.ergebnis === "S" ? "bg-green" : l.ergebnis === "N" ? "bg-red" : "bg-label-3"
+                              }`}
+                            >
+                              {l.ergebnis}
+                            </span>
+                          ))}
+                        </span>
+                      </td>
+                    ) : (
+                      <td key={j} className="px-3 py-1.5 tabular-nums first:pl-4 last:pr-4">
+                        {c}
+                      </td>
+                    ),
+                  )}
                 </tr>
               ))}
             </tbody>

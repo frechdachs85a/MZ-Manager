@@ -5,7 +5,10 @@ import { text } from "./spielerblock";
 // 30.10.2026 gesehen: Platz, Mannschaft, Sp, G, U, V, +, -, =, Pkt, Letzte 6 Spiele). Keine
 // Deutung einzelner Spalten: übernommen wird die erste HTML-Tabelle, in der das eigene Team steht,
 // mit Kopfzeile und allen Zeilen so, wie ManagerZone sie zeigt.
-export type Tabelle = { kopf: string[]; zeilen: { zellen: string[]; eigen: boolean; tid?: number }[] };
+// letzte: Spalte "Letzte 6 Spiele" (Links mit Titel "A 1 - 0 B" und Bild img/status_green|red|….gif, gesehen 31.10.2026);
+// green = Sieg, red = Niederlage, sonst (z. B. yellow) Remis
+export type LetztesSpiel = { ergebnis: "S" | "U" | "N"; titel: string; mid?: number };
+export type Tabelle = { kopf: string[]; zeilen: { zellen: string[]; eigen: boolean; tid?: number; letzte?: LetztesSpiel[] }[] };
 
 // Ligatabelle lesen (Zeile des eigenen Teams markiert)
 export function tabelleAus(html: string, teamName: string): Tabelle | null {
@@ -27,9 +30,28 @@ function tabelleSuchen(html: string, teamName: string, nurMitPunkten: boolean): 
       .filter((r) => r !== kopfReihe && r.querySelectorAll("td").length > 1)
       .map((r) => {
         // Leere Zellen (z. B. "Letzte 6 Spiele" als Symbole): Titel der Bilder, sonst leer
-        const zellen = r.querySelectorAll("td").map((td) => text(td) || td.querySelectorAll("img, i, span").map((x) => x.getAttribute("title") ?? "").filter(Boolean).join(" "));
+        const zellen = r.querySelectorAll("td").map(
+          (td) =>
+            text(td) ||
+            td
+              .querySelectorAll("img, i, span")
+              .map((x) => x.getAttribute("title") ?? "")
+              .filter(Boolean)
+              .join(" "),
+        );
         const tid = Number((r.querySelector("a[href*='tid=']")?.getAttribute("href") ?? "").match(/[?&]tid=(\d+)/)?.[1]) || undefined;
-        return { zellen, eigen: r.classList.contains("highlight_row") || zellen.some((z) => z.includes(teamName)), tid };
+        const letzte: LetztesSpiel[] = r
+          .querySelectorAll("a")
+          .filter((a) => /status_\w+\.gif/.test(a.querySelector("img")?.getAttribute("src") ?? ""))
+          .map((a) => {
+            const farbe = (a.querySelector("img")?.getAttribute("src") ?? "").match(/status_(\w+)\.gif/)?.[1];
+            return {
+              ergebnis: farbe === "green" ? "S" : farbe === "red" ? "N" : "U",
+              titel: a.getAttribute("title") ?? "",
+              mid: Number((a.getAttribute("href") ?? "").match(/[?&]mid=(\d+)/)?.[1]) || undefined,
+            };
+          });
+        return { zellen, eigen: r.classList.contains("highlight_row") || zellen.some((z) => z.includes(teamName)), tid, ...(letzte.length ? { letzte } : {}) };
       });
     if (zeilen.length > 1) return { kopf, zeilen };
   }

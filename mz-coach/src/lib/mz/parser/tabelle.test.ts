@@ -38,3 +38,16 @@ describe("Ligatabelle neben den Paarungen", () => {
     expect(t.zeilen.find((z) => z.eigen)?.zellen).toEqual(["2", "Mein Team", "9", "20"]);
   });
 });
+
+describe("Letzte 6 Spiele", () => {
+  it("liest Sieg und Niederlage aus den Ampel-Bildern", () => {
+    const html = `<table><thead><tr><th></th><th>Mannschaft</th><th>Pkt</th><th>Letzte 6 Spiele</th></tr></thead><tbody>
+<tr><td>1</td><td>Team A</td><td>3</td><td></td></tr>
+<tr class="highlight_row"><td>2</td><td>Mein Team</td><td>3</td><td><nobr><a href="/?p=match&sub=result&mid=5" title="Mein Team 1 - 0 X"><img src="img/status_green.gif"></a><a href="/?p=match&sub=result&mid=6" title="Y 2 - 0 Mein Team"><img src="img/status_red.gif"></a></nobr></td></tr></tbody></table>`;
+    const z = tabelleAus(html, "Mein Team")!.zeilen.find((x) => x.eigen)!;
+    expect(z.letzte).toEqual([
+      { ergebnis: "S", titel: "Mein Team 1 - 0 X", mid: 5 },
+      { ergebnis: "N", titel: "Y 2 - 0 Mein Team", mid: 6 },
+    ]);
+  });
+});
