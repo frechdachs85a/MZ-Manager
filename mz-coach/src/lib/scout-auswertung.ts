@@ -1,5 +1,7 @@
 import type Database from "better-sqlite3";
+import { ladeTeamSpiele } from "@/lib/db/gegner";
 import { ladeScoutSpiele } from "@/lib/db/scout-spiel";
+import { letzteLigaspiele } from "@/lib/mz/parser/spielliste";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
 import { TEAM } from "@/lib/wissen/startbasis";
 import type { ScoutBericht, ScoutTaktik } from "@/lib/wissen/scoutspiele";
@@ -10,17 +12,17 @@ import type { ScoutBericht, ScoutTaktik } from "@/lib/wissen/scoutspiele";
 // damit der Taktikvorschlag (scoutEntscheidung) es direkt nutzt.
 export type ScoutSpielZeile = { mid: number; datum: string | null; reiter: string; tore: string; ergebnis: "S" | "U" | "N"; ballbesitz?: number };
 
-// Gezählt werden nur die Scoutspiele des neuesten Scout-Tags (Marcus, 31.10.2026: „Scoutspiele gegen den Gegner am
-// heutigen Tag analysieren“). Ältere Tage stehen in `aeltere`, zählen aber nicht: der Gegner spielt im Scoutspiel mit der
-// Aufstellung seines letzten Ligaspiels, ältere Spiele können eine andere Aufstellung haben.
-export function scoutAuswertung(
-  db: Database.Database,
-  tid: number,
-): { bericht: ScoutBericht; spiele: ScoutSpielZeile[]; tag: string; aeltere: number } | undefined {
-  const alle = ladeScoutSpiele(db, tid);
-  if (!alle.length) return undefined;
-  const tag = alle.map((s) => s.datum ?? "").sort().at(-1) ?? "";
-  const spiele = alle.filter((s) => (s.datum ?? "") === tag);
+// Gezählt werden alle Scoutspiele gegen den Gegner seit dem eigenen letzten Ligaspiel (Marcus, 31.10.2026: „alle Spiele vom
+// Zeitpunkt des letzten Spieltages; keine Infos von vor 6 Monaten, wenn ich erneut gegen ihn spiele“). Neue kommen beim
+// Abruf dazu, schon gespeicherte werden nicht erneut geladen.
+export function scoutAbDatum(db: Database.Database): string | undefined {
+  return letzteLigaspiele(ladeTeamSpiele(db, TEAM.tid), 99).find((s) => s.tore !== undefined)?.datum;
+}
+
+export function scoutAuswertung(db: Database.Database, tid: number): { bericht: ScoutBericht; spiele: ScoutSpielZeile[]; ab?: string } | undefined {
+  const ab = scoutAbDatum(db);
+  const spiele = ladeScoutSpiele(db, tid).filter((s) => !ab || (s.datum ?? "") >= ab);
+  if (!spiele.length) return undefined;
   const archiv = archivLaden(db);
   const zeilen: ScoutSpielZeile[] = [];
   const je = new Map<string, ScoutTaktik & { besitz: number[] }>();
@@ -63,13 +65,12 @@ export function scoutAuswertung(
   const pps = (t: ScoutTaktik) => ((3 * t.S + t.U) / t.spiele).toFixed(2).replace(".", ",");
   return {
     spiele: zeilen,
-    tag,
-    aeltere: alle.length - spiele.length,
+    ab,
     bericht: {
       tid,
       gegner: spiele[0].gegnerName ?? `tid ${tid}`,
       datum,
-      quelle: `${zeilen.length} Scoutspiele vom ${tag.split("-").reverse().join(".")} aus ManagerZone, automatisch ausgewertet (Taktik über die Startaufstellung zugeordnet)${alle.length > spiele.length ? `; ${alle.length - spiele.length} ältere nicht gezählt` : ""}`,
+      quelle: `${zeilen.length} Scoutspiele${ab ? ` seit deinem letzten Ligaspiel (${ab.split("-").reverse().join(".")})` : ""} aus ManagerZone, automatisch ausgewertet (Taktik über die Startaufstellung zugeordnet)`,
       taktiken,
       befunde: taktiken.map(
         (t) => `${t.reiter}: ${t.spiele} Spiele, ${t.S} S / ${t.U} U / ${t.N} N, Tore ${t.tore}:${t.gegentore}, ${pps(t)} Punkte pro Spiel`,

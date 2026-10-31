@@ -6,6 +6,7 @@ import { letzterLauf } from "@/lib/db/spieltag";
 import { parseSpielliste, spiellisteHtmlAus } from "@/lib/mz/parser/spielliste";
 import { parseStatsXml, statsXmlAus } from "@/lib/mz/parser/stats";
 import { TEAM } from "@/lib/wissen/startbasis";
+import { scoutAbDatum } from "@/lib/scout-auswertung";
 import { meldungAus, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler } from "./sitzung";
 
@@ -42,7 +43,9 @@ export async function scoutspieleAbrufen(db: Database.Database, opt: { manuell: 
         speichereRohseite(db, { art: "scoutspiele-liste", url: a.url, status: a.status, htmlRoh: a.text, htmlDom: null });
         const html = spiellisteHtmlAus(a.text);
         if (!html) throw new MzFehler("Liste der Scoutspiele: Antwort nicht erkannt (gespeichert als scoutspiele-liste).");
-        const liste = parseSpielliste(html, TEAM.tid).spiele.filter((x) => x.heim.tid === tid || x.gast.tid === tid);
+        // Nur Scoutspiele seit dem eigenen letzten Ligaspiel (Marcus, 31.10.2026), ältere werden nicht geladen
+        const ab = scoutAbDatum(db);
+        const liste = parseSpielliste(html, TEAM.tid).spiele.filter((x) => (x.heim.tid === tid || x.gast.tid === tid) && (!ab || x.datum >= ab));
         const bekannt = bekannteScoutMids(db);
         const neu = liste.filter((x) => !bekannt.has(x.mid));
         let geholt = 0;
