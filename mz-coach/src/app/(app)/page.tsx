@@ -29,9 +29,11 @@ export default async function Uebersicht() {
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
   const db = getDb();
   const { bilanz, warnungen: verlust } = skillBilanz(db, 14);
-  const taktikVorschlaege = reiterUebersicht(db).karten.filter(
-    (k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag,
-  ).length;
+  // Reiter, bei denen die Taktikseite eine Änderung vorschlägt (Besetzung/Wechsel, überschreiben, Name, freund)
+  const taktikReiter = reiterUebersicht(db)
+    .karten.filter((k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag)
+    .map((k) => k.name);
+  const taktikVorschlaege = taktikReiter.length;
   const kader = ladeKader(db);
   const kaderNach = new Map(kader.map((s) => [s.pid, s]));
   const einsatz = kader.map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }));
@@ -135,10 +137,10 @@ export default async function Uebersicht() {
           href="/markt"
         />
         <Kachel
-          titel="Taktik"
+          titel="Taktik-Vorschläge"
           ton={taktikVorschlaege ? "gold" : "tint"}
           wert={taktikVorschlaege}
-          unten={taktikVorschlaege ? "Reiter mit Vorschlägen" : "Keine Vorschläge"}
+          unten={taktikVorschlaege ? `Änderungsvorschlag für ${taktikReiter.join(", ")}` : "Alle Reiter passen, keine Vorschläge"}
           href="/taktik"
         />
       </div>

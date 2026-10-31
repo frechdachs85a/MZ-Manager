@@ -2,27 +2,18 @@
 
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Badge, List, Row, Section, Unavailable } from "@/components/ui";
+import { Badge, Card, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
 import { ladeMarktRahmen } from "@/lib/db/markt";
 import { datumZeit } from "@/lib/format";
 import { auftragLoeschen } from "./actions";
 import { Bietomat, GebotKarte } from "./formulare";
-import { SpielerProfil } from "@/components/spieler-profil";
-import { MarktInfo } from "@/components/markt-info";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
 import { MarktReiter } from "@/components/markt-reiter";
-import { mzMarktLink } from "@/lib/mz/formel";
-import { watchlistAktuell } from "@/lib/watchlist";
+import { vorschlagAnzahl, watchlistAktuell } from "@/lib/watchlist";
 import { marktErgebnis, verbesserungFuer } from "@/lib/markt-ergebnis";
-import { VerbesserungZeile } from "@/components/verbesserung-zeile";
-
-const STATUS_TON = {
-  aktiv: "green",
-  beendet: undefined,
-  abgebrochen: "red",
-} as const;
+import { SpielerKarte } from "@/components/vorschlag-karte";
 
 // Seite Bietomat
 export default async function BietomatSeite() {
@@ -34,16 +25,78 @@ export default async function BietomatSeite() {
   const verkaeufe = ladeVerkaeufe(db);
   const namen = new Map(auftraege.map((a) => [a.pid, a.name ?? String(a.pid)]));
   const watch = watchlistAktuell(db).liste;
-  const aufWatch = new Set(watch.map((w) => w.pid));
   const watchAnzahl = watch.length;
-  const vorschlaege = (marktErgebnis(db).ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid)).length;
+  const vorschlaege = vorschlagAnzahl(db, marktErgebnis(db).ergebnis?.alle ?? []);
   return (
     <>
-      <PageHeader title="Transfermarkt" subtitle={`Gebote · ${auftraege.filter((a) => a.status === "aktiv").length} aktiv · Bietomat bietet bis höchstens zum Endpreis`} />
+      <PageHeader
+        title="Transfermarkt"
+        subtitle={`Gebote · ${auftraege.filter((a) => a.status === "aktiv").length} aktiv · Bietomat bietet bis höchstens zum Endpreis`}
+      />
       <MarktReiter
         aktiv="/markt/bietomat"
         anzahl={{ "/markt": vorschlaege, "/markt/watchlist": watchAnzahl, "/markt/bietomat": auftraege.filter((a) => a.status === "aktiv").length }}
       />
+      <div className="seite">
+        {/* Deine Gebote als Spielerkarten wie in Vorschläge und Watchlist, dazu dein Gebot (Marcus, 31.10.2026) */}
+        <Section title="Deine Gebote" footer="Der Bietomat bietet kurz vor Schluss Stufe für Stufe bis höchstens zum Endpreis, auch bei Verlängerung.">
+          {auftraege.length ? (
+            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              {auftraege.map((a) =>
+                a.spieler ? (
+                  <SpielerKarte
+                    key={a.pid}
+                    k={a.spieler}
+                    v={verbesserungFuer(db, a.spieler)}
+                    verkauf={verkaeufe.get(a.pid)}
+                    ende={a.auktionEnde}
+                    badge={a.status}
+                    hinweise={a.auktionEnde ? [] : ["Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten."]}
+                    zusatz={
+                      <GebotKarte
+                        pid={a.pid}
+                        maximum={a.maximum}
+                        auktionEnde={a.auktionEnde}
+                        eigenesGebot={ladeProtokoll(db, a.pid, 50).find((l) => l.text.startsWith("Geboten:"))?.betrag ?? undefined}
+                      />
+                    }
+                    fuss={
+                      <form action={auftragLoeschen} className="grid grid-cols-2 gap-2">
+                        <input type="hidden" name="pid" value={a.pid} />
+                        <button
+                          type="submit"
+                          name="danach"
+                          value="watchlist"
+                          className="pressable min-h-[40px] rounded-[10px] border border-tint/40 text-[13.5px] font-semibold text-tint"
+                        >
+                          Zurück auf Watchlist
+                        </button>
+                        <button
+                          type="submit"
+                          name="danach"
+                          value="weg"
+                          className="pressable min-h-[40px] rounded-[10px] border border-red/40 text-[13.5px] font-semibold text-red"
+                        >
+                          Verwerfen
+                        </button>
+                      </form>
+                    }
+                  />
+                ) : (
+                  <Card key={a.pid} className="p-4 text-[14px]">
+                    {a.name ?? a.pid}: keine Spielerdaten gespeichert.
+                  </Card>
+                ),
+              )}
+            </div>
+          ) : (
+            <Unavailable
+              title="Gebote"
+              reason="Noch kein Gebot. Spieler auf der Watchlist mit einem Endpreis in den Bietomat geben oder unten per Nummer laden."
+            />
+          )}
+        </Section>
+      </div>
       <div className="seite flex flex-col lg:grid lg:grid-cols-2 lg:gap-x-8">
         <div className="order-2 lg:order-2">
           <Section
@@ -63,58 +116,6 @@ export default async function BietomatSeite() {
           </Section>
         </div>
         <div className="order-1 lg:order-1">
-          <Section title="Aufträge">
-            {auftraege.length ? (
-              <List>
-                {auftraege.map((a) => (
-                  <li key={a.pid} className="py-3">
-                    <div className="flex items-start gap-3">
-                      <div className="min-w-0 flex-1">
-                        <a href={mzMarktLink(a.pid)} target="_blank" rel="noreferrer" title="Auf dem Transfermarkt von ManagerZone öffnen" className="text-[14.5px] font-medium leading-snug hover:underline">{`${a.name ?? "?"} (${a.pid})`}</a>
-                        {!a.auktionEnde && (
-                          <div className="mt-0.5 text-[12.5px] text-red">Auktionsende unbekannt: Spieler neu laden und Auftrag erneut speichern, sonst wird nicht geboten.</div>
-                        )}
-                      </div>
-                      <Badge tone={STATUS_TON[a.status]}>{a.status}</Badge>
-                      {/* Gebot entfernen (Marcus, 31.10.2026): ganz verwerfen oder zurück auf die Watchlist */}
-                      <form action={auftragLoeschen} className="flex flex-col items-end gap-1">
-                        <input type="hidden" name="pid" value={a.pid} />
-                        <button type="submit" name="danach" value="watchlist" className="text-[12.5px] font-semibold text-tint">
-                          Zurück auf Watchlist
-                        </button>
-                        <button type="submit" name="danach" value="weg" className="text-[12.5px] font-semibold text-red">
-                          Verwerfen
-                        </button>
-                      </form>
-                    </div>
-                    <GebotKarte
-                      pid={a.pid}
-                      maximum={a.maximum}
-                      auktionEnde={a.auktionEnde}
-                      eigenesGebot={ladeProtokoll(db, a.pid, 50).find((l) => l.text.startsWith("Geboten:"))?.betrag ?? undefined}
-                    />
-                    {a.spieler && (
-                      <div className="mt-3">
-                        <VerbesserungZeile v={verbesserungFuer(db, a.spieler)} />
-                      </div>
-                    )}
-                    {a.spieler && (
-                      <div className="mt-3">
-                        <MarktInfo s={a.spieler} verkauf={verkaeufe.get(a.pid)} stand={`Stand beim Laden (${datumZeit(a.erstellt)}); Gebot und Ende verfolgt der Bietomat in der heißen Phase live.`} />
-                      </div>
-                    )}
-                    {a.spieler && (
-                      <div className="mt-3">
-                        <SpielerProfil skills={a.spieler.skills} scout={a.spieler.scout} />
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </List>
-            ) : (
-              <Unavailable title="Aufträge" reason="Noch kein Auftrag gespeichert." />
-            )}
-          </Section>
           <Section title="Protokoll">
             {log.length ? (
               <List>
