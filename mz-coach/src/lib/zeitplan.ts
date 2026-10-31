@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
-import { abrufBeenden, abrufBeginnen } from "@/lib/db/abruf";
+import { abrufBeenden, abrufBeginnen, letzterAbruf } from "@/lib/db/abruf";
+import { letzterLauf } from "@/lib/db/spieltag";
 import { aufraeumen, sichereDatenbank } from "@/lib/archiv";
 import { marktAbrufen, marktFaellig } from "@/lib/mz/abruf/markt";
 import { ligaHinterlegen } from "@/lib/mz/abruf/liga";
@@ -18,6 +19,16 @@ import { bietomatTakt } from "@/lib/mz/abruf/bietomat-lauf";
 // 5 Stunden nach jedem Ligaspiel: Spieltag (Spielbericht, nächster Gegner, Taktikvorschlag), sonst täglich der Spielplan
 // danach: Aufräumen täglich, Sicherung der Datenbank wöchentlich
 const TAKT_MS = 15 * 60 * 1000;
+
+// Formation Liga fällig? Nur vor dem Anstoß des nächsten Ligaspiels. nachKader: direkt nach einem Kaderabruf immer;
+// sonst nur, wenn der letzte Versuch fehlschlug und mindestens 60 Minuten her ist.
+function ligaFaellig(db: Database.Database, nachKader: boolean, jetzt = new Date()): boolean {
+  const lauf = letzterLauf(db, true);
+  if (!lauf?.anstoss || Date.parse(lauf.anstoss) <= jetzt.getTime()) return false;
+  if (nachKader) return true;
+  const l = letzterAbruf(db, "liga");
+  return !!l && l.ok === 0 && jetzt.getTime() - Date.parse(l.gestartet) >= 60 * 60_000;
+}
 const TAG_MS = 24 * 3600_000;
 let gestartet = false;
 let laeuft = false;
@@ -64,6 +75,16 @@ async function takt() {
     if (kaderFaellig(db)) {
       const r = await kaderAbrufen(db);
       console.log(`[zeitplan] ${r.meldung.slice(0, 300)}`);
+      // Liga mit dem neuen Kaderstand (Verletzung, Sperre, Trainingslager, Skills) neu hinterlegen (Marcus, 31.10.2026)
+      if (r.ok && ligaFaellig(db, true)) {
+        const l = await ligaHinterlegen(db);
+        console.log(`[zeitplan] ${l.meldung.slice(0, 300)}`);
+      }
+    }
+    // Liga darf nie leer oder veraltet bleiben: nach einem Fehler stündlich erneut versuchen
+    if (ligaFaellig(db, false)) {
+      const l = await ligaHinterlegen(db);
+      console.log(`[zeitplan] ${l.meldung.slice(0, 300)}`);
     }
     const spieltag = spieltagFaellig(db);
     if (spieltag) {

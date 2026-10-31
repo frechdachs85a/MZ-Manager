@@ -305,6 +305,7 @@ Formation Liga (26.10.2026)
 - Nach jeder Spieltag-Analyse (5 Stunden nach dem Ligaspiel) automatisch die Aufstellung gegen den nächsten Gegner in den Editor-Reiter „Liga“ schreiben und nach Neuladen prüfen. Welcher Reiter im Spiel gilt und was am Ende gespielt wird, entscheidet Marcus selbst.
 - Grundlage ist die getestete Taktik aus dem Archiv (Spieler, Bank, Wechsel- und Taktikregeln bleiben). Angepasst wird nur: stärkste Verteidiger gegen seine stärksten Angreifer, Innenverteidiger mit dem meisten Kopfball, wenn er über außen spielt, Angriff auf seiner schwächeren Abwehrseite (sonst spiegeln).
 - Sperren gelten je Wettbewerb: Pokal- oder Freundschaftsspiel-Sperre sperrt nicht für die Liga.
+- Für den Reiter „Liga“ ist die Seite allein zuständig (Marcus, 31.10.2026): beste Taktik für das nächste Ligaspiel nach der Gegneranalyse, selbst aufgestellt und in den Reiter „Liga“ übernommen; er darf nie leer sein. Umsetzung: nach jeder Spieltag-Analyse und nach jedem täglichen Kaderabruf neu (bis zum Anstoß), nach einem Fehler stündlich erneut. Vorher wird die Besetzung der Basis-Taktik mit dem Taktik-Check gegen Kader und Aufstellbarkeit am Spieltag geprüft (Verletzung, Sperre, Trainingslager, Skills, Ausdauer-Wechsel).
 
 Zentrale
 - Warnung bei Skillverlust (vor allem Ausdauer unter 8), Übersicht „Bälle der letzten 14 Tage“ (wer hat Bälle bekommen oder verloren). Taktik fürs nächste Spiel nur kompakt.
