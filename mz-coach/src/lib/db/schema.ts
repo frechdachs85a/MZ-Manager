@@ -311,6 +311,21 @@ const MIGRATIONEN: string[] = [
     abgerufen TEXT NOT NULL
   );
   `,
+  // 23: Ligatabelle mit Startelf je Team (letztes Ligaspiel laut Tabelle) und Weltrang (Marcus, 31.10.2026)
+  `
+  CREATE TABLE liga_elf (
+    tid INTEGER PRIMARY KEY,
+    mid INTEGER NOT NULL,
+    datum TEXT,
+    elf_json TEXT NOT NULL, -- pids der Startelf
+    abgerufen TEXT NOT NULL
+  );
+  CREATE TABLE liga_rang (
+    tid INTEGER PRIMARY KEY,
+    rang INTEGER,
+    stand TEXT NOT NULL
+  );
+  `,
 ];
 
 // Schema auf den neuesten Stand bringen (Migrationen der Reihe nach)

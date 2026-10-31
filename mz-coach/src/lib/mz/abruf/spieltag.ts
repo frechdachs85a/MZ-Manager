@@ -11,7 +11,7 @@ import { TEAM } from "@/lib/wissen/startbasis";
 import { meldungAus, spielXmlEinlesen, type Ergebnis } from "./kader";
 import { liesGegnerKader } from "./fremd";
 import { holeStatsXml } from "./spiele";
-import { ligaTabelleHolen } from "./tabelle";
+import { ligaElfenHolen, ligaTabelleHolen, ligaTeamsInSitzung } from "./tabelle";
 import { marke, mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
 
 // Spieltag-Automatik (Auftrag Marcus, 26.10.2026): 5 Stunden nach jedem Ligaspiel
@@ -61,6 +61,7 @@ export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boo
         // Ligatabelle nur hier, nach jedem Ligaspiel (Marcus, 31.10.2026)
         try {
           teile.push(await ligaTabelleHolen(db, s));
+          teile.push(await ligaTeamsInSitzung(db, s));
         } catch (e) {
           teile.push(`Ligatabelle: ${meldungAus(e)}`);
         }
@@ -128,6 +129,12 @@ export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boo
     }
     teile.push(`Stats-XML: ${geholt} von ${auftraege.length} fehlenden Spielen geholt.`);
     if (letztes && !spielVorhanden(db, letztes.mid)) teile.push(`Spielbericht für mid ${letztes.mid} noch nicht möglich (Stats-XML fehlt).`);
+    // Startelf je Ligateam für den Startelf-Wert in der Ligatabelle (Marcus, 31.10.2026)
+    try {
+      teile.push(await ligaElfenHolen(db));
+    } catch (e) {
+      teile.push(`Startelfen: ${meldungAus(e)}`);
+    }
   } catch (e) {
     ok = false;
     teile.push(meldungAus(e));

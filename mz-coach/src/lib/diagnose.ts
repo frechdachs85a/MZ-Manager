@@ -18,6 +18,7 @@ import { spieltagLage } from "@/lib/spieltag";
 import { quotenJeBereich } from "@/lib/db/wertspiel";
 import { ladeKader } from "@/lib/db/kader";
 import { schwaerzen } from "@/lib/schwaerzen";
+import { ladeLigaElfen } from "@/lib/db/liga-team";
 import { ladeKombis, scoutEinstufung } from "@/lib/scout";
 
 // Diagnose: Abrufprotokoll, die neuesten Rohantworten, die nach dem Hosting erstmals echt geprüft werden müssen
@@ -47,6 +48,8 @@ export const ARTEN = [
   "spieler-fremd",
   "taktik-geloescht",
   "tabelle",
+  "team-seite",
+  "rangliste-manager",
 ];
 
 // Diagnose für den Fernzugriff (ohne Zugangsdaten)
@@ -240,7 +243,7 @@ export function diagnose(db: Database.Database) {
   try {
     const t = letzteRohseite(db, "tabelle");
     const h = t ? (ladeRohseite(db, t.id, "dom") ?? ladeRohseite(db, t.id, "roh")) : null;
-    ligaTabelle = t ? { stand: t.abgerufen, bytes: t.bytes, tabelle: h ? tabelleAus(h.html, TEAM.name) : null } : { fehlt: true };
+    ligaTabelle = t ? { stand: t.abgerufen, bytes: t.bytes, tabelle: h ? tabelleAus(h.html, TEAM.name) : null, startelfen: [...ladeLigaElfen(db).values()].map((e) => ({ tid: e.tid, mid: e.mid, elf: e.elf.length })) } : { fehlt: true };
   } catch (e) {
     ligaTabelle = { fehler: e instanceof Error ? e.message : String(e) };
   }

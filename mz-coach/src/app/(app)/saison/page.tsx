@@ -14,8 +14,10 @@ const komma = (n?: number, s = 1) => (n === undefined ? "n. v." : n.toFixed(s).r
 const FARBE = { S: "bg-tint text-white", U: "bg-gold-hell text-ink", N: "bg-red/85 text-white" } as const;
 
 // Seite Saison
-export default async function Saison() {
+export default async function Saison({ searchParams }: PageProps<"/saison">) {
   await connection();
+  const q = await searchParams;
+  const sort = q.tabelle === "wert" || q.tabelle === "rang" ? q.tabelle : "punkte";
   const a = saisonAuswertung(getDb());
   const n = a.spiele.length;
   return (
@@ -23,7 +25,7 @@ export default async function Saison() {
       <PageHeader title="Saison" subtitle={`${TEAM.name} · ${TEAM.liga} · ${n} Ligaspiele mit Stats-XML`} />
       {n === 0 ? (
         <div className="seite">
-          <LigaTabelle db={getDb()} titel="Ligatabelle" />
+          <LigaTabelle db={getDb()} titel="Ligatabelle" sort={sort} basis="/saison" />
           <Section title="Ligaspiele">
             <Unavailable
               title="Saisonstatistik"
@@ -40,7 +42,7 @@ export default async function Saison() {
             <Kachel titel="Schüsse aufs Tor" wert={komma(a.schuesseAufsTor)} unten="je Spiel im Schnitt" />
           </div>
           <div className="seite">
-            <LigaTabelle db={getDb()} titel="Ligatabelle" />
+            <LigaTabelle db={getDb()} titel="Ligatabelle" sort={sort} basis="/saison" />
             <Section title="Formkurve" footer="Neuestes Spiel links. Nur gespeicherte Spiele mit Stats-XML.">
               <div className="flex flex-wrap gap-2">
                 {a.spiele.map((s) => (
