@@ -51,6 +51,10 @@ const wertIn = (s: SpielerDaten | undefined, r: Position) => {
 const kurz = (s?: SpielerDaten, pid?: number) => (s ? s.name.split(" ").at(-1)! : `pid ${pid}`);
 const komma = (n: number) => n.toFixed(2).replace(".", ",");
 
+// Grund statt "nicht aufstellbar" (Marcus, 31.10.2026: Trainingslager, verletzt, gesperrt sagen es schon)
+const ausfallGrund = (s?: SpielerDaten) =>
+  s?.status?.verletzt ? "verletzt" : s?.status?.gesperrt ? "gesperrt" : s?.status?.trainingslager ? "im Trainingslager" : "nicht aufstellbar";
+
 // pid-Attribute in Pos/Sub und Spieler in Regeln (out_player, in_player_id) tauschen: a <-> b
 function tausche(xml: string, a: number, b: number): string {
   const A = `__A${a}__`;
@@ -118,7 +122,7 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
             : undefined
           : alt && !imAlter(alt)
             ? `nicht im Alter ${alter!.von} bis ${alter!.bis}`
-            : "nicht aufstellbar",
+            : ausfallGrund(alt),
       });
     });
   }
