@@ -41,3 +41,25 @@ export function ladeEditorReiter(db: Database.Database): { reiter: EditorReiter[
   const r = db.prepare("SELECT wert, geaendert FROM einstellung WHERE schluessel = ?").get(EDITOR_KEY) as { wert: string; geaendert: string } | undefined;
   return r ? { reiter: JSON.parse(r.wert) as EditorReiter[], stand: r.geaendert } : null;
 }
+
+// Fortschritt einer laufenden Editor-Aktion (Taktikseite zeigt ihn als Balken, Marcus 31.10.2026)
+export type Fortschritt = { aufgabe: string; schritt: number; von: number; text: string; beginn: string; fertig: boolean; ok?: boolean };
+const FORTSCHRITT_KEY = "taktik_fortschritt";
+
+export function speichereFortschritt(db: Database.Database, f: Fortschritt) {
+  db.prepare(
+    `INSERT INTO einstellung (schluessel, wert, geaendert) VALUES (?, ?, ?)
+     ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert, geaendert = excluded.geaendert`,
+  ).run(FORTSCHRITT_KEY, JSON.stringify(f), new Date().toISOString());
+}
+
+export function ladeFortschritt(db: Database.Database): Fortschritt | null {
+  const r = db.prepare("SELECT wert FROM einstellung WHERE schluessel = ?").get(FORTSCHRITT_KEY) as { wert: string } | undefined;
+  return r ? (JSON.parse(r.wert) as Fortschritt) : null;
+}
+
+// Letzte fertige Editor-Aktion, wenn sie höchstens `minuten` her ist (für die Meldung oben auf der Taktikseite)
+export function letzteEditorAktion(db: Database.Database, minuten = 30, jetzt = new Date()): Fortschritt | null {
+  const f = ladeFortschritt(db);
+  return f?.fertig && jetzt.getTime() - Date.parse(f.beginn) < minuten * 60_000 ? f : null;
+}

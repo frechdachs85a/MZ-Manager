@@ -6,7 +6,8 @@ import { spieltagLage } from "@/lib/spieltag";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { TAKTIK_PFAD, meldungAus, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
-import { ladeTaktiken, loescheTaktik, speichereTaktikXml } from "@/lib/db/taktik";
+import { ladeTaktiken, loescheTaktik, speichereFortschritt, speichereTaktikXml } from "@/lib/db/taktik";
+import { reiterAusEditor, reiterSpeichern, type GelesenerReiter } from "./editor-reiter";
 
 // Formation "Liga" in ManagerZone hinterlegen (Auftrag Marcus, 26.10.2026): nach jeder Spieltag-Analyse die berechnete
 // Aufstellung gegen den nächsten Gegner in den Editor-Reiter mit dem Namen "Liga" schreiben. Welcher Reiter im Spiel
@@ -123,7 +124,7 @@ export async function ligaHinterlegen(db: Database.Database, opt = { manuell: fa
 // Eine XML in den Editor-Reiter mit dem Namen `reiterName` schreiben, wie von Hand: Reiter wählen, importieren, Import
 // prüfen, "Speicher aktuellen Tab", dann neu laden und vergleichen. Wirft MzFehler, wenn etwas nicht passt. Gibt den
 // Buchstaben des Reiters zurück.
-async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, soll: Soll): Promise<string> {
+async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, soll: Soll, melde: Melde = () => {}): Promise<string> {
   const seite = await s.holeSeite(TAKTIK_PFAD, {
     warteAuf: 'dd[id^="n_"]',
     aufSeite: async (page) => {
@@ -145,6 +146,7 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
       const lokal = await belegung(page, slot, "tacticsDataLocal");
       const vorher = abweichung(soll, lokal);
       if (vorher) return { fehler: `Import unvollständig (${vorher}): nicht gespeichert.` };
+      melde(`${reiterName}: Import geprüft, speichern`);
       const antwort = page.waitForResponse((r) => r.url().includes("p=tactics") && r.url().includes("sub=save"), { timeout: 30_000 });
       await page.evaluate(() => (document.querySelector("#savecurrentb") as HTMLElement).click());
       const r = await antwort;
@@ -156,6 +158,7 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
   if ("fehler" in x) throw new MzFehler(x.fehler);
   // Antwort ist JSON; der Editor prüft data == "true" (gesehen 26.10.2026: ["true"], in JavaScript gleich "true")
   if (!/^\[?\s*"?true"?\s*\]?$/.test(x.antwort.trim())) throw new MzFehler(`ManagerZone hat das Speichern nicht bestätigt: ${x.antwort}`);
+  melde(`${reiterName}: neu laden und prüfen`);
   const neu = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => belegung(page, x.slot, "tacticsDataLocal") });
   const ist = neu.extra as Ist;
   const ab = abweichung(soll, ist);
@@ -170,7 +173,7 @@ async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, 
 // (#save_rename_tactics_button, POST ajax.php?p=tactics&sub=rename mit tactic_name und key). Ohne Clubmitgliedschaft
 // lässt der Editor nur Reiter A umbenennen. Danach neu laden und prüfen, dass der Reiter den neuen Namen trägt.
 // neu = "" setzt den Namen zurück: der Editor zeigt dann den Buchstaben des Reiters (tactics.js, renameTactic success).
-async function reiterUmbenennen(s: MzSitzung, alt: string, neu: string): Promise<string> {
+async function reiterUmbenennen(s: MzSitzung, alt: string, neu: string, melde: Melde = () => {}): Promise<string> {
   if (neu.length > 6) throw new MzFehler(`Name „${neu}“ ungültig (höchstens 6 Zeichen).`);
   const seite = await s.holeSeite(TAKTIK_PFAD, {
     warteAuf: 'dd[id^="n_"]',
@@ -198,6 +201,7 @@ async function reiterUmbenennen(s: MzSitzung, alt: string, neu: string): Promise
   const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
   if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
   if ("fehler" in x) throw new MzFehler(x.fehler);
+  melde(`Name „${neu || x.slot.toUpperCase()}“: neu laden und prüfen`);
   const neuGeladen = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => reiterSuchen(page, neu || x.slot.toUpperCase()) });
   if (neuGeladen.extra !== x.slot) throw new MzFehler(`Umbenennen nicht bestätigt (Antwort: ${x.antwort}).`);
   return x.slot;
@@ -206,7 +210,7 @@ async function reiterUmbenennen(s: MzSitzung, alt: string, neu: string): Promise
 // Reiter löschen wie von Hand (Marcus, 31.10.2026): Reiter wählen, „Alles zurücksetzen“ (#clearb, clearAll(): Feld und
 // Regeln leeren), „Speicher aktuellen Tab“, dann den Namen entfernen (leerer Name = Buchstabe). Nach dem Neuladen geprüft:
 // keine Spieler mehr im Reiter, Name = Buchstabe. Reiter A darf laut Editor nicht leer sein (allowEmpty false).
-async function reiterLeeren(s: MzSitzung, reiter: string): Promise<string> {
+async function reiterLeeren(s: MzSitzung, reiter: string, melde: Melde = () => {}): Promise<string> {
   const seite = await s.holeSeite(TAKTIK_PFAD, {
     warteAuf: 'dd[id^="n_"]',
     aufSeite: async (page) => {
@@ -227,6 +231,7 @@ async function reiterLeeren(s: MzSitzung, reiter: string): Promise<string> {
         return Array.isArray(t?.TacticPlayer) ? t!.TacticPlayer!.length : 0;
       }, slot);
       if (rest > 0) return { fehler: `Nach „Alles zurücksetzen“ noch ${rest} Spieler im Reiter: nicht gespeichert.` };
+      melde(`${reiter}: zurückgesetzt, speichern`);
       const antwort = page.waitForResponse((r) => r.url().includes("p=tactics") && r.url().includes("sub=save"), { timeout: 30_000 });
       await page.evaluate(() => (document.querySelector("#savecurrentb") as HTMLElement).click());
       const r = await antwort;
@@ -236,6 +241,7 @@ async function reiterLeeren(s: MzSitzung, reiter: string): Promise<string> {
   const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
   if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
   if ("fehler" in x) throw new MzFehler(x.fehler);
+  melde(`${reiter}: neu laden und prüfen`);
   const neu = await s.holeSeite(TAKTIK_PFAD, {
     warteAuf: 'dd[id^="n_"]',
     aufSeite: (page) =>
@@ -251,38 +257,60 @@ async function reiterLeeren(s: MzSitzung, reiter: string): Promise<string> {
   return x.slot;
 }
 
-// Reiter löschen (nur auf Klick): XML vorher als Sicherung speichern, leeren, Namen entfernen, Archiv-Eintrag löschen
-export async function reiterLoeschen(db: Database.Database, reiter: string): Promise<Ergebnis> {
-  if (/^liga$/i.test(reiter)) return { ok: false, meldung: "Den Reiter „Liga“ braucht die Seite." };
+type Melde = (text: string) => void;
+
+// Gemeinsamer Ablauf jeder Editor-Aktion auf Klick (Marcus, 31.10.2026: Fortschritt sehen, danach stimmt die Seite):
+// Fortschritt in der Datenbank (die Taktikseite fragt ihn ab), Anmelden, die eigentliche Änderung, danach alle Reiter neu aus
+// dem Editor lesen (editor-reiter.ts), damit Namen, Archiv und Vorschläge den neuen Stand zeigen.
+async function editorAktion(db: Database.Database, aufgabe: string, schritte: number, lauf: (s: MzSitzung, melde: Melde) => Promise<string>, fehlerText: string): Promise<Ergebnis> {
   const log = abrufBeginnen(db, "taktik-check");
+  const von = schritte + 2;
+  const beginn = new Date().toISOString();
+  let schritt = 0;
+  const melde: Melde = (text) => speichereFortschritt(db, { aufgabe, schritt: Math.min(++schritt, von - 1), von, text, beginn, fertig: false });
+  melde("Bei ManagerZone anmelden (wartet, falls gerade ein anderer Abruf läuft)");
   try {
-    const sicherung = ladeTaktiken(db).find((t) => t.reiter === reiter);
-    if (sicherung) speichereRohseite(db, { art: "taktik-geloescht", url: `reiter:${reiter}`, status: null, htmlRoh: sicherung.xml, htmlDom: null });
-    const slot = await mitMzSitzung(
+    const meldung = await mitMzSitzung(
       db,
       async (s) => {
-        const sl = await reiterLeeren(s, reiter);
-        await reiterUmbenennen(s, reiter, "");
-        return sl;
+        const m = await lauf(s, melde);
+        melde("Alle Reiter neu aus dem Editor lesen");
+        const seite = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: reiterAusEditor });
+        if (Array.isArray(seite.extra)) reiterSpeichern(db, seite.extra as GelesenerReiter[]);
+        return m;
       },
       { manuell: true },
     );
-    loescheTaktik(db, reiter);
-    const { ladeEditorReiter, speichereEditorReiter } = await import("@/lib/db/taktik");
-    const ed = ladeEditorReiter(db);
-    if (ed)
-      speichereEditorReiter(
-        db,
-        ed.reiter.map((r) => (r.slot === slot ? { ...r, name: slot.toUpperCase(), spieler: 0 } : r)),
-      );
-    const meldung = `Reiter ${slot.toUpperCase()} („${reiter}“) geleert und Name entfernt (nach Neuladen geprüft). Die XML ist als Sicherung gespeichert.`;
     abrufBeenden(db, log, true, meldung);
+    speichereFortschritt(db, { aufgabe, schritt: von, von, text: meldung, beginn, fertig: true, ok: true });
     return { ok: true, meldung };
   } catch (e) {
-    const meldung = `Löschen ${reiter}: ${meldungAus(e)}`;
+    const meldung = `${fehlerText}: ${meldungAus(e)}`;
     abrufBeenden(db, log, false, meldung);
+    speichereFortschritt(db, { aufgabe, schritt, von, text: meldung, beginn, fertig: true, ok: false });
     return { ok: false, meldung };
   }
+}
+
+// Reiter löschen (nur auf Klick): XML vorher als Sicherung speichern, leeren, Namen entfernen
+export async function reiterLoeschen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  if (/^liga$/i.test(reiter)) return { ok: false, meldung: "Den Reiter „Liga“ braucht die Seite." };
+  const sicherung = ladeTaktiken(db).find((t) => t.reiter === reiter);
+  if (sicherung) speichereRohseite(db, { art: "taktik-geloescht", url: `reiter:${reiter}`, status: null, htmlRoh: sicherung.xml, htmlDom: null });
+  return editorAktion(
+    db,
+    `${reiter} löschen`,
+    5,
+    async (s, melde) => {
+      melde(`${reiter}: Alles zurücksetzen`);
+      const slot = await reiterLeeren(s, reiter, melde);
+      melde(`${reiter}: Namen entfernen`);
+      await reiterUmbenennen(s, reiter, "", melde);
+      loescheTaktik(db, reiter);
+      return `Reiter ${slot.toUpperCase()} („${reiter}“) geleert und Name entfernt (nach Neuladen geprüft). Die XML ist als Sicherung gespeichert.`;
+    },
+    `Löschen ${reiter}`,
+  );
 }
 
 // Archiv-Eintrag unter dem neuen Namen führen
@@ -294,23 +322,27 @@ function archivUmbenennen(db: Database.Database, alt: string, neu: string, xml?:
   if (alt !== neu) loescheTaktik(db, alt);
 }
 
+// Umbenennen als Editor-Aktion
+const umbenennenAktion = (db: Database.Database, alt: string, neu: string) =>
+  editorAktion(
+    db,
+    `${alt} in „${neu}“ umbenennen`,
+    2,
+    async (s, melde) => {
+      melde(`${alt}: umbenennen in „${neu}“`);
+      const slot = await reiterUmbenennen(s, alt, neu, melde);
+      archivUmbenennen(db, alt, neu);
+      return `Reiter ${slot.toUpperCase()} heißt jetzt „${neu}“ statt „${alt}“ (nach Neuladen geprüft).`;
+    },
+    `Umbenennen ${alt}`,
+  );
+
 // Nur umbenennen (Sinnhaftigkeit: Name passt nicht zum Inhalt), auf Klick
 export async function reiterNameUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
   const { portfolioPlan } = await import("@/lib/portfolio-plan");
   const v = portfolioPlan(db).sinn.find((x) => x.reiter === reiter && x.name);
   if (!v?.name) return { ok: false, meldung: `Für Reiter „${reiter}“ gibt es keinen Namensvorschlag mehr.` };
-  const log = abrufBeginnen(db, "taktik-check");
-  try {
-    const slot = await mitMzSitzung(db, (s) => reiterUmbenennen(s, reiter, v.name!), { manuell: true });
-    archivUmbenennen(db, reiter, v.name);
-    const meldung = `Reiter ${slot.toUpperCase()} heißt jetzt „${v.name}“ statt „${reiter}“ (nach Neuladen geprüft).`;
-    abrufBeenden(db, log, true, meldung);
-    return { ok: true, meldung };
-  } catch (e) {
-    const meldung = `Umbenennen ${reiter}: ${meldungAus(e)}`;
-    abrufBeenden(db, log, false, meldung);
-    return { ok: false, meldung };
-  }
+  return umbenennenAktion(db, reiter, v.name);
 }
 
 // Reiter frei umbenennen (Taktikseite: Name eingeben oder Vorschlag übernehmen), auf Klick
@@ -321,18 +353,7 @@ export async function reiterUmbenennenFrei(db: Database.Database, alt: string, n
   const fehler = nameErlaubt(neu, alt, namen);
   if (fehler) return { ok: false, meldung: fehler };
   if (/^liga$/i.test(alt)) return { ok: false, meldung: "Den Reiter „Liga“ braucht die Seite unter diesem Namen." };
-  const log = abrufBeginnen(db, "taktik-check");
-  try {
-    const slot = await mitMzSitzung(db, (s) => reiterUmbenennen(s, alt, neu.trim()), { manuell: true });
-    archivUmbenennen(db, alt, neu.trim());
-    const meldung = `Reiter ${slot.toUpperCase()} heißt jetzt „${neu.trim()}“ statt „${alt}“ (nach Neuladen geprüft).`;
-    abrufBeenden(db, log, true, meldung);
-    return { ok: true, meldung };
-  } catch (e) {
-    const meldung = `Umbenennen ${alt}: ${meldungAus(e)}`;
-    abrufBeenden(db, log, false, meldung);
-    return { ok: false, meldung };
-  }
+  return umbenennenAktion(db, alt, neu.trim());
 }
 
 // Vorschlag für den Reiter freund übernehmen: "bank" = wichtigste Spieler auf die Bank, "stil" = anderer Stil
@@ -344,21 +365,32 @@ export async function freundUebernehmen(db: Database.Database, reiter: string, w
   return xmlUebernehmen(db, reiter, xml, was === "bank" ? "freund: wichtigste Spieler auf die Bank" : `freund: anderer Stil ${k!.freund!.stilVorschlag!.stil}`);
 }
 
-// Eine XML auf Klick in den gleichnamigen Editor-Reiter schreiben, prüfen und danach auch im Archiv dieser Seite speichern
-async function xmlUebernehmen(db: Database.Database, reiter: string, xml: string, was: string): Promise<Ergebnis> {
-  const log = abrufBeginnen(db, "taktik-check");
-  try {
-    const soll = sollAus(xml);
-    const slot = await mitMzSitzung(db, (s) => inEditorSchreiben(s, reiter, xml, soll), { manuell: true });
-    speichereTaktikXml(db, reiter, xml, `${was}, übernommen ${new Date().toISOString()}`);
-    const meldung = `Taktik ${reiter}: ${was} in ManagerZone gespeichert (Reiter ${slot.toUpperCase()}) und nach Neuladen geprüft.`;
-    abrufBeenden(db, log, true, meldung);
-    return { ok: true, meldung };
-  } catch (e) {
-    const meldung = `Taktik ${reiter}: ${meldungAus(e)}`;
-    abrufBeenden(db, log, false, meldung);
-    return { ok: false, meldung };
-  }
+// Eine XML auf Klick in den gleichnamigen Editor-Reiter schreiben und prüfen; optional danach umbenennen
+async function xmlUebernehmen(db: Database.Database, reiter: string, xml: string, was: string, neuerName?: string): Promise<Ergebnis> {
+  const umbenennen = !!neuerName && neuerName !== reiter;
+  return editorAktion(
+    db,
+    `${reiter}: ${was}`,
+    umbenennen ? 5 : 3,
+    async (s, melde) => {
+      melde(`${reiter}: Reiter wählen und XML importieren`);
+      const slot = await inEditorSchreiben(s, reiter, xml, sollAus(xml), melde);
+      speichereTaktikXml(db, reiter, xml, `${was}, übernommen ${new Date().toISOString()}`);
+      let m = `Taktik ${reiter}: ${was} in ManagerZone gespeichert (Reiter ${slot.toUpperCase()}) und nach Neuladen geprüft.`;
+      if (umbenennen) {
+        try {
+          melde(`${reiter}: umbenennen in „${neuerName}“`);
+          await reiterUmbenennen(s, reiter, neuerName!, melde);
+          archivUmbenennen(db, reiter, neuerName!);
+          m += ` Neuer Name: „${neuerName}“.`;
+        } catch (e) {
+          m += ` Umbenennen in „${neuerName}“ fehlgeschlagen (${meldungAus(e)}), bitte im Editor von Hand.`;
+        }
+      }
+      return m;
+    },
+    `Taktik ${reiter}`,
+  );
 }
 
 // Vorschlag des Taktik-Checks für einen Reiter übernehmen (nur auf Klick, Marcus 30.10.2026)
@@ -370,19 +402,10 @@ export async function taktikUebernehmen(db: Database.Database, reiter: string): 
   return xmlUebernehmen(db, reiter, c.xml, "Vorschlag des Taktik-Checks");
 }
 
-// Vorschlag des Portfolio-Plans übernehmen: Reiter mit dem neuen Stil überschreiben (nur auf Klick)
+// Vorschlag des Portfolio-Plans übernehmen: Reiter mit dem neuen Stil überschreiben und nach dem Inhalt benennen
 export async function portfolioUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
   const { portfolioPlan } = await import("@/lib/portfolio-plan");
   const v = portfolioPlan(db).vorschlaege.find((x) => x.reiter === reiter);
   if (!v) return { ok: false, meldung: `Für Reiter „${reiter}“ gibt es keinen Portfolio-Vorschlag mehr.` };
-  const r = await xmlUebernehmen(db, reiter, v.xml, `Portfolio: ${v.stil} gegen ${v.klasse}`);
-  if (!r.ok || v.name === reiter) return r;
-  // Danach den Reiter nach seinem neuen Inhalt benennen
-  try {
-    await mitMzSitzung(db, (s) => reiterUmbenennen(s, reiter, v.name), { manuell: true });
-    archivUmbenennen(db, reiter, v.name);
-    return { ok: true, meldung: `${r.meldung} Neuer Name: „${v.name}“.` };
-  } catch (e) {
-    return { ok: true, meldung: `${r.meldung} Umbenennen in „${v.name}“ fehlgeschlagen (${meldungAus(e)}), bitte im Editor von Hand.` };
-  }
+  return xmlUebernehmen(db, reiter, v.xml, `Portfolio: ${v.stil} gegen ${v.klasse}`, v.name);
 }

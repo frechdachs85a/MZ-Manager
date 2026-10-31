@@ -2,7 +2,7 @@
 
 // Server-Aktionen der Zentrale: Vorschläge des Taktik-Checks und des Portfolio-Plans in ManagerZone übernehmen (nur auf Klick).
 
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 
 export type UebernahmeState = { ok?: boolean; meldung?: string };
@@ -15,6 +15,7 @@ export async function vorschlagUebernehmen(_prev: UebernahmeState, formData: For
   const r = await taktikUebernehmen(getDb(), reiter);
   revalidatePath("/");
   revalidatePath("/taktik");
+  refresh();
   return r;
 }
 
@@ -26,6 +27,7 @@ export async function portfolioVorschlagUebernehmen(_prev: UebernahmeState, form
   const r = await portfolioUebernehmen(getDb(), reiter);
   revalidatePath("/");
   revalidatePath("/taktik");
+  refresh();
   revalidatePath("/portfolio");
   return r;
 }
@@ -38,6 +40,7 @@ export async function reiterUmbenennenAktion(_prev: UebernahmeState, formData: F
   const r = await reiterNameUebernehmen(getDb(), reiter);
   revalidatePath("/");
   revalidatePath("/taktik");
+  refresh();
   revalidatePath("/portfolio");
   return r;
 }
@@ -51,6 +54,7 @@ export async function reiterFreiUmbenennen(_prev: UebernahmeState, formData: For
   const r = await reiterUmbenennenFrei(getDb(), alt, neu);
   revalidatePath("/");
   revalidatePath("/taktik");
+  refresh();
   return r;
 }
 
@@ -63,6 +67,7 @@ export async function freundVorschlagUebernehmen(_prev: UebernahmeState, formDat
   const r = await freundUebernehmen(getDb(), reiter, was);
   revalidatePath("/");
   revalidatePath("/taktik");
+  refresh();
   return r;
 }
 
@@ -74,5 +79,6 @@ export async function reiterLoeschenAktion(_prev: UebernahmeState, formData: For
   const r = await reiterLoeschen(getDb(), reiter);
   revalidatePath("/");
   revalidatePath("/taktik");
+  refresh();
   return r;
 }
