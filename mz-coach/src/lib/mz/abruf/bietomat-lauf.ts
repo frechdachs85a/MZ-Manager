@@ -2,10 +2,12 @@ import "server-only";
 import { auktionsBericht } from "@/lib/auktionsbericht";
 import { benachrichtige } from "@/lib/nachricht";
 import { entferneVonWatchlist } from "@/lib/db/watch";
+import { eigeneGebote } from "@/lib/mz/parser/eigene-gebote";
+import { GEBOTE_AJAX } from "./bietomat";
 import type Database from "better-sqlite3";
 import type { Page } from "playwright";
 import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
-import { ladeAuftraege, protokolliere, setzeBietomatLaeuft, setzeStatus, type GebotAuftrag } from "@/lib/db/gebot";
+import { ladeAuftraege, protokolliere, setzeBietomatLaeuft, setzeStatus, speichereEndstand, type GebotAuftrag } from "@/lib/db/gebot";
 import { parseTransferSuche } from "@/lib/mz/parser/transfer";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { endeUtc } from "./bietomat";
@@ -100,6 +102,18 @@ export async function auftragAbarbeiten(db: Database.Database, a: GebotAuftrag):
           if (schritt.art === "fertig") {
             setzeStatus(db, a.pid, schritt.status);
             protokolliere(db, a.pid, `${schritt.text} ${gebote} Gebot(e) abgegeben.`);
+            // Endstand aus der Gebotsübersicht: Endpreis, Mannschaft, Arbeitsbewilligung (Marcus, 31.10.2026)
+            try {
+              const g = await s.holeText(GEBOTE_AJAX);
+              speichereRohseite(db, { art: "gebote-eigene", url: g.url, status: g.status, htmlRoh: g.text, htmlDom: null });
+              const e = eigeneGebote(g.text).find((x) => x.pid === a.pid);
+              if (e) {
+                speichereEndstand(db, [e]);
+                protokolliere(db, a.pid, `Gebotsübersicht: letztes Gebot ${e.letztesGebot ?? "?"} EUR von ${e.team ?? "?"}.`, e.letztesGebot);
+              } else protokolliere(db, a.pid, "Gebotsübersicht: Spieler nicht gefunden.");
+            } catch (err) {
+              protokolliere(db, a.pid, `Gebotsübersicht nicht gelesen: ${meldungAus(err)}`);
+            }
             return schritt.text;
           }
           if (schritt.art === "warten") {

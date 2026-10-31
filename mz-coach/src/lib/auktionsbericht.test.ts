@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
 import { migrieren } from "@/lib/db/schema";
-import { protokolliere, speichereAuftrag } from "@/lib/db/gebot";
+import { protokolliere, speichereAuftrag, speichereEndstand } from "@/lib/db/gebot";
 import { auktionsBericht } from "./auktionsbericht";
 
 // Erfundene Testdaten
@@ -24,6 +24,15 @@ describe("Auktionsbericht", () => {
   });
   it("nicht bekommen", () => {
     expect(auktionsBericht(db(), 1, "Auktion vorbei: ein anderer Verein war zuletzt Höchstbietender.")!.titel).toBe("❌ Max Muster: nicht bekommen");
+  });
+  it("Endstand aus der Gebotsübersicht hat Vorrang", () => {
+    const d = db();
+    speichereEndstand(d, [{ pid: 1, letztesGebot: 1_800_000, tid: 99, team: "Team X" }]);
+    d.prepare("UPDATE gebot_auftrag SET status = 'beendet'").run();
+    speichereEndstand(d, [{ pid: 1, letztesGebot: 1_800_000, tid: 99, team: "Team X" }]);
+    const b = auktionsBericht(d, 1, "Auktion vorbei: du warst zuletzt Höchstbietender.")!;
+    expect(b.titel).toBe("❌ Max Muster: nicht bekommen");
+    expect(b.text).toContain("1.800.000 EUR an Team X");
   });
   it("kein Bericht, wenn du den Auftrag selbst beendet hast", () => {
     expect(auktionsBericht(db(), 1, "Auftrag gelöscht oder beendet.")).toBeNull();
