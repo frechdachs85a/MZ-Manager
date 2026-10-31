@@ -35,7 +35,8 @@ export const WECHSEL_MINUTE = 70;
 export type PlatzAenderung = { rolle: Position; x: number; y: number; alt: string; altWert?: number; neu: string; neuWert: number; grund?: string };
 export type TaktikCheck = {
   reiter: string;
-  ok: boolean; // keine Änderung nötig
+  ok: boolean; // keine Änderung nötig und kein Hinweis
+  aenderbar: boolean; // die XML ändert sich, also gibt es etwas zu übernehmen (Hinweise allein zählen nicht)
   aenderungen: PlatzAenderung[];
   wechselregeln: string[];
   gewinn: number; // Summe MZ-Wert der Elf neu minus alt (kann bei erzwungenem Ersatz auch negativ sein)
@@ -74,7 +75,7 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
   const plaetze = t.pos.map((p) => ({ pid: p.pid, x: p.start.x, y: p.start.y, rolle: rolle({ pid: p.pid, x: p.start.x, y: p.start.y, torwart: p.pos === "goalie" }) }));
   // Kandidaten: aufstellbar und mit bekannten Skills
   const kandidaten = ja.filter((s) => plaetze.some((p) => wertIn(s, p.rolle) !== undefined));
-  if (kandidaten.length < plaetze.length) return { reiter, ok: true, aenderungen: [], wechselregeln: [], gewinn: 0, xml, fehler: "Zu wenige aufstellbare Spieler mit bekannten Skills." };
+  if (kandidaten.length < plaetze.length) return { reiter, ok: true, aenderbar: false, aenderungen: [], wechselregeln: [], gewinn: 0, xml, fehler: "Zu wenige aufstellbare Spieler mit bekannten Skills." };
   const prio = (s: SpielerDaten) => (alter && istPrio(s) ? PRIO_BONUS : 0);
   const kosten = plaetze.map((p) => kandidaten.map((s) => -((wertIn(s, p.rolle) ?? -100) + (s.pid === p.pid ? BONUS_JETZT : 0) + prio(s))));
   const zu = zuordnen(kosten);
@@ -158,7 +159,7 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
   }
   if (neueRegeln.length) out = out.replace(/<\/SoccerTactics>/, `${neueRegeln.join("\n")}\n</SoccerTactics>`);
 
-  return { reiter, ok: !aenderungen.length && !neueRegeln.length && !wechselregeln.length, aenderungen, wechselregeln, gewinn: umstellen ? gewinn : 0, xml: out };
+  return { reiter, ok: !aenderungen.length && !neueRegeln.length && !wechselregeln.length, aenderbar: out !== xml, aenderungen, wechselregeln, gewinn: umstellen ? gewinn : 0, xml: out };
 }
 
 // Altersgrenze eines Reiters: Altersregler aus dem Editor; ohne Editor-Stand bei Namen U18/U21/U23 bis zu diesem Alter
@@ -180,7 +181,7 @@ export function taktikCheck(db: Database.Database): TaktikCheck[] {
     try {
       return pruefeTaktikGegenKader(t.reiter, t.xml, kader, spieltag, alterGrenze(db, t.reiter));
     } catch (e) {
-      return { reiter: t.reiter, ok: true, aenderungen: [], wechselregeln: [], gewinn: 0, xml: t.xml, fehler: e instanceof Error ? e.message : String(e) };
+      return { reiter: t.reiter, ok: true, aenderbar: false, aenderungen: [], wechselregeln: [], gewinn: 0, xml: t.xml, fehler: e instanceof Error ? e.message : String(e) };
     }
   });
 }

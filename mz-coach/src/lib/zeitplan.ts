@@ -4,7 +4,7 @@ import { letzterLauf } from "@/lib/db/spieltag";
 import { aufraeumen, sichereDatenbank } from "@/lib/archiv";
 import { marktAbrufen, marktFaellig } from "@/lib/mz/abruf/markt";
 import { ligaHinterlegen, ligaKontrolle } from "@/lib/mz/abruf/liga";
-import { reiterUebersicht } from "@/lib/reiter-uebersicht";
+import { hatVorschlag, reiterUebersicht } from "@/lib/reiter-uebersicht";
 import { kaderAbrufen, kaderFaellig } from "@/lib/mz/abruf/kader";
 import { spieltagAbrufen, spieltagFaellig } from "@/lib/mz/abruf/spieltag";
 import { topAbrufen, topFaellig } from "@/lib/mz/abruf/top";
@@ -27,7 +27,7 @@ function taktikenPruefen(db: Database.Database): string {
   const log = abrufBeginnen(db, "taktik-pruefung");
   try {
     const karten = reiterUebersicht(db).karten.filter((k) => k.art !== "leer" && k.art !== "liga");
-    const mit = karten.filter((k) => (k.check && !k.check.ok) || k.portfolio || k.sinn?.name || k.freund?.xml || k.freund?.stilVorschlag);
+    const mit = karten.filter(hatVorschlag);
     const meldung = `${karten.length} Reiter geprüft: ${mit.length ? `Vorschläge für ${mit.map((k) => k.name).join(", ")}` : "keine Änderung nötig"}.`;
     abrufBeenden(db, log, true, meldung);
     return meldung;
