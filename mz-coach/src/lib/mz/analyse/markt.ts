@@ -1,3 +1,4 @@
+import { posDe } from "@/lib/mz/formel";
 import { ausdauerPlan } from "@/lib/skill-bilanz";
 import { GEWICHTE, mzWert, type Position } from "@/lib/mz/formel";
 import { FORMEL_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
@@ -196,8 +197,8 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
     const elfNachher = elfVorher + gewinn;
     const istGroesste = ziel === schwach[0];
     const gruende = [
-      `${istGroesste ? "Größte Schwachstelle" : "Schwachstelle"}: ${ziel.rolle} auf ${ziel.slot.x}/${ziel.slot.y}, dort spielt ${ziel.spieler.name} mit ${ziel.wert.toFixed(2)}.`,
-      `${k.name} hätte als ${ziel.rolle} ${neu.toFixed(2)}, also +${gewinn.toFixed(2)}.`,
+      `${istGroesste ? "Größte Schwachstelle" : "Schwachstelle"}: ${posDe(ziel.rolle)} auf ${ziel.slot.x}/${ziel.slot.y}, dort spielt ${ziel.spieler.name} mit ${ziel.wert.toFixed(2)}.`,
+      `${k.name} hätte als ${posDe(ziel.rolle)} ${neu.toFixed(2)}, also +${gewinn.toFixed(2)}.`,
       `Startelf gesamt ${r2(elfVorher).toFixed(2)} → ${r2(elfNachher).toFixed(2)} (+${((gewinn / elfVorher) * 100).toFixed(1).replace(".", ",")} %).`,
     ];
     const st = staerken(k, ziel.spieler, ziel.rolle);

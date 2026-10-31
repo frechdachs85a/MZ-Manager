@@ -12,7 +12,9 @@ type Lage = ReturnType<typeof spieltagLage>;
 const eur = (n: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(n))} €`;
 
 const anstossText = (iso: string) =>
-  new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(
+    new Date(iso),
+  );
 
 // Matchplan des nächsten Spiels: Taktikvorschlag, Belege, Formation Liga
 export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
@@ -65,7 +67,9 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
               <ul className="mt-1.5 space-y-0.5 text-[14px] leading-snug text-label">
                 {vorschlag.kurz.map((k, i) => (
                   <li key={i} className="flex gap-2">
-                    <span aria-hidden className="text-tint-hell">•</span>
+                    <span aria-hidden className="text-tint-hell">
+                      •
+                    </span>
                     <span>{k}</span>
                   </li>
                 ))}
@@ -76,7 +80,9 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
                   <ul className="mt-1.5 space-y-1.5 text-[13.5px] leading-relaxed text-label">
                     {anpassungen.map((a, i) => (
                       <li key={i} className="flex gap-2">
-                        <span aria-hidden className="text-tint-hell">→</span>
+                        <span aria-hidden className="text-tint-hell">
+                          →
+                        </span>
                         <span>
                           {a.kurz}
                           {a.art === "wechselzeit" && a.umgesetzt && <span className="font-semibold text-tint-hell"> ✓ umgesetzt</span>}
@@ -90,7 +96,9 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
                 <ul className="mt-4 space-y-1.5 text-[13.5px] leading-relaxed text-label-2">
                   {stuetzen.map((b, i) => (
                     <li key={`s${i}`} className="flex gap-2.5">
-                      <span aria-label="stützt" className="mt-[1px] font-bold text-tint-hell">✓</span>
+                      <span aria-label="stützt" className="mt-[1px] font-bold text-tint-hell">
+                        ✓
+                      </span>
                       <span>
                         <span className="font-semibold text-label">{b.quelle}</span>
                       </span>
@@ -98,7 +106,9 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
                   ))}
                   {dagegen.map((b, i) => (
                     <li key={`d${i}`} className="flex gap-2.5">
-                      <span aria-label="spricht dagegen" className="mt-[1px] font-bold text-[#fbbf24]">!</span>
+                      <span aria-label="spricht dagegen" className="mt-[1px] font-bold text-[#fbbf24]">
+                        !
+                      </span>
                       <span>
                         <span className="font-semibold text-label">{b.quelle}: </span>
                         {b.text}
@@ -114,18 +124,26 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
 
           {taktikCode && (taktikCode.art === "angepasst" || taktikCode.art === "neu") && (
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <DateiKnopf text={taktikCode.xml} dateiname={`${vorschlag?.taktik ?? "taktik"}-${lauf.gegnerName ?? "gegner"}.xml`.replace(/[^\w.-]+/g, "_")} label={taktikCode.art === "angepasst" ? "Angepasste Taktik als XML" : "Taktik als XML (neu)"} />
+              <DateiKnopf
+                text={taktikCode.xml}
+                dateiname={`${vorschlag?.taktik ?? "taktik"}-${lauf.gegnerName ?? "gegner"}.xml`.replace(/[^\w.-]+/g, "_")}
+                label={taktikCode.art === "angepasst" ? "Angepasste Taktik als XML" : "Taktik als XML (neu)"}
+              />
               <span className="text-[12.5px] text-label-2">
-                {taktikCode.art === "angepasst" ? `Dein Reiter ${vorschlag?.taktik} aus dem Archiv mit: ${taktikCode.geaendert.join(", ")}.` : `${vorschlag?.taktik} ist nicht in deinem Archiv: neu erzeugt mit deiner besten Besetzung.`}
+                {taktikCode.art === "angepasst"
+                  ? `Dein Reiter ${vorschlag?.taktik} aus dem Archiv mit: ${taktikCode.geaendert.join(", ")}.`
+                  : `${vorschlag?.taktik} ist nicht in deinem Archiv: neu erzeugt mit deiner besten Besetzung.`}
               </span>
             </div>
           )}
           {taktikCode?.art === "editor" && (
+            <p className="mt-4 text-[12.5px] text-label-2">{vorschlag?.taktik} hast du im Editor. Für Prüfung und Heatmap: XML unter „Taktik“ hochladen.</p>
+          )}
+          {taktikCode?.art === "archiv" && (
             <p className="mt-4 text-[12.5px] text-label-2">
-              {vorschlag?.taktik} hast du im Editor. Für Prüfung und Heatmap: XML unter „Taktik“ hochladen.
+              Reiter {vorschlag?.taktik} ist in deinem Archiv und braucht keine Änderung: im Spiel einfach diesen Reiter wählen.
             </p>
           )}
-          {taktikCode?.art === "archiv" && <p className="mt-4 text-[12.5px] text-label-2">Reiter {vorschlag?.taktik} ist in deinem Archiv und braucht keine Änderung: im Spiel einfach diesen Reiter wählen.</p>}
 
           {aufstellung && aufstellung.fehler.length > 0 && (
             <div className="mt-5 rounded-[8px] border border-[#fca5a5]/40 bg-[#7f1d1d]/40 p-3 text-[13.5px] text-[#fee2e2]">
@@ -135,7 +153,10 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
           )}
 
           {mitLink && (
-            <Link href="/spieltag" className="mt-6 inline-flex min-h-[44px] items-center rounded-[8px] bg-white/10 px-4 text-[13px] font-semibold uppercase tracking-wider text-label hover:bg-white/15">
+            <Link
+              href="/spieltag"
+              className="mt-6 inline-flex min-h-[44px] items-center rounded-[8px] bg-white/10 px-4 text-[13px] font-semibold uppercase tracking-wider text-label hover:bg-white/15"
+            >
               Alle Belege, Gegneranalyse und Spielbericht →
             </Link>
           )}
@@ -144,19 +165,25 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
         <div className="border-t border-separator bg-black/10 p-6 lg:border-l lg:border-t-0 lg:p-8">
           {liga ? (
             <>
-              <div className="kapitaelchen mb-3">Formation Liga · {liga.reiter} gegen {lauf.gegnerName ?? "ihn"}</div>
+              <div className="kapitaelchen mb-3">
+                Formation Liga · {liga.reiter} gegen {lauf.gegnerName ?? "ihn"}
+              </div>
               <div className="mx-auto max-w-[340px]">
                 <Spielfeld spieler={liga.feld} titel={`Formation Liga (${liga.reiter})`} />
               </div>
               <ul className="mt-3 space-y-1 text-[12.5px] leading-snug text-label-2">
                 {liga.kurz.map((k) => (
                   <li key={k} className="flex gap-2">
-                    <span aria-hidden className="text-tint">•</span>
+                    <span aria-hidden className="text-tint">
+                      •
+                    </span>
                     <span>{k}</span>
                   </li>
                 ))}
                 <li className="flex gap-2">
-                  <span aria-hidden className="text-tint">•</span>
+                  <span aria-hidden className="text-tint">
+                    •
+                  </span>
                   <span>Bank: {liga.bank.join(", ")}</span>
                 </li>
               </ul>

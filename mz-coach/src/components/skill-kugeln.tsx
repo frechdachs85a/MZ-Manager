@@ -18,13 +18,7 @@ export function SkillKugeln({ label, skill, kompakt }: { label: string; skill?: 
               <span
                 key={i}
                 className={`h-[10px] flex-1 rounded-[3px] ${
-                  i < skill.wert
-                    ? skill.gemaxt === undefined
-                      ? "bg-skill-fix"
-                      : skill.gemaxt
-                        ? "bg-skill-max"
-                        : "bg-skill-train"
-                    : "bg-fill"
+                  i < skill.wert ? (skill.gemaxt === undefined ? "bg-skill-fix" : skill.gemaxt ? "bg-skill-max" : "bg-skill-train") : "bg-fill"
                 }`}
               />
             ))}

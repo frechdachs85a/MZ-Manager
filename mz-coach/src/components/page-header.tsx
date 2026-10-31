@@ -5,15 +5,7 @@ import { useEffect, useRef, useState } from "react";
 // Seitenkopf wie ein Bildschirmtitel im Manager-Spiel. Auf dem Handy erscheint beim Scrollen oben eine kleine
 // Titelleiste (mit Aktion).
 // Ab Desktop-Breite übernimmt die Seitenleiste die Navigation.
-export function PageHeader({
-  title,
-  subtitle,
-  action,
-}: {
-  title: string;
-  subtitle?: string;
-  action?: React.ReactNode;
-}) {
+export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   const sentinel = useRef<HTMLDivElement>(null);
   const [compact, setCompact] = useState(false);
 

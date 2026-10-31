@@ -1,6 +1,6 @@
 import { SkillKugeln } from "@/components/skill-kugeln";
 import { stufe } from "@/components/wert-stufe";
-import { alleMzWerte, POSITIONEN } from "@/lib/mz/formel";
+import { alleMzWerte, POSITIONEN, posDe } from "@/lib/mz/formel";
 import { ALLE_SKILLS, SKILL_LABEL, type Skills } from "@/lib/mz/skills";
 
 // Spieleransicht für den Bietomat (Marcus, 26.10.2026): MZ-Werte je Rolle (beste Rolle hervorgehoben), Scout-Sterne
@@ -20,8 +20,12 @@ export function SpielerProfil({ skills, scout }: { skills: Skills; scout?: { hoc
       <div className="flex flex-wrap gap-1">
         {bekannt.length ? (
           bekannt.map(({ p, w }) => (
-            <span key={p} className={`rounded-[6px] px-1.5 py-0.5 text-[11.5px] tabular-nums ${stufe(w).cls} ${beste?.p === p ? "ring-2 ring-tint" : ""}`} title={`${p}: ${stufe(w).name}`}>
-              {p} {komma(w)}
+            <span
+              key={p}
+              className={`rounded-[6px] px-1.5 py-0.5 text-[11.5px] tabular-nums ${stufe(w).cls} ${beste?.p === p ? "ring-2 ring-tint" : ""}`}
+              title={`${posDe(p)}: ${stufe(w).name}`}
+            >
+              {posDe(p)} {komma(w)}
             </span>
           ))
         ) : (
@@ -30,7 +34,7 @@ export function SpielerProfil({ skills, scout }: { skills: Skills; scout?: { hoc
       </div>
       {beste && (
         <div className="text-[12px] text-label-2">
-          Beste Rolle: <b>{beste.p}</b> ({komma(beste.w)}, {stufe(beste.w).name})
+          Beste Rolle: <b>{posDe(beste.p)}</b> ({komma(beste.w)}, {stufe(beste.w).name})
         </div>
       )}
       {scout && (

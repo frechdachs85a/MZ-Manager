@@ -7,6 +7,7 @@ import { Card, Kachel, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { spielDatum } from "@/lib/format";
 import { saisonAuswertung } from "@/lib/saison";
+import { LigaTabelle } from "@/components/liga-tabelle";
 import { TEAM } from "@/lib/wissen/startbasis";
 
 const komma = (n?: number, s = 1) => (n === undefined ? "n. v." : n.toFixed(s).replace(".", ","));
@@ -22,8 +23,12 @@ export default async function Saison() {
       <PageHeader title="Saison" subtitle={`${TEAM.name} · ${TEAM.liga} · ${n} Ligaspiele mit Stats-XML`} />
       {n === 0 ? (
         <div className="seite">
+          <LigaTabelle db={getDb()} titel="Ligatabelle" />
           <Section title="Ligaspiele">
-            <Unavailable title="Saisonstatistik" reason="Noch keine eigenen Ligaspiele dieser Saison gespeichert. Der tägliche Abruf (ab 4 Uhr) holt sie mit Login." />
+            <Unavailable
+              title="Saisonstatistik"
+              reason="Noch keine eigenen Ligaspiele dieser Saison gespeichert. Der tägliche Abruf (ab 4 Uhr) holt sie mit Login."
+            />
           </Section>
         </div>
       ) : (
@@ -35,6 +40,7 @@ export default async function Saison() {
             <Kachel titel="Schüsse aufs Tor" wert={komma(a.schuesseAufsTor)} unten="je Spiel im Schnitt" />
           </div>
           <div className="seite">
+            <LigaTabelle db={getDb()} titel="Ligatabelle" />
             <Section title="Formkurve" footer="Neuestes Spiel links. Nur gespeicherte Spiele mit Stats-XML.">
               <div className="flex flex-wrap gap-2">
                 {a.spiele.map((s) => (
@@ -61,7 +67,11 @@ export default async function Saison() {
                     key={s.mid}
                     title={`${s.heim ? "" : "@ "}${s.gegner}`}
                     detail={`${spielDatum(s.datum)} · Ballbesitz ${komma(s.ballbesitz, 0)} %`}
-                    value={<span className="display text-[18px] font-semibold text-label tabular-nums">{s.eigen}:{s.gegnerTore}</span>}
+                    value={
+                      <span className="display text-[18px] font-semibold text-label tabular-nums">
+                        {s.eigen}:{s.gegnerTore}
+                      </span>
+                    }
                   />
                 ))}
               </List>

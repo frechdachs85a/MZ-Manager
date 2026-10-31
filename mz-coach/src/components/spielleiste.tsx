@@ -15,7 +15,14 @@ export async function Spielleiste() {
   }
   const lauf = l?.lauf;
   const zeit = lauf?.anstoss
-    ? new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(lauf.anstoss))
+    ? new Intl.DateTimeFormat("de-DE", {
+        timeZone: "Europe/Berlin",
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(lauf.anstoss))
     : null;
   return (
     <div className="sticky top-0 z-20 hidden border-b border-separator bg-bar backdrop-blur-xl lg:block">
@@ -28,13 +35,19 @@ export async function Spielleiste() {
               {lauf.heim ? "gegen" : "bei"} {lauf.gegnerName}
             </span>
             {l?.vorschlag && (
-              <span className="rounded-[4px] bg-tint px-2 py-[2px] text-[12px] font-bold uppercase tracking-wider text-auf-akzent">Vorschlag {l.vorschlag.taktik}</span>
+              <span className="rounded-[4px] bg-tint px-2 py-[2px] text-[12px] font-bold uppercase tracking-wider text-auf-akzent">
+                Vorschlag {l.vorschlag.taktik}
+              </span>
             )}
           </Link>
         ) : (
-          <Link href="/spieltag" className="text-label-3 hover:text-label">Nächstes Ligaspiel: Spielplan noch nicht abgerufen</Link>
+          <Link href="/spieltag" className="text-label-3 hover:text-label">
+            Nächstes Ligaspiel: Spielplan noch nicht abgerufen
+          </Link>
         )}
-        <span className="ml-auto text-label-3">{TEAM.name} · {TEAM.liga}</span>
+        <span className="ml-auto text-label-3">
+          {TEAM.name} · {TEAM.liga}
+        </span>
       </div>
     </div>
   );

@@ -11,4 +11,5 @@ export async function jugendEntscheiden(formData: FormData) {
   const e = formData.get("entscheidung") === "abgeben" ? "abgeben" : "behalten";
   if (pid > 0) setzeJugendEntscheidung(getDb(), pid, e);
   revalidatePath("/jugend");
+  revalidatePath(`/kader/${pid}`);
 }

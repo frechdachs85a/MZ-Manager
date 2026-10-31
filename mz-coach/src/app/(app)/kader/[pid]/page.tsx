@@ -10,7 +10,10 @@ import { ladeKader } from "@/lib/db/kader";
 import { datumZeit, euro, heuteInBerlin } from "@/lib/format";
 import { datumKurz, einsatzImLigaspiel, tag } from "@/lib/mz/einsatz";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
-import { GEWICHTE, mzWert, POSITIONEN } from "@/lib/mz/formel";
+import { GEWICHTE, mzWert, POSITIONEN, posDe } from "@/lib/mz/formel";
+import { ladeJugendEntscheidungen } from "@/lib/db/watch";
+import { jugendAuswertung } from "@/lib/jugend";
+import { jugendEntscheiden } from "../../jugend/actions";
 import { ALLE_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { ScoutAbzeichen } from "@/components/scout-abzeichen";
@@ -24,11 +27,39 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
   const s = ladeKader(db).find((x) => x.pid === Number(pid));
   if (!s) notFound();
   const scout = scoutEinstufung(s, ladeKombis(db));
+  // Jugendspieler: Behalten/Abgabe auch hier einstellen (Marcus, 31.10.2026)
+  const { talente, ersetzen, weitere } = jugendAuswertung(ladeKader(db), ladeKombis(db));
+  const jung = [...talente, ...ersetzen, ...weitere].find((j) => j.s.pid === s.pid);
+  const eigene = ladeJugendEntscheidungen(db).get(s.pid);
+  const jetzt = eigene ?? (jung?.vorschlag === "Abgabekandidat" ? "abgeben" : "behalten");
 
   return (
     <>
       <PageHeader title={s.name} subtitle={[s.nr && `Nr. ${s.nr}`, s.alter !== undefined && `${s.alter} Jahre`].filter(Boolean).join(" · ")} />
       <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
+        {jung && (
+          <Section title="Jugend: behalten?" footer={`Vorschlag nach deiner Regel: ${jung.vorschlag}.${eigene ? " Deine Entscheidung gilt." : ""}`}>
+            <Card className="flex flex-wrap items-center gap-2 p-4">
+              {(["behalten", "abgeben"] as const).map((e) => (
+                <form key={e} action={jugendEntscheiden}>
+                  <input type="hidden" name="pid" value={s.pid} />
+                  <input type="hidden" name="entscheidung" value={e} />
+                  <button
+                    className={`pressable rounded-md border px-3 py-1.5 text-[14px] font-semibold ${
+                      jetzt === e
+                        ? e === "behalten"
+                          ? "border-green bg-green text-white"
+                          : "border-orange bg-orange text-white"
+                        : "border-separator text-label-2"
+                    }`}
+                  >
+                    {e === "behalten" ? "Behalten" : "Abgabekandidat"}
+                  </button>
+                </form>
+              ))}
+            </Card>
+          </Section>
+        )}
         <Section
           title="Skills"
           footer={`Rot = ausgemaxt, blau = trainierbar, grau = nicht trainierbar (Erfahrung, Form). ${
@@ -41,11 +72,7 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
         >
           <Card className="px-4 py-2">
             {ALLE_SKILLS.map((k) => (
-              <SkillKugeln
-                key={k}
-                label={SKILL_LABEL[k]}
-                skill={s.skills[k] && { ...s.skills[k], markierung: s.scoutMarkierung?.[k] }}
-              />
+              <SkillKugeln key={k} label={SKILL_LABEL[k]} skill={s.skills[k] && { ...s.skills[k], markierung: s.scoutMarkierung?.[k] }} />
             ))}
           </Card>
         </Section>
@@ -71,7 +98,7 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
               return (
                 <Row
                   key={p}
-                  title={p}
+                  title={posDe(p)}
                   value={
                     w.ok ? (
                       <span className="font-semibold tabular-nums text-label">{w.wert.toFixed(2)}</span>
@@ -125,11 +152,7 @@ const sterne = (n: number, max = 4) => (
 
 function ScoutKarte({ s, e }: { s: SpielerDaten; e: ScoutEinstufung }) {
   if (e.status === "loyal")
-    return (
-      <Card className="p-4 text-[14px] text-label-2">
-        Loyaler Spieler: hat keinen Scoutbericht, kann entlassen, aber nie verkauft werden.
-      </Card>
-    );
+    return <Card className="p-4 text-[14px] text-label-2">Loyaler Spieler: hat keinen Scoutbericht, kann entlassen, aber nie verkauft werden.</Card>;
   if (e.status === "keiner") return <Card className="p-4 text-[14px] text-label-2">-</Card>;
   const p = skillPrognose(s);
   return (
@@ -140,7 +163,11 @@ function ScoutKarte({ s, e }: { s: SpielerDaten; e: ScoutEinstufung }) {
         {s.scoutTraining !== undefined && <span>Tr. Geschwindigkeit {sterne(s.scoutTraining)}</span>}
       </div>
       {e.status !== "ok" && <div className={e.status === "unbekannt" ? "text-red" : "text-label-2"}>{e.grund}</div>}
-      {e.status === "ok" && <div className="text-label-2">Rang {e.rang} · Schlüsselwort: „{e.gefunden.join("“, „")}“</div>}
+      {e.status === "ok" && (
+        <div className="text-label-2">
+          Rang {e.rang} · Schlüsselwort: „{e.gefunden.join("“, „")}“
+        </div>
+      )}
       <table className="w-full text-[13px]">
         <thead>
           <tr className="text-left text-label-2">
@@ -206,10 +233,7 @@ function StatusListe({ s }: { s: SpielerDaten }) {
       <Row
         title="Gesperrt"
         value={jaNein(st.gesperrt)}
-        detail={[
-          ...(s.sperren ?? []).map((x) => `${x.karte}, ${x.spiele} Spiel(e), ${x.art}: ${x.wettbewerb} (${x.datum})`),
-          stand(ss.gesperrt),
-        ].join(" · ")}
+        detail={[...(s.sperren ?? []).map((x) => `${x.karte}, ${x.spiele} Spiel(e), ${x.art}: ${x.wettbewerb} (${x.datum})`), stand(ss.gesperrt)].join(" · ")}
       />
       <Row title="Transfermarkt" value="nicht verfügbar" detail="Quelle noch nicht eingebunden" />
     </List>
