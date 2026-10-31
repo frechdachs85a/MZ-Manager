@@ -5,7 +5,8 @@ import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
 import { spieltagLage } from "@/lib/spieltag";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { TAKTIK_PFAD, meldungAus, type Ergebnis } from "./kader";
-import { mitMzSitzung, MzFehler } from "./sitzung";
+import { mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
+import { speichereTaktikXml } from "@/lib/db/taktik";
 
 // Formation "Liga" in ManagerZone hinterlegen (Auftrag Marcus, 26.10.2026): nach jeder Spieltag-Analyse die berechnete
 // Aufstellung gegen den nächsten Gegner in den Editor-Reiter mit dem Namen "Liga" schreiben. Welcher Reiter im Spiel
@@ -90,42 +91,8 @@ export async function ligaHinterlegen(db: Database.Database, opt = { manuell: fa
     const meldung = await mitMzSitzung(
       db,
       async (s) => {
-        // 1. Reiter wählen, importieren, aktuellen Reiter speichern
-        const seite = await s.holeSeite(TAKTIK_PFAD, {
-          warteAuf: 'dd[id^="n_"]',
-          aufSeite: async (page) => {
-            const slot = await reiterSuchen(page, REITER_NAME);
-            if (!slot) return { fehler: `Kein Reiter mit dem Namen „${REITER_NAME}“ im Editor: nichts geändert.` };
-            await page.evaluate((x) => (document.querySelector(`#tacticTab_${x} a`) as HTMLElement | null)?.click(), slot);
-            await page.waitForTimeout(1500);
-            const aktiv = await page.evaluate(() => (document.querySelector("#current_tab") as HTMLInputElement | null)?.value);
-            if (aktiv !== slot) return { fehler: `Reiter ${slot} ließ sich nicht wählen (aktiv: ${aktiv ?? "?"}): nichts geändert.` };
-            await page.evaluate((xml) => {
-              (document.querySelector("#importExportData") as HTMLTextAreaElement).value = xml;
-              (document.querySelector("#import_button") as HTMLElement).click();
-            }, liga.xml);
-            await page.waitForTimeout(2000);
-            // Import prüfen, bevor gespeichert wird (unbekannte pid bricht den Import still ab)
-            const lokal = await belegung(page, slot, "tacticsDataLocal");
-            const vorher = abweichung(soll, lokal);
-            if (vorher) return { fehler: `Import unvollständig (${vorher}): nicht gespeichert.` };
-            const antwort = page.waitForResponse((r) => r.url().includes("p=tactics") && r.url().includes("sub=save"), { timeout: 30_000 });
-            await page.evaluate(() => (document.querySelector("#savecurrentb") as HTMLElement).click());
-            const r = await antwort;
-            return { slot, antwort: (await r.text()).slice(0, 300) };
-          },
-        });
-        const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
-        if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
-        if ("fehler" in x) throw new MzFehler(x.fehler);
-        // Antwort ist JSON; der Editor prüft data == "true" (gesehen 26.10.2026: ["true"], in JavaScript gleich "true")
-        if (!/^\[?\s*"?true"?\s*\]?$/.test(x.antwort.trim())) throw new MzFehler(`ManagerZone hat das Speichern nicht bestätigt: ${x.antwort}`);
-
-        // 2. Neu laden und vergleichen
-        const neu = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => belegung(page, x.slot, "tacticsDataLocal") });
-        const ab = abweichung(soll, neu.extra as Ist);
-        if (ab) throw new MzFehler(`Gespeichert, aber beim Neuladen anders: ${ab}.`);
-        return `Formation Liga gegen ${gegner} gespeichert (${liga.reiter}, Reiter ${x.slot.toUpperCase()}) und nach Neuladen geprüft.`;
+        const slot = await inEditorSchreiben(s, REITER_NAME, liga.xml, soll);
+        return `Formation Liga gegen ${gegner} gespeichert (${liga.reiter}, Reiter ${slot.toUpperCase()}) und nach Neuladen geprüft.`;
       },
       opt,
     );
@@ -138,3 +105,63 @@ export async function ligaHinterlegen(db: Database.Database, opt = { manuell: fa
   }
 }
 
+// Eine XML in den Editor-Reiter mit dem Namen `reiterName` schreiben, wie von Hand: Reiter wählen, importieren, Import
+// prüfen, "Speicher aktuellen Tab", dann neu laden und vergleichen. Wirft MzFehler, wenn etwas nicht passt. Gibt den
+// Buchstaben des Reiters zurück.
+async function inEditorSchreiben(s: MzSitzung, reiterName: string, xml: string, soll: Soll): Promise<string> {
+  const seite = await s.holeSeite(TAKTIK_PFAD, {
+    warteAuf: 'dd[id^="n_"]',
+    aufSeite: async (page) => {
+      const slot = await reiterSuchen(page, reiterName);
+      if (!slot) return { fehler: `Kein Reiter mit dem Namen „${reiterName}“ im Editor: nichts geändert.` };
+      await page.evaluate((x) => (document.querySelector(`#tacticTab_${x} a`) as HTMLElement | null)?.click(), slot);
+      await page.waitForTimeout(1500);
+      const aktiv = await page.evaluate(() => (document.querySelector("#current_tab") as HTMLInputElement | null)?.value);
+      if (aktiv !== slot) return { fehler: `Reiter ${slot} ließ sich nicht wählen (aktiv: ${aktiv ?? "?"}): nichts geändert.` };
+      await page.evaluate((x) => {
+        (document.querySelector("#importExportData") as HTMLTextAreaElement).value = x;
+        (document.querySelector("#import_button") as HTMLElement).click();
+      }, xml);
+      await page.waitForTimeout(2000);
+      // Import prüfen, bevor gespeichert wird (unbekannte pid bricht den Import still ab)
+      const lokal = await belegung(page, slot, "tacticsDataLocal");
+      const vorher = abweichung(soll, lokal);
+      if (vorher) return { fehler: `Import unvollständig (${vorher}): nicht gespeichert.` };
+      const antwort = page.waitForResponse((r) => r.url().includes("p=tactics") && r.url().includes("sub=save"), { timeout: 30_000 });
+      await page.evaluate(() => (document.querySelector("#savecurrentb") as HTMLElement).click());
+      const r = await antwort;
+      return { slot, antwort: (await r.text()).slice(0, 300) };
+    },
+  });
+  const x = seite.extra as { fehler: string } | { slot: string; antwort: string } | undefined;
+  if (!x) throw new MzFehler("Taktikseite nicht eingeloggt geladen.");
+  if ("fehler" in x) throw new MzFehler(x.fehler);
+  // Antwort ist JSON; der Editor prüft data == "true" (gesehen 26.10.2026: ["true"], in JavaScript gleich "true")
+  if (!/^\[?\s*"?true"?\s*\]?$/.test(x.antwort.trim())) throw new MzFehler(`ManagerZone hat das Speichern nicht bestätigt: ${x.antwort}`);
+  const neu = await s.holeSeite(TAKTIK_PFAD, { warteAuf: 'dd[id^="n_"]', aufSeite: (page) => belegung(page, x.slot, "tacticsDataLocal") });
+  const ab = abweichung(soll, neu.extra as Ist);
+  if (ab) throw new MzFehler(`Gespeichert, aber beim Neuladen anders: ${ab}.`);
+  return x.slot;
+}
+
+// Vorschlag des Taktik-Checks für einen Reiter übernehmen (nur auf Klick, Marcus 30.10.2026): in den gleichnamigen
+// Editor-Reiter schreiben, prüfen und danach auch im Archiv dieser Seite speichern.
+export async function taktikUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  const log = abrufBeginnen(db, "taktik-check");
+  try {
+    const { taktikCheck } = await import("@/lib/taktik-check");
+    const c = taktikCheck(db).find((x) => x.reiter === reiter);
+    if (!c) throw new MzFehler(`Reiter „${reiter}“ nicht im Archiv.`);
+    if (c.ok) throw new MzFehler(`Reiter „${reiter}“ braucht keine Änderung.`);
+    const soll = sollAus(c.xml);
+    const slot = await mitMzSitzung(db, (s) => inEditorSchreiben(s, reiter, c.xml, soll), { manuell: true });
+    speichereTaktikXml(db, reiter, c.xml, `Taktik-Check, übernommen ${new Date().toISOString()}`);
+    const meldung = `Taktik ${reiter}: Vorschlag in ManagerZone gespeichert (Reiter ${slot.toUpperCase()}) und nach Neuladen geprüft.`;
+    abrufBeenden(db, log, true, meldung);
+    return { ok: true, meldung };
+  } catch (e) {
+    const meldung = `Taktik ${reiter}: ${meldungAus(e)}`;
+    abrufBeenden(db, log, false, meldung);
+    return { ok: false, meldung };
+  }
+}
