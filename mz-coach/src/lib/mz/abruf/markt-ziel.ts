@@ -81,7 +81,7 @@ export function suchZiele(schwach: Schwachstelle[], anzahl = 3): SuchZiel[] {
         [`${SKILL_FELD[hauptskill]}a`]: stufe,
         [`${SKILL_FELD[hauptskill]}b`]: stufe,
       }),
-      text: `${s.rolle} (jetzt ${s.spieler.name}, ${s.wert.toFixed(2).replace(".", ",")}${s.ohneWechsel ? `, Ausdauer ${s.spieler.skills.ausdauer?.wert} ohne freien Wechsel` : ""}): ${SKILL_LABEL[hauptskill]} Stufe für Stufe von ${stufen[0] ?? untergrenze} bis ${untergrenze}; Sprint und Ausdauer ab ${MIN_SPRINT}`,
+      text: `${s.rolle} (jetzt ${s.spieler.name}, ${s.wert.toFixed(2).replace(".", ",")}${s.ohneWechsel ? `, Ausdauer ${s.spieler.skills.ausdauer?.wert} ohne freien Wechsel` : ""}): ${SKILL_LABEL[hauptskill]} Stufe für Stufe von ${stufen[0] ?? untergrenze} bis ${untergrenze}; Sprint und Ausdauer ab ${MIN_SPRINT}, zusammen ab 17`,
     });
   }
   return ziele;

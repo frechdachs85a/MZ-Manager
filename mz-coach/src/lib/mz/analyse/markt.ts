@@ -13,8 +13,12 @@ import { ABWEHR_Y } from "./gegner";
 // Nationalität, die als einheimisch gilt. FC Toho spielt in der Seniorenliga Germany; geschrieben
 // wie auf der deutschen Spieleransicht ("Nationalität: Deutschland").
 export const HEIMATLAND = "Deutschland";
-export const MIN_SPRINT = 9; // 99-Regel (mz-wissen.md, Abschnitt 7)
-export const MIN_AUSDAUER = 9;
+// 99-Regel (mz-wissen.md, Abschnitt 7): Sprint und Ausdauer je 9+. Gelockert am 31.10.2026 nach Marcus' eigenen Geboten
+// (Spieler mit Sprint 8/Ausdauer 9 und Sprint 9/Ausdauer 8): je mindestens 8 und zusammen mindestens 17, also höchstens einer
+// der beiden 8; das steht dann als Vorbehalt dabei.
+export const MIN_SPRINT = 8;
+export const MIN_AUSDAUER = 8;
+export const MIN_SPRINT_AUSDAUER = 17;
 export const ALTER_ABBAU = 30; // ab 30: erst Sprint, dann Ausdauer weg
 
 export type Slot = { pid: number; x: number; y: number; torwart: boolean };
@@ -91,7 +95,7 @@ export const GRUND_TEXT: Record<Grund, string> = {
   abgelehnt: "von dir abgelehnt",
   eigener: "eigener Spieler",
   skills: "Skills nicht vollständig sichtbar",
-  "99-regel": `99-Regel nicht erfüllt (Sprint und Ausdauer je ${MIN_SPRINT}+)`,
+  "99-regel": `Sprint oder Ausdauer zu niedrig (je ${MIN_SPRINT}+, zusammen ${MIN_SPRINT_AUSDAUER}+)`,
   "keine-verbesserung": "verbessert keinen Startplatz",
   "preis-unbekannt": "Preis nicht lesbar",
   "zu-teuer": "teurer als dein Kapital",
@@ -163,7 +167,8 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
       if (rahmen.gesperrteTeams.has(k.markt.verkaeuferTid)) return raus("gesperrter-verein");
     }
     if (FORMEL_SKILLS.some((s) => k.skills[s] === undefined)) return raus("skills");
-    if (k.skills.sprint!.wert < MIN_SPRINT || k.skills.ausdauer!.wert < MIN_AUSDAUER) return raus("99-regel");
+    if (k.skills.sprint!.wert < MIN_SPRINT || k.skills.ausdauer!.wert < MIN_AUSDAUER || k.skills.sprint!.wert + k.skills.ausdauer!.wert < MIN_SPRINT_AUSDAUER)
+      return raus("99-regel");
 
     // Startplatz mit dem größten Gewinn
     let bester: { ziel: Schwachstelle; neu: number; gewinn: number } | null = null;
@@ -178,8 +183,9 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
     const preis = mindestpreis(k);
     if (preis === undefined) return raus("preis-unbekannt");
     if (rahmen.kapital !== undefined && preis > rahmen.kapital) return raus("zu-teuer");
-    if (!k.nationalitaet) return raus("nationalitaet-unbekannt");
-    const auslaender = k.nationalitaet !== HEIMATLAND;
+    // Nationalität zählt nur für Ausländerplätze: ohne Rahmen oder unlesbar kein Ausschluss, sondern Vorbehalt
+    if (!k.nationalitaet && !rahmen.ohneRahmen) return raus("nationalitaet-unbekannt");
+    const auslaender = !!k.nationalitaet && k.nationalitaet !== HEIMATLAND;
     const platzFrei = (rahmen.auslaenderFrei ?? 0) > 0;
     const bewilligungNoetig = auslaender && !platzFrei;
     if (!rahmen.ohneRahmen && bewilligungNoetig && (rahmen.bewilligungenFrei ?? 0) <= 0) return raus("auslaender");
@@ -194,23 +200,30 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
     ];
     const st = staerken(k, ziel.spieler, ziel.rolle);
     if (st.length) gruende.push(`Mehr als ${ziel.spieler.name} in: ${st.join(", ")}.`);
-    gruende.push(`99-Regel erfüllt: Sprint ${k.skills.sprint!.wert}, Ausdauer ${k.skills.ausdauer!.wert}.`);
     gruende.push(
-      rahmen.kapital !== undefined
-        ? `Mindestpreis laut Markt ${eur(preis)}, dein Kapital ${eur(rahmen.kapital)}.`
-        : `Mindestpreis laut Markt ${eur(preis)}.`,
+      `Sprint ${k.skills.sprint!.wert}, Ausdauer ${k.skills.ausdauer!.wert}${k.skills.sprint!.wert >= 9 && k.skills.ausdauer!.wert >= 9 ? " (99-Regel erfüllt)" : ""}.`,
     );
     gruende.push(
-      !auslaender
-        ? `Einheimisch (${k.nationalitaet}): belegt keinen Ausländerplatz.`
-        : rahmen.ohneRahmen
-          ? `Nicht einheimisch (${k.nationalitaet}): Ausländerplatz oder Arbeitsbewilligung nötig (nicht geprüft, Rahmen fehlt).`
-          : bewilligungNoetig
-          ? `Nicht einheimisch (${k.nationalitaet}): kein Ausländerplatz frei, aber noch ${rahmen.bewilligungenFrei} Arbeitsbewilligung(en).`
-          : `Nicht einheimisch (${k.nationalitaet}): belegt einen deiner ${rahmen.auslaenderFrei} freien Ausländerplätze.`,
+      rahmen.kapital !== undefined ? `Mindestpreis laut Markt ${eur(preis)}, dein Kapital ${eur(rahmen.kapital)}.` : `Mindestpreis laut Markt ${eur(preis)}.`,
+    );
+    gruende.push(
+      !k.nationalitaet
+        ? "Nationalität nicht lesbar."
+        : !auslaender
+          ? `Einheimisch (${k.nationalitaet}): belegt keinen Ausländerplatz.`
+          : rahmen.ohneRahmen
+            ? `Nicht einheimisch (${k.nationalitaet}): Ausländerplatz oder Arbeitsbewilligung nötig (nicht geprüft, Rahmen fehlt).`
+            : bewilligungNoetig
+              ? `Nicht einheimisch (${k.nationalitaet}): kein Ausländerplatz frei, aber noch ${rahmen.bewilligungenFrei} Arbeitsbewilligung(en).`
+              : `Nicht einheimisch (${k.nationalitaet}): belegt einen deiner ${rahmen.auslaenderFrei} freien Ausländerplätze.`,
     );
 
     const vorbehalte = ["Marktwert ist kein Preismaßstab: der Endpreis der Auktion kann deutlich höher liegen."];
+    if (k.skills.sprint!.wert < 9 || k.skills.ausdauer!.wert < 9)
+      vorbehalte.push(
+        `99-Regel nicht ganz erfüllt: Sprint ${k.skills.sprint!.wert}, Ausdauer ${k.skills.ausdauer!.wert}${k.skills.ausdauer!.wert < 9 ? " (hält 90 Minuten, ab 30 Jahren baut Ausdauer ab)" : ""}.`,
+      );
+    if (!k.nationalitaet) vorbehalte.push("Nationalität nicht lesbar: Ausländerplatz nicht geprüft.");
     if (rahmen.ohneRahmen) vorbehalte.push("Rahmen nicht eingetragen: Kapital, Ausländerplätze und Arbeitsbewilligungen nicht geprüft.");
     else if (bewilligungNoetig) {
       vorbehalte.push("Arbeitsbewilligung nötig: ihre Kosten kommen zum Gebot dazu. Der Betrag steht im Gebotsfenster von ManagerZone.");
@@ -224,8 +237,6 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
     return { kandidat: k, ziel, neu, gewinn, preis, elfVorher: r2(elfVorher), elfNachher: r2(elfNachher), gruende, vorbehalte };
   });
 
-  const sortiert = bewertet
-    .filter((b): b is Bewertung => b !== null)
-    .sort((a, b) => b.gewinn - a.gewinn || a.preis - b.preis);
+  const sortiert = bewertet.filter((b): b is Bewertung => b !== null).sort((a, b) => b.gewinn - a.gewinn || a.preis - b.preis);
   return { empfehlung: sortiert[0] ?? null, weitere: sortiert.slice(1, 6), ausgeschlossen, geprueft: kandidaten.length, alle: sortiert, grundJe };
 }

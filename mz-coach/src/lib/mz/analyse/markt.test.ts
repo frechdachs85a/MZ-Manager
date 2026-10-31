@@ -68,9 +68,9 @@ describe("Schwachstellen und Marktbewertung", () => {
     expect(bewerteMarkt(k, liste, rahmen({ abgelehnt: new Set([10]) })).empfehlung?.kandidat.pid).toBe(12);
   });
 
-  it("99-Regel, Ausländerplätze und fehlende Verbesserung schließen aus", () => {
+  it("Sprint und Ausdauer zusammen unter 17, Ausländerplätze und fehlende Verbesserung schließen aus", () => {
     const k = [
-      markt(20, alle(9, { sprint: 8 })),
+      markt(20, alle(9, { sprint: 8, ausdauer: 8 })),
       markt(21, alle(9), { nationalitaet: "Polen" }),
       markt(22, alle(9, { zweikampf: 0, sprint: 9, ausdauer: 9, technik: 0, spieluebersicht: 0, passen: 0, flanken: 0, erfahrung: 0, torwart: 0 })),
     ];
@@ -80,6 +80,12 @@ describe("Schwachstellen und Marktbewertung", () => {
     expect(bewerteMarkt([k[1]], liste, rahmen({ auslaenderFrei: 1 })).empfehlung?.kandidat.pid).toBe(21);
     const mitBewilligung = bewerteMarkt([k[1]], liste, rahmen({ bewilligungenFrei: 3 })).empfehlung;
     expect(mitBewilligung?.vorbehalte.some((v) => v.startsWith("Arbeitsbewilligung nötig"))).toBe(true);
+  });
+
+  it("Sprint 8 und Ausdauer 9 sind erlaubt, mit Vorbehalt (wie Marcus' eigene Gebote)", () => {
+    const e = bewerteMarkt([markt(23, alle(9, { sprint: 8 }))], liste, rahmen());
+    expect(e.empfehlung?.kandidat.pid).toBe(23);
+    expect(e.empfehlung?.vorbehalte.some((v) => v.startsWith("99-Regel nicht ganz erfüllt"))).toBe(true);
   });
 
   it("Spieler vom gesperrten Verein (Team der Frau) werden nie vorgeschlagen", () => {
