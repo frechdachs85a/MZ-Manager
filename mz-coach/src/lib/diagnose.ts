@@ -46,6 +46,7 @@ export const ARTEN = [
   "gebot-antwort",
   "spieler-fremd",
   "taktik-geloescht",
+  "tabelle",
 ];
 
 // Diagnose für den Fernzugriff (ohne Zugangsdaten)

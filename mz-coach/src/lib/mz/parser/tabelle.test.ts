@@ -27,3 +27,14 @@ describe("Ligatabelle aus dem Reiter Tabelle", () => {
     expect(t.zeilen[0].eigen).toBe(false);
   });
 });
+
+describe("Ligatabelle neben den Paarungen", () => {
+  it("nimmt die Tabelle mit Spalte Pkt, nicht die Paarungen", () => {
+    const html = `<table><tr><td>Team A</td><td>X - X</td><td>Mein Team</td></tr><tr><td>Team B</td><td>X - X</td><td>Team C</td></tr></table>
+<table class="nice_table"><thead><tr><th></th><th>Mannschaft</th><th>Sp</th><th>Pkt</th></tr></thead><tbody>
+<tr><td>1</td><td>Team A</td><td>9</td><td>22</td></tr><tr class="highlight_row"><td>2</td><td>Mein Team</td><td>9</td><td>20</td></tr></tbody></table>`;
+    const t = tabelleAus(html, "Mein Team")!;
+    expect(t.kopf).toEqual(["", "Mannschaft", "Sp", "Pkt"]);
+    expect(t.zeilen.find((z) => z.eigen)?.zellen).toEqual(["2", "Mein Team", "9", "20"]);
+  });
+});
