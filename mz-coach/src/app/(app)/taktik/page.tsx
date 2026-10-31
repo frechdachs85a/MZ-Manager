@@ -6,6 +6,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Spielfeld, type FeldSpieler } from "@/components/spielfeld";
+import { ZoomFeld } from "@/components/zoom-feld";
 import { DateiKnopf } from "@/components/datei-knopf";
 import { ReiterLoeschenKnopf, ReiterNameForm, TaktikCheckKarte } from "@/components/taktik-check-karte";
 import { Badge, Card, Section } from "@/components/ui";
@@ -46,6 +47,9 @@ export default async function Taktik() {
   const zeigeLetzte = !!letzte;
   const kader = new Map(ladeKader(db).map((s) => [s.pid, s]));
   const name = (pid: number) => kader.get(pid)?.name.split(" ").at(-1) ?? String(pid);
+  // Groß: mit Marktwert-Heatmap
+  const feldMitWert = (k: ReiterKarte): FeldSpieler[] =>
+    (k.archiv?.taktik?.pos ?? []).map((p) => ({ x: p.start.x, y: p.start.y, label: name(p.pid), wert: kader.get(p.pid)?.marktwert, torwart: p.pos === "goalie" }));
   const feld = (k: ReiterKarte): FeldSpieler[] =>
     (k.archiv?.taktik?.pos ?? []).map((p) => ({ x: p.start.x, y: p.start.y, label: name(p.pid), torwart: p.pos === "goalie" }));
   const genutzt = karten.filter((k) => k.art !== "leer");
@@ -96,7 +100,17 @@ export default async function Taktik() {
                   <p className="px-4 py-3 text-[13px] text-label-2">Leer: frei für einen neuen Stil oder eine Seitenvariante.</p>
                 ) : (
                   <div className="grid gap-3 px-4 py-3 sm:grid-cols-[150px_1fr]">
-                    {k.art === "liga" && lage.liga ? <Spielfeld spieler={lage.liga.feld} /> : k.archiv?.taktik ? <Spielfeld spieler={feld(k)} /> : <div />}
+                    {k.art === "liga" && lage.liga ? (
+                      <ZoomFeld titel={`${k.name}: Formation Liga`} klein={<Spielfeld spieler={lage.liga.feld} />} gross={<Spielfeld spieler={lage.liga.feld} heatmap />} />
+                    ) : k.archiv?.taktik ? (
+                      <ZoomFeld
+                        titel={`${k.name}${k.stil ? ` · ${stilDe(k.stil)}` : ""}`}
+                        klein={<Spielfeld spieler={feld(k)} />}
+                        gross={<Spielfeld spieler={feldMitWert(k)} heatmap />}
+                      />
+                    ) : (
+                      <div />
+                    )}
                     <div className="space-y-2 text-[13px]">
                       {k.art === "liga" ? <LigaInhalt lage={lage} kontrolle={kontrolle} /> : <Inhalt k={k} wichtig={wichtig.map((w) => w.name.split(" ").at(-1)!)} />}
                     </div>
