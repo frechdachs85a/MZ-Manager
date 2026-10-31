@@ -114,7 +114,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   const signatur = new Map<string, string>();
   const stil = new Map<string, string>();
   const stilJe = new Map<string, string>();
-  // Gespiegelt: gleiche Einstellungen, jeder Spieler steht bis auf SPIEGEL_TOLERANZ Punkte auf dem gespiegelten Platz (x -> 208 − x)
+  // Gespiegelt: gleiche Einstellungen, jeder Platz liegt bis auf SPIEGEL_TOLERANZ Punkte auf einem gespiegelten Platz (x -> 208 − x)
   const gesehen: { reiter: string; t: NonNullable<(typeof archiv)[number]["taktik"]> }[] = [];
   const spiegelVon = (t: NonNullable<(typeof archiv)[number]["taktik"]>) =>
     gesehen.find(
@@ -123,10 +123,16 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
         g.t.team.playstyle === t.team.playstyle &&
         g.t.pos.length === t.pos.length &&
         t.pos.some((x) => Math.abs(x.start.x - 104) > SPIEGEL_TOLERANZ) &&
-        t.pos.every((x) => {
-          const y = g.t.pos.find((q) => q.pid === x.pid);
-          return !!y && Math.hypot(208 - x.start.x - y.start.x, x.start.y - y.start.y) <= SPIEGEL_TOLERANZ;
-        }),
+        (() => {
+          // nur die Plätze (Spieler dürfen auf der anderen Seite andere sein), jeder Platz höchstens einmal
+          const frei = [...g.t.pos];
+          return t.pos.every((x) => {
+            const i = frei.findIndex((q) => q.pos === x.pos && Math.hypot(208 - x.start.x - q.start.x, x.start.y - q.start.y) <= SPIEGEL_TOLERANZ);
+            if (i < 0) return false;
+            frei.splice(i, 1);
+            return true;
+          });
+        })(),
     )?.reiter;
   for (const a of archiv) {
     const t = a.taktik!;
