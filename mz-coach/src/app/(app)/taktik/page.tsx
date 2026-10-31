@@ -12,6 +12,7 @@ import { Badge, Card, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
 import { letzteEditorAktion } from "@/lib/db/taktik";
+import { spieltagLage } from "@/lib/spieltag";
 import { datumZeit } from "@/lib/format";
 import { stilDe } from "@/lib/mz/analyse/gegner";
 import { PRIO_NR } from "@/lib/taktik-check";
@@ -37,6 +38,8 @@ export default async function Taktik() {
   const { karten, plan, stand, wichtig } = reiterUebersicht(db);
   // Letzte Editor-Aktion (bis 30 Minuten danach), damit die Meldung nach dem Neuladen sichtbar bleibt
   const letzte = letzteEditorAktion(db);
+  // Formation Liga: was die Seite für das nächste Ligaspiel hinterlegt hat (spieltag.ts, abruf/liga.ts)
+  const lage = spieltagLage(db);
   const zeigeLetzte = !!letzte;
   const kader = new Map(ladeKader(db).map((s) => [s.pid, s]));
   const name = (pid: number) => kader.get(pid)?.name.split(" ").at(-1) ?? String(pid);
@@ -85,15 +88,16 @@ export default async function Taktik() {
                   <p className="px-4 py-3 text-[13px] text-label-2">Leer: frei für einen neuen Stil oder eine Seitenvariante.</p>
                 ) : (
                   <div className="grid gap-3 px-4 py-3 sm:grid-cols-[150px_1fr]">
-                    {k.archiv?.taktik ? <Spielfeld spieler={feld(k)} /> : <div />}
+                    {k.art === "liga" && lage.liga ? <Spielfeld spieler={lage.liga.feld} /> : k.archiv?.taktik ? <Spielfeld spieler={feld(k)} /> : <div />}
                     <div className="space-y-2 text-[13px]">
-                      <Inhalt k={k} wichtig={wichtig.map((w) => w.name.split(" ").at(-1)!)} />
+                      {k.art === "liga" ? <LigaInhalt lage={lage} /> : <Inhalt k={k} wichtig={wichtig.map((w) => w.name.split(" ").at(-1)!)} />}
                     </div>
                   </div>
                 )}
                 {k.art !== "leer" && (
                   <div className="mt-auto space-y-2 border-t border-separator px-4 py-3">
                     <div className="flex flex-wrap items-center gap-3">
+                      {k.art === "liga" && lage.liga && <DateiKnopf text={lage.liga.xml} dateiname="Liga.xml" label="XML" />}
                       {k.archiv && <DateiKnopf text={k.archiv.xml} dateiname={`${k.name}.xml`.replace(/[^\w.-]+/g, "_")} label="XML" />}
                       {k.art !== "liga" && <ReiterNameForm reiter={k.name} vorschlag={k.nameVorschlag} />}
                       {k.art !== "liga" && k.slot !== "a" && <ReiterLoeschenKnopf reiter={k.name} />}
@@ -165,6 +169,52 @@ export default async function Taktik() {
             <PruefForm />
           </Section>
         </div>
+      </div>
+    </>
+  );
+}
+
+// Reiter Liga: Gegner, Grundlage, was angepasst wurde, Bank und Stand in ManagerZone
+function LigaInhalt({ lage }: { lage: ReturnType<typeof spieltagLage> }) {
+  const l = lage.liga;
+  const st = lage.ligaStatus;
+  const gegner = lage.lauf?.gegnerName;
+  const anstoss = lage.lauf?.anstoss;
+  return (
+    <>
+      <div className="font-semibold">
+        {gegner ? `Gegen ${gegner}` : "Nächster Gegner unbekannt"}
+        {anstoss ? `, ${datumZeit(anstoss)}` : ""}
+      </div>
+      {st && (
+        <div className={st.ok ? "text-green" : "text-red"}>
+          {st.ok ? "✓" : "✗"} {st.meldung} ({datumZeit(st.beendet ?? st.gestartet)})
+        </div>
+      )}
+      {l ? (
+        <>
+          {lage.vorschlag && (
+            <div className="text-label-2">
+              Gewählt: {lage.vorschlag.taktik} ({lage.vorschlag.quelle}) · {lage.vorschlag.kurz.join(" · ")}
+            </div>
+          )}
+          <ul className="space-y-1 text-label-2">
+            {l.kurz.map((z) => (
+              <li key={z}>• {z}</li>
+            ))}
+            {l.hinweise.map((z) => (
+              <li key={z} className="text-orange">
+                • {z}
+              </li>
+            ))}
+          </ul>
+          <div className="text-label-3">Bank: {l.bank.join(", ")}</div>
+        </>
+      ) : (
+        <div className="text-red">Noch keine Formation Liga berechnet (kein Gegner oder zu wenige aufstellbare Spieler).</div>
+      )}
+      <div className="text-label-3">
+        Neu berechnet und in ManagerZone geschrieben nach jeder Spieltag-Analyse und jedem täglichen Kaderabruf bis zum Anstoß.
       </div>
     </>
   );
