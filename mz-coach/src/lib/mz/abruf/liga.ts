@@ -431,3 +431,13 @@ export async function portfolioUebernehmen(db: Database.Database, reiter: string
   if (!v) return { ok: false, meldung: `Für Reiter „${reiter}“ gibt es keinen Portfolio-Vorschlag mehr.` };
   return xmlUebernehmen(db, reiter, v.xml, `Portfolio: ${v.stil} gegen ${v.klasse}`, v.name);
 }
+
+// Portfolio-Lücke gegen den nächsten Ligagegner übernehmen (Marcus, 31.10.2026): in den gewählten Reiter schreiben und nach
+// dem Inhalt benennen. Nur auf Klick.
+export async function lueckeUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  const { spieltagLage } = await import("@/lib/spieltag");
+  const l = spieltagLage(db).luecke;
+  if (!l) return { ok: false, meldung: "Kein fehlender bewährter Stil gegen den nächsten Gegner mehr." };
+  if (!l.reiter.some((r) => r.name === reiter)) return { ok: false, meldung: `Reiter „${reiter}“ darf hierfür nicht überschrieben werden.` };
+  return xmlUebernehmen(db, reiter, l.xml, `Portfolio gegen ${l.klasse}: ${l.stil.schluessel}`, l.name);
+}

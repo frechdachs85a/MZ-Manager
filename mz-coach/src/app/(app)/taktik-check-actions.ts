@@ -82,3 +82,16 @@ export async function reiterLoeschenAktion(_prev: UebernahmeState, formData: For
   refresh();
   return r;
 }
+
+// Fehlenden bewährten Stil gegen den nächsten Gegner in den gewählten Reiter übernehmen (Spieltag-Seite)
+export async function lueckeUebernehmenAktion(_prev: UebernahmeState, formData: FormData): Promise<UebernahmeState> {
+  const reiter = String(formData.get("reiter") ?? "");
+  if (!reiter) return { meldung: "Reiter fehlt." };
+  const { lueckeUebernehmen } = await import("@/lib/mz/abruf/liga");
+  const r = await lueckeUebernehmen(getDb(), reiter);
+  revalidatePath("/");
+  revalidatePath("/taktik");
+  revalidatePath("/spieltag");
+  refresh();
+  return r;
+}

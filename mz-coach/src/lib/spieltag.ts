@@ -19,6 +19,7 @@ import { seitenVergleich } from "@/lib/mz/analyse/seiten";
 import { duelle } from "@/lib/mz/analyse/duelle";
 import { quotenJeBereich } from "@/lib/db/wertspiel";
 import { topGegenKlasse } from "@/lib/portfolio";
+import { gegnerLuecke } from "@/lib/gegner-luecke";
 import { archivLaden, taktikZuordnen } from "@/lib/taktik-archiv";
 import { ladeKader } from "@/lib/db/kader";
 import type { FeldSpieler } from "@/components/spielfeld";
@@ -66,6 +67,7 @@ export function spieltagLage(db: Database.Database) {
   const neuestes = gegner?.stats.slice().sort((a, b) => (b.datum ?? "").localeCompare(a.datum ?? ""))[0];
   const klasse = neuestes && gegner ? gegnerKlasse(spielMuster(neuestes, gegner.tid, { anonym: true }).eigen) : undefined;
   const top = klasse ? topGegenKlasse(db, klasse) : [];
+  const luecke = gegnerLuecke(db, klasse, top);
 
   // Eigene Ligaspiele gegen diesen Gegnertyp, je zugeordneter Archiv-Taktik
   const archiv = archivLaden(db);
@@ -575,6 +577,7 @@ export function spieltagLage(db: Database.Database) {
     gegen,
     klasse,
     top,
+    luecke,
     empfehlung,
     belege,
   };
