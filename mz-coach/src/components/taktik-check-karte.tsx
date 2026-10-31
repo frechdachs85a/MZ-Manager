@@ -5,6 +5,7 @@
 
 import { useActionState } from "react";
 import { DateiKnopf } from "@/components/datei-knopf";
+import { FortschrittBalken } from "@/components/fortschritt-balken";
 import {
   freundVorschlagUebernehmen,
   portfolioVorschlagUebernehmen,
@@ -84,7 +85,8 @@ export function TaktikCheckKarte({
           </button>
         </form>
       </div>
-      {state.meldung && <p className={`mt-1 text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</p>}
+      <FortschrittBalken aktiv={pending} />
+{state.meldung && <p className={`mt-1 text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</p>}
     </div>
   );
 }
@@ -109,7 +111,8 @@ export function ReiterNameKnopf({ reiter, name }: { reiter: string; name: string
           {pending ? "Wird umbenannt …" : `In „${name}“ umbenennen`}
         </button>
       </form>
-      {state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
+      <FortschrittBalken aktiv={pending} />
+{state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
     </span>
   );
 }
@@ -143,7 +146,8 @@ export function ReiterNameForm({ reiter, vorschlag }: { reiter: string; vorschla
         {pending ? "Wird umbenannt …" : "Umbenennen"}
       </button>
       {vorschlag && <span className="text-[12px] text-label-3">Vorschlag: {vorschlag}</span>}
-      {state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
+      <FortschrittBalken aktiv={pending} />
+{state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
     </form>
   );
 }
@@ -172,7 +176,8 @@ export function ReiterLoeschenKnopf({ reiter }: { reiter: string }) {
       >
         {pending ? "Wird gelöscht …" : "Löschen"}
       </button>
-      {state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
+      <FortschrittBalken aktiv={pending} />
+{state.meldung && <span className={`text-[12.5px] ${state.ok ? "text-green" : "text-red"}`}>{state.meldung}</span>}
     </form>
   );
 }

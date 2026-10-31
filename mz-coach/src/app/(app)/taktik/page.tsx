@@ -11,6 +11,7 @@ import { ReiterLoeschenKnopf, ReiterNameForm, TaktikCheckKarte } from "@/compone
 import { Badge, Card, Section } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
+import { letzteEditorAktion } from "@/lib/db/taktik";
 import { datumZeit } from "@/lib/format";
 import { stilDe } from "@/lib/mz/analyse/gegner";
 import { PRIO_NR } from "@/lib/taktik-check";
@@ -34,6 +35,9 @@ export default async function Taktik() {
   await connection();
   const db = getDb();
   const { karten, plan, stand, wichtig } = reiterUebersicht(db);
+  // Letzte Editor-Aktion (bis 30 Minuten danach), damit die Meldung nach dem Neuladen sichtbar bleibt
+  const letzte = letzteEditorAktion(db);
+  const zeigeLetzte = !!letzte;
   const kader = new Map(ladeKader(db).map((s) => [s.pid, s]));
   const name = (pid: number) => kader.get(pid)?.name.split(" ").at(-1) ?? String(pid);
   const feld = (k: ReiterKarte): FeldSpieler[] =>
@@ -48,6 +52,11 @@ export default async function Taktik() {
         subtitle={`${genutzt.length} Reiter${stand ? ` · aus dem Editor gelesen ${datumZeit(stand)}` : " · noch nicht aus dem Editor gelesen (beim nächsten Kaderabruf)"} · ${vorschlaege ? `${vorschlaege} mit Vorschlägen` : "keine Vorschläge"}`}
       />
       <div className="seite">
+        {zeigeLetzte && (
+          <p className={`mb-4 rounded-md px-3 py-2 text-[13px] ${letzte!.ok ? "bg-green/10 text-green" : "bg-red/10 text-red"}`}>
+            {letzte!.ok ? "✓" : "✗"} {letzte!.aufgabe}: {letzte!.text} ({datumZeit(letzte!.beginn)})
+          </p>
+        )}
         <Section
           title="Deine Reiter"
           footer="Stand: wie beim letzten Kaderabruf im Editor (täglich, nur gelesen). Vorschläge übernimmt die Seite erst auf Klick, mit Rückfrage, und prüft danach durch Neuladen. Namen höchstens 6 Zeichen (Grenze des Editors)."
