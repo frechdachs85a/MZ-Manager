@@ -53,6 +53,37 @@ export default async function Markt(props: PageProps<"/markt">) {
         subtitle={suche ? `Suche vom ${datumZeit(suche.zeit)} · ${suche.spieler.length} Spieler geprüft` : "Transfermarkt-Scout"}
       />
       <div className="seite">
+        {/* Deine Gebote ganz oben (Marcus, 31.10.2026: "wo sind meine Spieler mit Maximalgebot?") */}
+        <Section
+          title="Deine Gebote im Bietomat"
+          footer="Aktive Aufträge: der Bietomat bietet kurz vor Schluss Stufe für Stufe bis höchstens zum Endpreis. Ändern oder löschen im Bietomat."
+        >
+          {auftraege.length ? (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {auftraege.map((a) => (
+                <Link key={a.pid} href="/markt/bietomat" className="pressable karte block rounded-[12px] bg-card p-4 hover:ring-2 hover:ring-tint/40">
+                  <div className="text-[16px] font-bold">{a.name ?? String(a.pid)}</div>
+                  <div className="text-[12px] text-label-3">ID {a.pid}</div>
+                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[12.5px]">
+                    <span className="text-label-3">Endpreis</span>
+                    <span className="text-right font-semibold tabular-nums">{euro(a.maximum)}</span>
+                    <span className="text-label-3">Gebot beim Anlegen</span>
+                    <span className="text-right tabular-nums">{a.spieler?.markt.hoechstgebot ? euro(a.spieler.markt.hoechstgebot) : "–"}</span>
+                    <span className="text-label-3">Ende</span>
+                    <span className="text-right tabular-nums">{a.auktionEnde ? datumZeit(a.auktionEnde) : "–"}</span>
+                  </div>
+                  <div className="mt-2">
+                    <Badge tone="green">aktiv</Badge>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <Card className="p-4 text-[14px] text-label-2">
+              Kein aktiver Auftrag. Spieler mit „Annehmen“ auf die Watchlist holen und dort einen Endpreis eintragen.
+            </Card>
+          )}
+        </Section>
         <Section
           title="Vorschläge"
           footer="Spieler aus der letzten Marktsuche, die einen Platz deiner Startelf verbessern, größter Gewinn zuerst. Annehmen setzt ihn auf die Watchlist, Ablehnen blendet ihn aus."
@@ -157,23 +188,6 @@ export default async function Markt(props: PageProps<"/markt">) {
               </div>
             ) : (
               <Card className="p-4 text-[14px] text-label-2">Noch leer. Vorschläge mit „Annehmen“ hierher holen.</Card>
-            )}
-          </Section>
-
-          <Section title="Im Bietomat" footer="Deine aktiven Aufträge. Ändern oder löschen im Bietomat.">
-            {auftraege.length ? (
-              <List>
-                {auftraege.map((a) => (
-                  <Row
-                    key={a.pid}
-                    title={a.name ?? String(a.pid)}
-                    detail={`Endpreis ${euro(a.maximum)}${a.auktionEnde ? ` · Ende ${datumZeit(a.auktionEnde)}` : ""}`}
-                    value={<Badge tone="green">aktiv</Badge>}
-                  />
-                ))}
-              </List>
-            ) : (
-              <Card className="p-4 text-[14px] text-label-2">Kein aktiver Auftrag.</Card>
             )}
           </Section>
 
