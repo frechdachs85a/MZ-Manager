@@ -3,19 +3,20 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { Badge, Card, Hero, List, Row, Section, Unavailable } from "@/components/ui";
+import { Badge, Card, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { letzterAbruf } from "@/lib/db/abruf";
 import { datumZeit, euro, spielDatum } from "@/lib/format";
-import { GRUND_TEXT, HEIMATLAND, type Bewertung, type Grund, type Schwachstelle } from "@/lib/mz/analyse/markt";
-import { ablehnen, zuruecknehmen } from "./actions";
+import { GRUND_TEXT, HEIMATLAND, type Grund, type Schwachstelle } from "@/lib/mz/analyse/markt";
+import { vonWatchlist, zuruecknehmen } from "./actions";
+import { VorschlagKarte } from "@/components/vorschlag-karte";
+import { ladeWatchlist } from "@/lib/db/watch";
 import { RahmenForm, SuchKnopf } from "./formulare";
 import { InBietomat } from "./bietomat/formulare";
-import { SpielerProfil } from "@/components/spieler-profil";
 import { MarktInfo } from "@/components/markt-info";
 import { ladeAuftraege } from "@/lib/db/gebot";
 import { marktErgebnis } from "@/lib/markt-ergebnis";
-import { ladeVerkaeufe, type GespeicherterVerkauf } from "@/lib/db/verkauf";
+import { ladeVerkaeufe } from "@/lib/db/verkauf";
 
 const MZ = "https://www.managerzone.com";
 const komma = (n: number, s = 2) => n.toFixed(s).replace(".", ",");
@@ -26,8 +27,17 @@ export default async function Markt() {
   const db = getDb();
   const { kader, start, suche, rahmen, abgelehnt, schwach, r, ergebnis } = marktErgebnis(db);
   const abruf = letzterAbruf(db, "markt");
-  const imBietomat = new Map(ladeAuftraege(db).filter((a) => a.status === "aktiv").map((a) => [a.pid, a.maximum]));
+  const imBietomat = new Map(
+    ladeAuftraege(db)
+      .filter((a) => a.status === "aktiv")
+      .map((a) => [a.pid, a.maximum]),
+  );
   const verkaeufe = ladeVerkaeufe(db);
+  const auftraege = ladeAuftraege(db).filter((a) => a.status === "aktiv");
+  const watch = ladeWatchlist(db);
+  const aufWatch = new Set(watch.map((w) => w.pid));
+  // Vorschläge: alle, die verbessern, ohne die schon auf der Watchlist; höchstens 8
+  const vorschlaege = (ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid)).slice(0, 8);
   const auslaender = kader.filter((s) => s.nationalitaet && s.nationalitaet !== HEIMATLAND);
 
   return (
@@ -36,60 +46,92 @@ export default async function Markt() {
         title="Transfermarkt"
         subtitle={suche ? `Suche vom ${datumZeit(suche.zeit)} · ${suche.spieler.length} Spieler geprüft` : "Transfermarkt-Scout"}
       />
-      <div className="seite lg:grid lg:grid-cols-[1.15fr_1fr] lg:gap-x-8">
-        <div>
-          <Section title="Empfehlung">
-            {!schwach ? (
-              <Unavailable title="Empfehlung" reason="Kein eigenes Spiel mit Stats-XML gespeichert, daher keine Startelf." />
-            ) : !suche ? (
-              <Unavailable title="Empfehlung" reason="Noch keine Marktsuche. Sie läuft täglich ab 6 Uhr automatisch, oder unten jetzt suchen." />
-            ) : ergebnis?.empfehlung ? (
-              <>
+      <div className="seite">
+        <Section
+          title="Vorschläge"
+          footer="Spieler aus der letzten Marktsuche, die einen Platz deiner Startelf verbessern, größter Gewinn zuerst. Annehmen setzt ihn auf die Watchlist, Ablehnen blendet ihn aus."
+        >
+          {!schwach ? (
+            <Unavailable title="Vorschläge" reason="Kein eigenes Spiel mit Stats-XML gespeichert, daher keine Startelf." />
+          ) : !suche ? (
+            <Unavailable title="Vorschläge" reason="Noch keine Marktsuche. Sie läuft täglich ab 6 Uhr automatisch, oder unten jetzt suchen." />
+          ) : vorschlaege.length ? (
+            <>
               {!r && (
-                <p className="mb-2 rounded-md bg-[#fef3c7] px-3 py-2 text-[13px] text-[#92400e]">
-                  Rahmen noch nicht eingetragen (unten): Kapital, Ausländerplätze und Arbeitsbewilligungen sind bei diesen Vorschlägen nicht geprüft.
+                <p className="mb-3 rounded-md bg-orange/10 px-3 py-2 text-[13px] text-orange">
+                  Rahmen noch nicht eingetragen (rechts): Budget, Ausländerplätze und Arbeitsbewilligungen sind bei diesen Vorschlägen nicht geprüft.
                 </p>
               )}
-              <EmpfehlungKarte b={ergebnis.empfehlung} imBietomat={imBietomat.get(ergebnis.empfehlung.kandidat.pid)} verkauf={verkaeufe.get(ergebnis.empfehlung.kandidat.pid)} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
-              </>
+              <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                {vorschlaege.map((b, i) => (
+                  <VorschlagKarte key={b.kandidat.pid} b={b} rang={i + 1} verkauf={verkaeufe.get(b.kandidat.pid)} imBietomat={imBietomat.get(b.kandidat.pid)} />
+                ))}
+              </div>
+              <p className="mt-2 text-[12px] text-label-3">Stand der Marktsuche vom {datumZeit(suche.zeit)}.</p>
+            </>
+          ) : (
+            <Card className="p-4">
+              <div className="text-[17px] font-semibold">Heute kein passender Spieler auf dem Markt</div>
+              <p className="mt-1 text-[15px] text-label-2">
+                Von {ergebnis?.geprueft ?? 0} geprüften Spielern verbessert keiner deine Startelf innerhalb deiner Grenzen. Gründe siehe unten.
+              </p>
+            </Card>
+          )}
+        </Section>
+      </div>
+      <div className="seite lg:grid lg:grid-cols-[1.15fr_1fr] lg:gap-x-8">
+        <div>
+          <Section title="Watchlist" footer="Angenommene Vorschläge. Mit einem Endpreis kommt der Spieler in den Bietomat; entfernen geht jederzeit.">
+            {watch.length ? (
+              <div className="grid gap-3">
+                {watch.map((w) => (
+                  <Card key={w.pid} className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <a href={`${MZ}/?p=players&pid=${w.pid}`} target="_blank" rel="noreferrer" className="text-[17px] font-bold hover:underline">
+                          {w.name}
+                        </a>
+                        {w.bewertung && (
+                          <div className="text-[12.5px] text-label-2">
+                            als {w.bewertung.rolle} statt {w.bewertung.statt}: +{komma(w.bewertung.gewinn)} MZ-Wert (beim Annehmen)
+                          </div>
+                        )}
+                      </div>
+                      <form action={vonWatchlist}>
+                        <input type="hidden" name="pid" value={w.pid} />
+                        <button className="pressable rounded-md border border-separator px-2.5 py-1 text-[12.5px] font-semibold text-red">Entfernen</button>
+                      </form>
+                    </div>
+                    <div className="mt-2">
+                      <MarktInfo s={w.spieler} verkauf={verkaeufe.get(w.pid)} stand={`Stand beim Annehmen (${datumZeit(w.aufgenommen)})`} />
+                    </div>
+                    <div className="mt-3">
+                      <InBietomat pid={w.pid} imBietomat={imBietomat.get(w.pid)} />
+                    </div>
+                  </Card>
+                ))}
+              </div>
             ) : (
-              <Card className="p-4">
-                <div className="text-[17px] font-semibold">Heute kein passender Spieler auf dem Markt</div>
-                <p className="mt-1 text-[15px] text-label-2">
-                  Von {ergebnis?.geprueft ?? 0} geprüften Spielern verbessert keiner deine Startelf innerhalb deiner Grenzen. Gründe siehe unten.
-                </p>
-              </Card>
+              <Card className="p-4 text-[14px] text-label-2">Noch leer. Vorschläge mit „Annehmen“ hierher holen.</Card>
             )}
           </Section>
 
-          {ergebnis && ergebnis.weitere.length > 0 && (
-            <Section title="Nächste Kandidaten" footer="Kommen nach, wenn du die Empfehlung ablehnst.">
+          <Section title="Im Bietomat" footer="Deine aktiven Aufträge. Ändern oder löschen im Bietomat.">
+            {auftraege.length ? (
               <List>
-                {ergebnis.weitere.map((b) => (
-                  <li key={b.kandidat.pid} className="py-2.5">
-                    <details>
-                      <summary className="flex cursor-pointer list-none items-center gap-4">
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[14.5px] font-medium leading-snug">
-                            {b.kandidat.name}
-                            {imBietomat.has(b.kandidat.pid) && <span className="ml-2"><Badge tone="green">im Bietomat</Badge></span>}
-                          </div>
-                          <div className="mt-0.5 text-[12.5px] text-label-2">{`${b.ziel.rolle} statt ${b.ziel.spieler.name} · ${b.kandidat.alter ?? "?"} J. · ${b.kandidat.nationalitaet} · ab ${euro(b.preis)}`}</div>
-                        </div>
-                        <span className="font-semibold tabular-nums text-label">+{komma(b.gewinn)}</span>
-                        <span className="text-[12px] text-tint">Details</span>
-                      </summary>
-                      <div className="mt-3 space-y-3">
-                        <MarktInfo s={b.kandidat} verkauf={verkaeufe.get(b.kandidat.pid)} stand={suche ? `Stand der Marktsuche vom ${datumZeit(suche.zeit)}` : undefined} />
-                        <SpielerProfil skills={b.kandidat.skills} scout={b.kandidat.scout} />
-                        <InBietomat pid={b.kandidat.pid} imBietomat={imBietomat.get(b.kandidat.pid)} />
-                      </div>
-                    </details>
-                  </li>
+                {auftraege.map((a) => (
+                  <Row
+                    key={a.pid}
+                    title={a.name ?? String(a.pid)}
+                    detail={`Endpreis ${euro(a.maximum)}${a.auktionEnde ? ` · Ende ${datumZeit(a.auktionEnde)}` : ""}`}
+                    value={<Badge tone="green">aktiv</Badge>}
+                  />
                 ))}
               </List>
-            </Section>
-          )}
+            ) : (
+              <Card className="p-4 text-[14px] text-label-2">Kein aktiver Auftrag.</Card>
+            )}
+          </Section>
 
           {ergebnis && (
             <Section title="Nicht vorgeschlagen" footer={`Von ${ergebnis.geprueft} Spielern der letzten Suche.`}>
@@ -110,7 +152,14 @@ export default async function Markt() {
             </Link>
           </Section>
 
-          <Section title="Suche" footer={abruf ? `Letzter Abruf ${datumZeit(abruf.gestartet)}: ${abruf.meldung ?? "läuft"}` : "Läuft täglich ab 6 Uhr (Berlin), wenn der ManagerZone-Zugang eingerichtet ist."}>
+          <Section
+            title="Suche"
+            footer={
+              abruf
+                ? `Letzter Abruf ${datumZeit(abruf.gestartet)}: ${abruf.meldung ?? "läuft"}`
+                : "Läuft täglich ab 6 Uhr (Berlin), wenn der ManagerZone-Zugang eingerichtet ist."
+            }
+          >
             <SuchKnopf />
           </Section>
         </div>
@@ -186,93 +235,6 @@ export default async function Markt() {
   );
 }
 
-function EmpfehlungKarte({ b, imBietomat, stand, verkauf }: { b: Bewertung; imBietomat?: number; stand?: string; verkauf?: GespeicherterVerkauf }) {
-  const k = b.kandidat;
-  return (
-    <div className="space-y-3">
-      <Hero>
-        <div className="kapitaelchen !text-gold-hell">Verstärkt am meisten</div>
-        <div className="mt-1.5 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <a href={`${MZ}/?p=players&pid=${k.pid}`} target="_blank" rel="noreferrer" className="text-[26px] font-bold leading-tight tracking-tight underline-offset-4 hover:underline">
-              {k.name}
-            </a>
-            <div className="mt-1 text-[14px] text-white/80">
-              {k.alter ?? "?"} J. · {k.nationalitaet} · als {b.ziel.rolle} für {b.ziel.spieler.name}
-            </div>
-          </div>
-          <div className="shrink-0 text-right">
-            <div className="text-[34px] font-bold leading-none tabular-nums">+{komma(b.gewinn)}</div>
-            <div className="mt-1 text-[12px] text-white/70">MZ-Wert</div>
-          </div>
-        </div>
-        <div className="mt-4 space-y-2 text-[13px]">
-          <Vergleich label={b.ziel.spieler.name} wert={b.ziel.wert} hell={false} />
-          <Vergleich label={k.name} wert={b.neu} hell />
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2 text-[13px]">
-          <span className="rounded-[10px] bg-white/15 px-2.5 py-1">ab {euro(b.preis)}</span>
-          {k.markt.ende && <span className="rounded-[10px] bg-white/15 px-2.5 py-1">Ende {k.markt.ende}</span>}
-          <span className="rounded-[10px] bg-white/15 px-2.5 py-1">
-            Startelf {komma(b.elfVorher)} → {komma(b.elfNachher)}
-          </span>
-        </div>
-      </Hero>
-      <Card className="p-4">
-        <div className="text-[15px] font-semibold">Warum dieser Spieler</div>
-        <ul className="mt-2 space-y-1.5 text-[15px]">
-          {b.gruende.map((g, i) => (
-            <li key={i} className="flex gap-2">
-              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-tint" />
-              <span>{g}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 text-[15px] font-semibold">Vorbehalte</div>
-        <ul className="mt-2 space-y-1.5 text-[15px] text-label-2">
-          {b.vorbehalte.map((g, i) => (
-            <li key={i} className="flex gap-2">
-              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-orange" />
-              <span>{g}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-      <Card className="p-4">
-        <div className="mb-2 text-[15px] font-semibold">Spieler</div>
-        <MarktInfo s={k} stand={stand} verkauf={verkauf} />
-        <div className="mt-3">
-          <SpielerProfil skills={k.skills} scout={k.scout} />
-        </div>
-      </Card>
-      <Card className="p-4">
-        <div className="mb-2 text-[15px] font-semibold">Bieten {imBietomat ? "· im Bietomat" : ""}</div>
-        <InBietomat pid={k.pid} imBietomat={imBietomat} />
-      </Card>
-      <form action={ablehnen}>
-        <input type="hidden" name="pid" value={k.pid} />
-        <input type="hidden" name="name" value={k.name} />
-        <button className="pressable karte min-h-[50px] w-full rounded-[14px] bg-card text-[17px] font-semibold text-red">
-          Ablehnen und nächsten suchen
-        </button>
-      </form>
-    </div>
-  );
-}
-
-// Balken auf der MZ-Skala 0 bis 10, Wert immer als Zahl daneben
-function Vergleich({ label, wert, hell }: { label: string; wert: number; hell: boolean }) {
-  return (
-    <div className="grid grid-cols-[minmax(0,7.5rem)_1fr_3rem] items-center gap-2">
-      <span className="truncate text-white/80">{label}</span>
-      <span className="h-2 overflow-hidden rounded-full bg-white/15">
-        <span className={`block h-full rounded-full ${hell ? "bg-white" : "bg-white/45"}`} style={{ width: `${wert * 10}%` }} />
-      </span>
-      <span className="text-right font-semibold tabular-nums">{komma(wert)}</span>
-    </div>
-  );
-}
-
 function SchwachstellenKarte({ liste, fehlt }: { liste: Schwachstelle[]; fehlt: string[] }) {
   return (
     <Card className="px-4 py-3">
@@ -290,7 +252,9 @@ function SchwachstellenKarte({ liste, fehlt }: { liste: Schwachstelle[]; fehlt: 
               <div className={`h-full rounded-full ${i === 0 ? "bg-tint" : "bg-label-3"}`} style={{ width: `${s.wert * 10}%` }} />
             </div>
             {s.ohneWechsel && (
-              <div className="mt-1 text-[12px] font-semibold text-red">Ausdauer {s.spieler.skills.ausdauer?.wert}: bräuchte einen Wechsel, alle 3 sind vergeben</div>
+              <div className="mt-1 text-[12px] font-semibold text-red">
+                Ausdauer {s.spieler.skills.ausdauer?.wert}: bräuchte einen Wechsel, alle 3 sind vergeben
+              </div>
             )}
             {i === 0 && <div className="mt-1 text-[12px] font-semibold text-tint">größte Schwachstelle</div>}
           </li>

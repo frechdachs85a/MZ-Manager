@@ -42,6 +42,7 @@ export default async function Taktik() {
   // Formation Liga: was die Seite für das nächste Ligaspiel hinterlegt hat (spieltag.ts, abruf/liga.ts)
   const lage = spieltagLage(db);
   const kontrolle = letzterAbruf(db, "liga-kontrolle");
+  const pruefung = letzterAbruf(db, "taktik-pruefung");
   const zeigeLetzte = !!letzte;
   const kader = new Map(ladeKader(db).map((s) => [s.pid, s]));
   const name = (pid: number) => kader.get(pid)?.name.split(" ").at(-1) ?? String(pid);
@@ -57,6 +58,11 @@ export default async function Taktik() {
         subtitle={`${genutzt.length} Reiter${stand ? ` · aus dem Editor gelesen ${datumZeit(stand)}` : " · noch nicht aus dem Editor gelesen (beim nächsten Kaderabruf)"} · ${vorschlaege ? `${vorschlaege} mit Vorschlägen` : "keine Vorschläge"}`}
       />
       <div className="seite">
+        {pruefung && (
+          <p className="mb-3 text-[13px] text-label-2">
+            Täglich mit dem Kaderabruf geprüft, zuletzt {datumZeit(pruefung.beendet ?? pruefung.gestartet)}: {pruefung.meldung}
+          </p>
+        )}
         {zeigeLetzte && (
           <p className={`mb-4 rounded-md px-3 py-2 text-[13px] ${letzte!.ok ? "bg-green/10 text-green" : "bg-red/10 text-red"}`}>
             {letzte!.ok ? "✓" : "✗"} {letzte!.aufgabe}: {letzte!.text} ({datumZeit(letzte!.beginn)})
