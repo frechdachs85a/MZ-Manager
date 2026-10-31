@@ -326,6 +326,22 @@ const MIGRATIONEN: string[] = [
     stand TEXT NOT NULL
   );
   `,
+  // 24: Nachrichten (Pop-up beim nächsten Besuch) und Push-Abos der Geräte (Marcus, 31.10.2026: Auktionsbericht aufs Handy)
+  `
+  CREATE TABLE nachricht (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    zeit TEXT NOT NULL,
+    titel TEXT NOT NULL,
+    text TEXT NOT NULL,
+    link TEXT,
+    gelesen INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE push_abo (
+    endpoint TEXT PRIMARY KEY,
+    abo_json TEXT NOT NULL,
+    erstellt TEXT NOT NULL
+  );
+  `,
 ];
 
 // Schema auf den neuesten Stand bringen (Migrationen der Reihe nach)

@@ -1,4 +1,6 @@
 import "server-only";
+import { auktionsBericht } from "@/lib/auktionsbericht";
+import { benachrichtige } from "@/lib/nachricht";
 import type Database from "better-sqlite3";
 import type { Page } from "playwright";
 import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
@@ -131,14 +133,26 @@ export async function auftragAbarbeiten(db: Database.Database, a: GebotAuftrag):
       { manuell: true, vorrang: true },
     );
     abrufBeenden(db, log, true, `Bietomat ${a.name ?? a.pid}: ${text}`);
+    await berichtSenden(db, a.pid, text);
     return text;
   } catch (e) {
     const m = `Bietomat ${a.name ?? a.pid}: ${meldungAus(e)}`;
     protokolliere(db, a.pid, m);
     abrufBeenden(db, log, false, m);
+    await berichtSenden(db, a.pid, m);
     return m;
   } finally {
     setzeBietomatLaeuft(false);
+  }
+}
+
+// Auktionsbericht als Push und Pop-up (Marcus, 31.10.2026); ein Fehler hier stört den Bietomat nie
+async function berichtSenden(db: Database.Database, pid: number, ergebnis: string) {
+  try {
+    const b = auktionsBericht(db, pid, ergebnis);
+    if (b) await benachrichtige(db, b);
+  } catch (e) {
+    protokolliere(db, pid, `Bericht nicht gesendet: ${meldungAus(e)}`);
   }
 }
 

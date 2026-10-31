@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { istEingerichtet } from "@/lib/auth/geheimnisse";
 import { getSessionSecret, SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 
-// Alles außer Login, Einrichtung, Gesundheitsprüfung und Icons ist nur mit gültiger Session erreichbar.
+// Alles außer Login, Einrichtung, Gesundheitsprüfung, Icons, Push-Service-Worker und Manifest ist nur mit gültiger Session erreichbar.
 // Ohne App-Passwort (Ersteinrichtung) führt jede Seite zu /einrichtung.
 let eingerichtet = false; // einmal eingerichtet, bleibt es so
 // Ohne gültige Sitzung zur Anmeldung umleiten
@@ -28,6 +28,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!login|einrichtung|api/gesund|api/fern|_next/static|_next/image|icons/|apple-touch-icon.png|favicon.png).*)",
+    "/((?!login|einrichtung|api/gesund|api/fern|_next/static|_next/image|icons/|apple-touch-icon.png|favicon.png|push-sw.js|manifest.webmanifest).*)",
   ],
 };
