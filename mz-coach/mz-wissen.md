@@ -287,3 +287,4 @@ Weitere Beobachtungen von Marcus zu Sydney (Ligaspiele): Gegentore bekam Sydney 
 - Ausdauer unter 8: Der Spieler hält nicht über 90 Minuten durch, ein Wechsel muss eingeplant werden. Die Zentrale warnt, wenn Ausdauer unter 8 fällt und wenn ein Startspieler Ausdauer unter 8 hat.
 - Teamwert immer als ein Wert je Team: jeder Spieler anteilig nach seinen Spielminuten (keine Tabelle je Zeitfenster).
 - Taktik-Check (Marcus, 30.10.2026): Nach jedem Kaderabruf prüfen, ob die Taktiken im Archiv noch optimal besetzt sind (Skills ändern sich). Vorschlag mit XML; übernommen wird nur auf Klick, nie automatisch.
+- Höchstens 3 Wechsel je Spiel. Brauchen mehr Startspieler wegen Ausdauer unter 8 einen Wechsel, bekommen ihn die mit der niedrigsten Ausdauer zuerst; wer leer ausgeht, ist eine Schwachstelle mit Vorrang beim Transfermarkt (Marcus, 30.10.2026).

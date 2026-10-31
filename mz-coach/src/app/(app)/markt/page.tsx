@@ -284,6 +284,9 @@ function SchwachstellenKarte({ liste, fehlt }: { liste: Schwachstelle[]; fehlt: 
             <div className="mt-1 h-[6px] overflow-hidden rounded-full bg-fill">
               <div className={`h-full rounded-full ${i === 0 ? "bg-tint" : "bg-label-3"}`} style={{ width: `${s.wert * 10}%` }} />
             </div>
+            {s.ohneWechsel && (
+              <div className="mt-1 text-[12px] font-semibold text-red">Ausdauer {s.spieler.skills.ausdauer?.wert}: bräuchte einen Wechsel, alle 3 sind vergeben</div>
+            )}
             {i === 0 && <div className="mt-1 text-[12px] font-semibold text-tint">größte Schwachstelle</div>}
           </li>
         ))}

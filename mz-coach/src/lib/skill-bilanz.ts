@@ -38,3 +38,12 @@ export function skillBilanz(db: Database.Database, tage = 14, jetzt = new Date()
   }
   return { bilanz: [...je.values()].sort((a, b) => b.plus - b.minus - (a.plus - a.minus)), warnungen };
 }
+
+// Höchstens 3 Wechsel je Spiel (ManagerZone; MAX_WECHSEL in der Prüfliste). Brauchen mehr Startspieler einen Wechsel
+// wegen Ausdauer unter 8, als frei sind (Marcus, 30.10.2026): nach Wichtigkeit, also niedrigste Ausdauer zuerst; wer
+// leer ausgeht, ist eine Schwachstelle (Transfermarkt: dort einen Spieler mit genug Ausdauer suchen).
+export const MAX_WECHSEL_SPIEL = 3;
+export function ausdauerPlan<T extends { pid: number; ausdauer?: number }>(starter: T[], frei = MAX_WECHSEL_SPIEL): { wechseln: T[]; ohneWechsel: T[] } {
+  const brauchen = starter.filter((s) => s.ausdauer !== undefined && s.ausdauer < AUSDAUER_GRENZE).sort((a, b) => (a.ausdauer ?? 0) - (b.ausdauer ?? 0));
+  return { wechseln: brauchen.slice(0, Math.max(0, frei)), ohneWechsel: brauchen.slice(Math.max(0, frei)) };
+}

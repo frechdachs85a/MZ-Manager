@@ -7,7 +7,7 @@ import { rolle } from "@/lib/mz/analyse/markt";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { verfuegbar, zuordnen } from "@/lib/mz/taktik/erzeugen";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
-import { AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
+import { ausdauerPlan, MAX_WECHSEL_SPIEL } from "@/lib/skill-bilanz";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
 // Täglicher Taktik-Check (Marcus, 30.10.2026): Skills ändern sich (Bälle dazu, ältere Spieler verlieren Ausdauer oder
@@ -18,7 +18,8 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 //   umgestellt wird.
 // - MIN_GEWINN: Umstellungen nur vorschlagen, wenn die Elf insgesamt mindestens so viel MZ-Wert gewinnt; nicht aufstellbare
 //   Spieler werden immer ersetzt.
-// - Ausdauer unter 8 ohne Zeitwechsel: Wechselregel in der WECHSEL_MINUTE mit dem besten Bankspieler für die Rolle.
+// - Ausdauer unter 8 ohne Zeitwechsel: Wechselregel in der WECHSEL_MINUTE mit dem besten Bankspieler für die Rolle,
+//   höchstens bis 3 Zeitwechsel insgesamt (niedrigste Ausdauer zuerst); wer leer ausgeht, wird als Schwachstelle gemeldet.
 // Vorschlag nur; übernommen wird erst, wenn Marcus es anklickt (abruf/liga.ts, taktikUebernehmen).
 export const BONUS_JETZT = 0.05;
 export const MIN_GEWINN = 0.2;
@@ -111,21 +112,27 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
   const zeitRaus = new Set(tNeu.regeln.filter((r) => r.check_time === "true" && /^\d+$/.test(r.out_player ?? "")).map((r) => Number(r.out_player)));
   const bankFrei = tNeu.subs.filter((b) => b.pos === "sub").map((b) => nachPid.get(b.pid)).filter((s): s is SpielerDaten => !!s && verfuegbarPids.has(s.pid));
   const neueRegeln: string[] = [];
-  for (const p of tNeu.pos.filter((x) => x.pos === "normal")) {
-    const s = nachPid.get(p.pid);
-    const ausdauer = s?.skills.ausdauer?.wert;
-    if (!s || ausdauer === undefined || ausdauer >= AUSDAUER_GRENZE || zeitRaus.has(p.pid)) continue;
-    const r = rolle({ pid: p.pid, x: p.start.x, y: p.start.y, torwart: false });
+  // Höchstens 3 Wechsel: vorhandene feste Zeitwechsel zählen mit; wer keinen Platz mehr bekommt, wird gemeldet
+  const kandidatenAusdauer = tNeu.pos
+    .filter((x) => x.pos === "normal" && !zeitRaus.has(x.pid))
+    .map((x) => ({ pid: x.pid, x: x.start.x, y: x.start.y, ausdauer: nachPid.get(x.pid)?.skills.ausdauer?.wert }));
+  const plan = ausdauerPlan(kandidatenAusdauer, MAX_WECHSEL_SPIEL - zeitRaus.size);
+  for (const p of plan.wechseln) {
+    const s = nachPid.get(p.pid)!;
+    const r = rolle({ pid: p.pid, x: p.x, y: p.y, torwart: false });
     const ersatz = [...bankFrei].sort((a, b) => (wertIn(b, r) ?? 0) - (wertIn(a, r) ?? 0))[0];
     if (!ersatz) {
-      wechselregeln.push(`${kurz(s)} (Ausdauer ${ausdauer}): keine passende Bank, Wechsel von Hand planen`);
+      wechselregeln.push(`${kurz(s)} (Ausdauer ${p.ausdauer}): keine passende Bank, Wechsel von Hand planen`);
       continue;
     }
     bankFrei.splice(bankFrei.indexOf(ersatz), 1);
-    wechselregeln.push(`${WECHSEL_MINUTE}. ${kurz(ersatz)} für ${kurz(s)} (Ausdauer ${ausdauer})`);
+    wechselregeln.push(`${WECHSEL_MINUTE}. ${kurz(ersatz)} für ${kurz(s)} (Ausdauer ${p.ausdauer})`);
     neueRegeln.push(
       `\t<TacticRule name="Taktikregel" check_time="true" time="${WECHSEL_MINUTE}" check_goal_condition="false" goal_condition="tie" goals="1" check_player_event="false" player_event_player_type="anyone" player_event="receives_yellow" out_player="${s.pid}" in_player_id="${ersatz.pid}" tactics="no_change" playstyle="no_change" aggression="no_change" formation="no_change" />`,
     );
+  }
+  for (const p of plan.ohneWechsel) {
+    wechselregeln.push(`${kurz(nachPid.get(p.pid))} (Ausdauer ${p.ausdauer}): kein Wechsel mehr frei (3 von 3) → Schwachstelle, siehe Transfermarkt`);
   }
   if (neueRegeln.length) out = out.replace(/<\/SoccerTactics>/, `${neueRegeln.join("\n")}\n</SoccerTactics>`);
 

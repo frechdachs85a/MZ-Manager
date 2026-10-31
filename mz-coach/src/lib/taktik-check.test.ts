@@ -67,3 +67,19 @@ describe("Taktik-Check", () => {
     expect(parseTaktikXml(r.xml).regeln.some((x) => x.out_player === "9" && x.time === "70")).toBe(true);
   });
 });
+
+describe("Taktik-Check: höchstens 3 Wechsel", () => {
+  it("vergibt Ausdauer-Wechsel nach Wichtigkeit und meldet, wer leer ausgeht", () => {
+    // Regel 60. 12 für 3 belegt schon einen Wechsel; vier Startspieler mit Ausdauer unter 8
+    const k = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((p) => sp(p, 7, { ausdauer: { 5: 7, 6: 5, 7: 6, 8: 7 }[p] ?? 9 }));
+    const bank = [12, 13, 14, 15].map((p) => sp(p, 5, { ausdauer: 9 }));
+    const x = xml(`${sub(13, 163)}\n${sub(14, 186)}\n${sub(15, 209)}`);
+    const r = pruefeTaktikGegenKader("a", x, [...k, ...bank], tag);
+    const neu = parseTaktikXml(r.xml).regeln.filter((g) => g.time === "70");
+    // Nur 2 Wechsel frei: die zwei Startspieler mit der niedrigsten Ausdauer (nach der Optimierung) bekommen sie
+    const aus = (pid: number) => ({ 5: 7, 6: 5, 7: 6, 8: 7 } as Record<number, number>)[pid] ?? 9;
+    const imSpiel = parseTaktikXml(r.xml).pos.filter((p) => p.pos === "normal" && aus(p.pid) < 8).map((p) => p.pid).sort((a, b) => aus(a) - aus(b));
+    expect(neu.map((g) => Number(g.out_player)).sort()).toEqual(imSpiel.slice(0, 2).sort());
+    expect(r.wechselregeln.filter((w) => w.includes("kein Wechsel mehr frei"))).toHaveLength(imSpiel.length - 2);
+  });
+});
