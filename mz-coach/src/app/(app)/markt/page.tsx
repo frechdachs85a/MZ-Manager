@@ -6,20 +6,18 @@ import { PageHeader } from "@/components/page-header";
 import { Badge, Card, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { letzterAbruf } from "@/lib/db/abruf";
-import { datumZeit, euro, spielDatum } from "@/lib/format";
+import { datumZeit, spielDatum } from "@/lib/format";
 import { GRUND_TEXT, HEIMATLAND, type Grund, type Schwachstelle } from "@/lib/mz/analyse/markt";
-import { vonWatchlist, zuruecknehmen } from "./actions";
+import { zuruecknehmen } from "./actions";
 import { posDe } from "@/lib/mz/formel";
 import { VorschlagKarte } from "@/components/vorschlag-karte";
-import { ladeWatchlist } from "@/lib/db/watch";
+import { watchlistAktuell } from "@/lib/watchlist";
+import { MarktReiter } from "@/components/markt-reiter";
 import { RahmenForm, SuchKnopf } from "./formulare";
-import { InBietomat } from "./bietomat/formulare";
-import { MarktInfo } from "@/components/markt-info";
 import { ladeAuftraege } from "@/lib/db/gebot";
 import { marktErgebnis } from "@/lib/markt-ergebnis";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
 
-const MZ = "https://www.managerzone.com";
 const komma = (n: number, s = 2) => n.toFixed(s).replace(".", ",");
 
 // Seite Transfermarkt
@@ -35,7 +33,7 @@ export default async function Markt(props: PageProps<"/markt">) {
   );
   const verkaeufe = ladeVerkaeufe(db);
   const auftraege = ladeAuftraege(db).filter((a) => a.status === "aktiv");
-  const watch = ladeWatchlist(db);
+  const watch = watchlistAktuell(db).liste;
   const aufWatch = new Set(watch.map((w) => w.pid));
   // Vorschläge: alle, die verbessern, ohne die schon auf der Watchlist; zum Durchblättern (Marcus, 31.10.2026)
   const alleVorschlaege = (ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid));
@@ -52,38 +50,8 @@ export default async function Markt(props: PageProps<"/markt">) {
         title="Transfermarkt"
         subtitle={suche ? `Suche vom ${datumZeit(suche.zeit)} · ${suche.spieler.length} Spieler geprüft` : "Transfermarkt-Scout"}
       />
+      <MarktReiter aktiv="/markt" anzahl={{ "/markt": alleVorschlaege.length, "/markt/watchlist": watch.length, "/markt/bietomat": auftraege.length }} />
       <div className="seite">
-        {/* Deine Gebote ganz oben (Marcus, 31.10.2026: "wo sind meine Spieler mit Maximalgebot?") */}
-        <Section
-          title="Deine Gebote im Bietomat"
-          footer="Aktive Aufträge: der Bietomat bietet kurz vor Schluss Stufe für Stufe bis höchstens zum Endpreis. Ändern oder löschen im Bietomat."
-        >
-          {auftraege.length ? (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {auftraege.map((a) => (
-                <Link key={a.pid} href="/markt/bietomat" className="pressable karte block rounded-[12px] bg-card p-4 hover:ring-2 hover:ring-tint/40">
-                  <div className="text-[16px] font-bold">{a.name ?? String(a.pid)}</div>
-                  <div className="text-[12px] text-label-3">ID {a.pid}</div>
-                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[12.5px]">
-                    <span className="text-label-3">Endpreis</span>
-                    <span className="text-right font-semibold tabular-nums">{euro(a.maximum)}</span>
-                    <span className="text-label-3">Gebot beim Anlegen</span>
-                    <span className="text-right tabular-nums">{a.spieler?.markt.hoechstgebot ? euro(a.spieler.markt.hoechstgebot) : "–"}</span>
-                    <span className="text-label-3">Ende</span>
-                    <span className="text-right tabular-nums">{a.auktionEnde ? datumZeit(a.auktionEnde) : "–"}</span>
-                  </div>
-                  <div className="mt-2">
-                    <Badge tone="green">aktiv</Badge>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <Card className="p-4 text-[14px] text-label-2">
-              Kein aktiver Auftrag. Spieler mit „Annehmen“ auf die Watchlist holen und dort einen Endpreis eintragen.
-            </Card>
-          )}
-        </Section>
         <Section
           title="Vorschläge"
           footer="Spieler aus der letzten Marktsuche, die einen Platz deiner Startelf verbessern, größter Gewinn zuerst. Annehmen setzt ihn auf die Watchlist, Ablehnen blendet ihn aus."
@@ -156,40 +124,6 @@ export default async function Markt(props: PageProps<"/markt">) {
       </div>
       <div className="seite lg:grid lg:grid-cols-[1.15fr_1fr] lg:gap-x-8">
         <div>
-          <Section title="Watchlist" footer="Angenommene Vorschläge. Mit einem Endpreis kommt der Spieler in den Bietomat; entfernen geht jederzeit.">
-            {watch.length ? (
-              <div className="grid gap-3">
-                {watch.map((w) => (
-                  <Card key={w.pid} className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <a href={`${MZ}/?p=players&pid=${w.pid}`} target="_blank" rel="noreferrer" className="text-[17px] font-bold hover:underline">
-                          {w.name}
-                        </a>
-                        {w.bewertung && (
-                          <div className="text-[12.5px] text-label-2">
-                            als {posDe(w.bewertung.rolle)} statt {w.bewertung.statt}: +{komma(w.bewertung.gewinn)} MZ-Wert (beim Annehmen)
-                          </div>
-                        )}
-                      </div>
-                      <form action={vonWatchlist}>
-                        <input type="hidden" name="pid" value={w.pid} />
-                        <button className="pressable rounded-md border border-separator px-2.5 py-1 text-[12.5px] font-semibold text-red">Entfernen</button>
-                      </form>
-                    </div>
-                    <div className="mt-2">
-                      <MarktInfo s={w.spieler} verkauf={verkaeufe.get(w.pid)} stand={`Stand beim Annehmen (${datumZeit(w.aufgenommen)})`} />
-                    </div>
-                    <div className="mt-3">
-                      <InBietomat pid={w.pid} imBietomat={imBietomat.get(w.pid)} />
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="p-4 text-[14px] text-label-2">Noch leer. Vorschläge mit „Annehmen“ hierher holen.</Card>
-            )}
-          </Section>
 
           {ergebnis && (
             <Section title="Nicht vorgeschlagen" footer={`Von ${ergebnis.geprueft} Spielern der letzten Suche.`}>
@@ -204,11 +138,6 @@ export default async function Markt(props: PageProps<"/markt">) {
             </Section>
           )}
 
-          <Section title="Bietomat">
-            <Link href="/markt/bietomat" className="pressable flex min-h-[46px] w-full items-center justify-center knopf text-[16px] font-bold">
-              Spieler per Nummer laden und Gebot planen
-            </Link>
-          </Section>
 
           <Section
             title="Suche"

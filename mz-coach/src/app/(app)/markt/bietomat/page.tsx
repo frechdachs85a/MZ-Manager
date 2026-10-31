@@ -1,4 +1,4 @@
-// Bietomat-Seite: neuer Auftrag, Regeln des automatischen Bietens, Aufträge mit Gebotskarte und Spielerprofil, Protokoll.
+// Reiter Gebote des Transfermarkts (Bietomat-Seite): neuer Auftrag, Regeln des automatischen Bietens, Aufträge mit Gebotskarte und Spielerprofil, Protokoll.
 
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -12,6 +12,9 @@ import { Bietomat, GebotKarte } from "./formulare";
 import { SpielerProfil } from "@/components/spieler-profil";
 import { MarktInfo } from "@/components/markt-info";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
+import { MarktReiter } from "@/components/markt-reiter";
+import { watchlistAktuell } from "@/lib/watchlist";
+import { marktErgebnis } from "@/lib/markt-ergebnis";
 
 const STATUS_TON = {
   aktiv: "green",
@@ -28,11 +31,19 @@ export default async function BietomatSeite() {
   const saldo = ladeMarktRahmen(db)?.werte.kapital;
   const verkaeufe = ladeVerkaeufe(db);
   const namen = new Map(auftraege.map((a) => [a.pid, a.name ?? String(a.pid)]));
+  const watch = watchlistAktuell(db).liste;
+  const aufWatch = new Set(watch.map((w) => w.pid));
+  const watchAnzahl = watch.length;
+  const vorschlaege = (marktErgebnis(db).ergebnis?.alle ?? []).filter((b) => !aufWatch.has(b.kandidat.pid)).length;
   return (
     <>
-      <PageHeader title="Bietomat" subtitle="Spieler per Nummer laden, Höchstgebot und Zeitraum festlegen" />
-      <div className="seite lg:grid lg:grid-cols-2 lg:gap-x-8">
-        <div>
+      <PageHeader title="Transfermarkt" subtitle={`Gebote · ${auftraege.filter((a) => a.status === "aktiv").length} aktiv · Bietomat bietet bis höchstens zum Endpreis`} />
+      <MarktReiter
+        aktiv="/markt/bietomat"
+        anzahl={{ "/markt": vorschlaege, "/markt/watchlist": watchAnzahl, "/markt/bietomat": auftraege.filter((a) => a.status === "aktiv").length }}
+      />
+      <div className="seite flex flex-col lg:grid lg:grid-cols-2 lg:gap-x-8">
+        <div className="order-2 lg:order-2">
           <Section
             title="Neuer Auftrag"
             footer="Spielernummer oder Name eintippen: Suche über das Feld Name/ID von ManagerZone, sonst mit den Standardfiltern der Marktseite. Mehrere Treffer: aus der Liste wählen."
@@ -49,7 +60,7 @@ export default async function BietomatSeite() {
             </List>
           </Section>
         </div>
-        <div>
+        <div className="order-1 lg:order-1">
           <Section title="Aufträge">
             {auftraege.length ? (
               <List>

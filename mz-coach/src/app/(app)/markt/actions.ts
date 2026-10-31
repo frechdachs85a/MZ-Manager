@@ -60,6 +60,7 @@ export async function annehmen(formData: FormData) {
   if (b)
     nimmAufWatchlist(db, b.kandidat, { rolle: b.ziel.rolle, statt: b.ziel.spieler.name, gewinn: b.gewinn, neu: b.neu, preis: b.preis });
   revalidatePath("/markt");
+  revalidatePath("/markt/watchlist");
 }
 
 // Von der Watchlist entfernen (jederzeit)
@@ -67,4 +68,5 @@ export async function vonWatchlist(formData: FormData) {
   const pid = Number(formData.get("pid"));
   if (pid > 0) entferneVonWatchlist(getDb(), pid);
   revalidatePath("/markt");
+  revalidatePath("/markt/watchlist");
 }
