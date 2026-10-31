@@ -101,3 +101,28 @@ export async function gebotsformularLesen(db: Database.Database): Promise<{ ok: 
     return { ok: false, meldung };
   }
 }
+
+// Gebotsübersicht von ManagerZone (?p=transfer&sub=yourplayers, Menü „Gebotsübersicht“; Marcus 31.10.2026: dort steht
+// nach der Auktion, für wie viel der Spieler rausging und an welche Mannschaft). Nur lesen und als Rohseite sichern,
+// damit der Aufbau geprüft werden kann, bevor ein Parser entsteht.
+export const GEBOTSUEBERSICHT_PFAD = "/?p=transfer&sub=yourplayers";
+export async function gebotsuebersichtLesen(db: Database.Database): Promise<{ ok: boolean; meldung: string }> {
+  const log = abrufBeginnen(db, "gebotsuebersicht");
+  try {
+    const meldung = await mitMzSitzung(
+      db,
+      async (s) => {
+        const seite = await s.holeSeite(GEBOTSUEBERSICHT_PFAD);
+        speichereRohseite(db, { art: "gebotsuebersicht", url: seite.url, status: seite.status, htmlRoh: seite.htmlRoh, htmlDom: seite.htmlDom });
+        return `Gebotsübersicht gelesen (${(seite.htmlDom ?? seite.htmlRoh ?? "").length} Zeichen), nichts geändert.`;
+      },
+      { manuell: true },
+    );
+    abrufBeenden(db, log, true, meldung);
+    return { ok: true, meldung };
+  } catch (e) {
+    const meldung = `Gebotsübersicht: ${meldungAus(e)}`;
+    abrufBeenden(db, log, false, meldung);
+    return { ok: false, meldung };
+  }
+}
