@@ -14,6 +14,7 @@ import { spieltagLage } from "@/lib/spieltag";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { SpieltagKnopf } from "./abruf-knopf";
 import { SpieltagReiter } from "./reiter";
+import { ScoutKnopf } from "../gegner/[tid]/scout-knopf";
 
 const anstossText = (iso: string) =>
   new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
@@ -46,6 +47,11 @@ export default async function Spieltag() {
             <SpieltagKnopf />
           </span>
         </div>
+        {lauf?.gegnerTid && (
+          <div className="mt-4 max-w-[520px]">
+            <ScoutKnopf tid={lauf.gegnerTid} text={`Scoutspiele gegen ${gName} einlesen und auswerten`} />
+          </div>
+        )}
         {l.letzterVersuch && l.letzterVersuch.ok === false && (
           <Card className="mt-4 border-l-4 border-orange p-4 text-[13.5px] text-label-2">
             <span className="font-semibold text-label">Letzter Versuch {datumZeit(l.letzterVersuch.gestartet)} nicht vollständig: </span>

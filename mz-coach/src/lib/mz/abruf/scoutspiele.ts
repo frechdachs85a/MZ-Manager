@@ -27,6 +27,9 @@ export async function scoutspieleAbrufen(db: Database.Database, opt: { manuell: 
     const meldung = await mitMzSitzung(
       db,
       async (s) => {
+        // Erst eine Seite laden: nur holeSeite meldet bei abgelaufener Sitzung neu an; die Spielliste (ajax) allein
+        // antwortet dann "You need to be logged in" (beobachtet beim Spieltag-Abruf 27. bis 30.10.2026)
+        await s.holeSeite("/?p=clubhouse");
         const a = await s.sendeForm("/ajax.php?p=matches&sub=list&sport=soccer", {
           type: "played",
           hidescore: "false",

@@ -3,10 +3,11 @@ import type Database from "better-sqlite3";
 import { parse } from "node-html-parser";
 import { abrufBeenden, abrufBeginnen, speichereRohseite } from "@/lib/db/abruf";
 import { ladeGegnerKader } from "@/lib/db/gegner-kader";
-import { ladeLigaElfen, speichereLigaElf } from "@/lib/db/liga-team";
+import { ladeLigaElfen, speichereLigaElf, speichereLigaRang } from "@/lib/db/liga-team";
 import { ladeSpiel } from "@/lib/db/spiele";
 import { gespeicherteTabelle, letzteMidJeTeam } from "@/lib/liga-teams";
 import { parseStatsXml, type StatsSpiel } from "@/lib/mz/parser/stats";
+import { weltrangAus } from "@/lib/mz/parser/teamseite";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { liesGegnerKader } from "./fremd";
 import { meldungAus, type Ergebnis } from "./kader";
@@ -30,20 +31,28 @@ export async function ligaTabelleHolen(db: Database.Database, s: MzSitzung): Pro
 }
 
 // Kaderseiten der Ligateams für den Startelf-Wert (höchstens alle 3 Tage je Team neu; die Tabelle kommt nach jedem
-// Ligaspiel). Dazu einmal je Lauf die Teamseite eines Ligateams und die Managerwertung als Rohseite, damit der Aufbau
-// für den Weltrang geprüft werden kann, bevor ein Parser entsteht (nichts geraten).
+// Ligaspiel) und Weltrang von der Teamseite jedes Ligateams (Marcus, 31.10.2026: „Rang“ auf ?p=team&tid=).
 export const KADER_LIGA_TAGE = 3;
 export async function ligaTeamsInSitzung(db: Database.Database, s: MzSitzung, jetzt = Date.now()): Promise<string> {
   const { tabelle } = gespeicherteTabelle(db);
   if (!tabelle) return "Ligateams: keine Tabelle gespeichert.";
-  const tids = tabelle.zeilen.map((z) => z.tid).filter((t): t is number => !!t && t !== TEAM.tid);
-  const probe = tids[0];
-  if (probe) {
-    const team = await s.holeSeite(`/?p=team&tid=${probe}`);
-    speichereRohseite(db, { art: "team-seite", url: team.url, status: team.status, htmlRoh: team.htmlRoh, htmlDom: team.htmlDom });
+  const alle = tabelle.zeilen.map((z) => z.tid).filter((t): t is number => !!t);
+  const tids = alle.filter((t) => t !== TEAM.tid);
+  let raenge = 0;
+  for (const [i, tid] of alle.entries()) {
+    try {
+      const team = await s.holeText(`/?p=team&tid=${tid}`);
+      const rang = weltrangAus(team.text);
+      // Erste Seite und jede ohne erkannten Rang für die Diagnose aufheben
+      if (i === 0 || rang === null) speichereRohseite(db, { art: "team-seite", url: team.url, status: team.status, htmlRoh: team.text, htmlDom: null });
+      if (rang !== null) {
+        speichereLigaRang(db, tid, rang);
+        raenge++;
+      }
+    } catch {
+      // Rang bleibt beim alten Stand
+    }
   }
-  const rang = await s.holeSeite("/?p=rank&sub=userrank");
-  speichereRohseite(db, { art: "rangliste-manager", url: rang.url, status: rang.status, htmlRoh: rang.htmlRoh, htmlDom: rang.htmlDom });
   let gelesen = 0;
   const fehler: string[] = [];
   for (const tid of tids) {
@@ -56,7 +65,7 @@ export async function ligaTeamsInSitzung(db: Database.Database, s: MzSitzung, je
       fehler.push(`tid ${tid}: ${meldungAus(e)}`);
     }
   }
-  return `Ligateams: ${gelesen} Kaderseiten gelesen${fehler.length ? `, Fehler: ${fehler.join("; ")}` : ""}.`;
+  return `Ligateams: ${raenge} von ${alle.length} Weltrang gelesen, ${gelesen} Kaderseiten gelesen${fehler.length ? `, Fehler: ${fehler.join("; ")}` : ""}.`;
 }
 
 // Startelf jedes Ligateams aus seinem letzten Ligaspiel (Stats-XML ohne Login, nacheinander mit Pause; eigene
