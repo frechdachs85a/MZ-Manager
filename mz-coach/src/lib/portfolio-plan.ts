@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { ladeKader } from "@/lib/db/kader";
 import { heuteInBerlin } from "@/lib/format";
 import { formation } from "@/lib/mz/analyse/gegner";
-import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
+import { erzeugeMitWechseln } from "@/lib/mz/taktik/mit-wechseln";
 import { portfolioAnalyse, regelcheck, stilSchluessel, type StilEintrag } from "@/lib/portfolio";
 import { istAussen, STURM_Y } from "@/lib/mz/taktik/pruefer";
 import { archivLaden } from "@/lib/taktik-archiv";
@@ -257,7 +257,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     const m = s.schluessel.match(/^\S+ (\S+)\/(\S+)$/);
     const kapitaen = Number(archiv.find((a) => a.reiter === d.reiter)?.taktik?.team.captain) || undefined;
     try {
-      const e = erzeugeTaktik({
+      const e = erzeugeMitWechseln({
         feld: s.beispiel.feld,
         torwart: s.beispiel.torwart,
         tactics: m?.[1],

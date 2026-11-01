@@ -13,6 +13,7 @@ import { KopierKnopf } from "@/components/kopier-knopf";
 import { ladeKader } from "@/lib/db/kader";
 import { letzterLauf } from "@/lib/db/spieltag";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
+import { erzeugeMitWechseln } from "@/lib/mz/taktik/mit-wechseln";
 import { pruefeTaktik } from "@/lib/mz/taktik/pruefer";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import type { SpielerDaten } from "@/lib/mz/spieler";
@@ -38,9 +39,9 @@ function besetzt(s: StilEintrag, u: Umfeld) {
 // Taktik-Code des Stils mit deiner besten Besetzung (lib/mz/taktik/erzeugen.ts), geprüft nach der Prüfliste
 function TaktikCode({ s, u }: { s: StilEintrag; u: Umfeld }) {
   const m = s.schluessel.match(/^\S+ (\S+)\/(\S+)$/);
-  let t: ReturnType<typeof erzeugeTaktik>;
+  let t: ReturnType<typeof erzeugeMitWechseln>;
   try {
-    t = erzeugeTaktik({
+    t = erzeugeMitWechseln({
       feld: s.beispiel.feld,
       torwart: s.beispiel.torwart,
       tactics: m?.[1],
