@@ -437,7 +437,8 @@ async function vollstaendigGeprueft(db: Database.Database, reiter: string, xml: 
   const kader = ladeKader(db);
   const p = pruefeTaktik(parseTaktikXml(xml), kader);
   if (!p.ok) return `Nicht geschrieben, Prüfliste nicht erfüllt: ${p.fehler.map((f) => f.text).join(" ")}`;
-  const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()));
+  const { alterGrenze } = await import("@/lib/taktik-check");
+  const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter));
   if (c.aenderbar) return `Nicht geschrieben, die tägliche Prüfung würde noch ändern: ${c.aenderungen.length ? "Besetzung, " : ""}${c.wechselregeln.join("; ")}`;
   return null;
 }
@@ -477,7 +478,9 @@ export async function regelnErgaenzen(db: Database.Database, reiter: string): Pr
   if (!t) return { ok: false, meldung: `Reiter „${reiter}“ nicht im Archiv.` };
   const a = abstaendeHalten(t.xml);
   const s = mitSpielstandRegeln(a.xml);
-  const c = pruefeTaktikGegenKader(reiter, s.xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()));
+  // Altersreiter (U18): nur Spieler im Alter, keine Ausdauer-Wechsel (wie die tägliche Prüfung)
+  const { alterGrenze } = await import("@/lib/taktik-check");
+  const c = pruefeTaktikGegenKader(reiter, s.xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter));
   const xml = c.fehler ? s.xml : c.xml;
   if (xml === t.xml) return { ok: true, meldung: `Reiter „${reiter}“ hat schon alle Regeln, nichts geändert.` };
   const fehlt = await vollstaendigGeprueft(db, reiter, xml);
@@ -486,20 +489,17 @@ export async function regelnErgaenzen(db: Database.Database, reiter: string): Pr
 }
 
 // Alle Reiter auf denselben Stand (Marcus, 01.11.2026: „in jeder Taktik, die ich habe, wo das fehlt … jetzt“): nacheinander
-// regelnErgaenzen für jeden Reiter im Editor außer Liga (baut die Seite selbst aus dem Archiv-Reiter), freund und
-// Altersreitern (Marcus: dort spielt, was da ist). Ergebnis je Reiter im Protokoll.
+// regelnErgaenzen für jeden Reiter im Editor außer Liga (baut die Seite selbst aus dem Archiv-Reiter) und freund (Marcus:
+// dort egal). U18 bekommt die Spielstand-Regeln auch (Marcus, 01.11.2026: „damit die erfolgreicher ist“), mit
+// Altersgrenze und ohne Ausdauer-Wechsel. Ergebnis je Reiter im Protokoll.
 export async function regelnAlleErgaenzen(db: Database.Database): Promise<Ergebnis> {
-  const { ladeTaktiken, ladeEditorReiter, istAltersreiter } = await import("@/lib/db/taktik");
+  const { ladeTaktiken, ladeEditorReiter } = await import("@/lib/db/taktik");
   const { FREUND } = await import("@/lib/freund-check");
-  const { JUGEND } = await import("@/lib/portfolio-plan");
   const editor = ladeEditorReiter(db);
   const reiter = ladeTaktiken(db)
     .map((t) => t.reiter)
-    .filter((r) => !/^liga$/i.test(r) && !FREUND.test(r) && !JUGEND.test(r))
-    .filter((r) => {
-      const e = editor?.reiter.find((x) => x.name.toLowerCase() === r.toLowerCase());
-      return editor ? !!e && !istAltersreiter(e) : true;
-    });
+    .filter((r) => !/^liga$/i.test(r) && !FREUND.test(r))
+    .filter((r) => !editor || editor.reiter.some((x) => x.name.toLowerCase() === r.toLowerCase()));
   const teile: string[] = [];
   let ok = true;
   for (const r of reiter) {
