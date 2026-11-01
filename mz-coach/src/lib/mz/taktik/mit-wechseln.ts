@@ -78,17 +78,21 @@ export function abstaendeHalten(xml: string): { xml: string; verschoben: string[
     // y MIN_Y bleibt stehen, dann bewegt sich nur der andere). Bis 01.11.2026 wurde immer nur das engste Paar korrigiert;
     // stand ein Spieler zwischen zwei anderen (433fl: Pinheiro zwischen Vranken und Chille), pendelte er hin und her.
     const vorher = p.map((q) => ({ x: q.x, y: q.y }));
+    // Gerechnet wird mit Kommazahlen, geschrieben mit ganzen Zahlen: nach dem Runden erneut prüfen (bis 01.11.2026 fielen
+    // Abstände durch das Runden wieder unter 47, z. B. 46,6)
+    const zuEng = () => p.some((a, i) => p.some((b, j) => j > i && Math.hypot(a.x - b.x, a.y - b.y) < MIN_ABSTAND));
+    for (let durchgang = 0; durchgang < 5 && (durchgang === 0 || zuEng()); durchgang++) {
     for (let runde = 0; runde < 200; runde++) {
       const zug = p.map(() => ({ x: 0, y: 0 }));
       let eng = false;
       for (let i = 0; i < p.length; i++)
         for (let j = i + 1; j < p.length; j++) {
           const d = Math.hypot(p[i].x - p[j].x, p[i].y - p[j].y);
-          if (d >= MIN_ABSTAND + 0.5) continue;
+          if (d >= MIN_ABSTAND + 1.5) continue;
           eng = true;
           const dx = (p[j].x - p[i].x) / (d || 1) || 1;
           const dy = (p[j].y - p[i].y) / (d || 1);
-          const um = (MIN_ABSTAND + 1 - d) / 2;
+          const um = (MIN_ABSTAND + 2 - d) / 2;
           const iFest = p[i].y <= MIN_Y && p[j].y > MIN_Y;
           const jFest = p[j].y <= MIN_Y && p[i].y > MIN_Y;
           if (!iFest) { zug[i].x -= dx * um * (jFest ? 2 : 1); zug[i].y -= dy * um * (jFest ? 2 : 1); }
@@ -100,9 +104,12 @@ export function abstaendeHalten(xml: string): { xml: string; verschoben: string[
         q.y = Math.max(MIN_Y, q.y + zug[k].y);
       });
     }
-    p.forEach((q, k) => {
+    p.forEach((q) => {
       q.x = Math.round(q.x);
       q.y = Math.round(q.y);
+    });
+    }
+    p.forEach((q, k) => {
       if (q.x !== vorher[k].x || q.y !== vorher[k].y)
         verschoben.push(`${kx === "x" ? "Start" : kx === "x1" ? "Alternative 1" : "Alternative 2"}: pid ${q.z.match(/pid="(\d+)"/)?.[1]} ${vorher[k].x}/${vorher[k].y} → ${q.x}/${q.y}`);
     });
