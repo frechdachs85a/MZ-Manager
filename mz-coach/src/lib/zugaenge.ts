@@ -7,7 +7,8 @@ import type { MarktSpieler } from "@/lib/mz/parser/transfer";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { TEAM } from "@/lib/wissen/startbasis";
 
-// Zugänge (Marcus, 01.11.2026): Ein gewonnener Transfer kommt etwa 24 Stunden nach Auktionsende in den Kader. Bis dahin
+// Zugänge (Marcus, 01.11.2026): Ein gewonnener Transfer kommt 25 Stunden nach Auktionsende in den Kader und ist ab dann
+// spielberechtigt (Marcus, 01.11.2026: „25 Stunden, nicht 24“). Bis dahin
 // zählt er für die Schwachstellen schon mit: er übernimmt den Startplatz, den er am stärksten verbessert, und der
 // Transfermarkt sucht danach die nächste Schwachstelle. Gewonnen = laut Gebotsübersicht hält FC Toho das letzte Gebot,
 // sonst laut Bietomat zuletzt Höchstbietender. Sobald der Spieler im Kader steht, zählt der echte Kader; nach 7 Tagen

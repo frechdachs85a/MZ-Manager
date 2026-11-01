@@ -67,7 +67,7 @@ export default async function Markt(props: PageProps<"/markt">) {
         >
           {schwach && schwach.zugaenge.length > 0 && (
             <Card className="mb-3 border-l-4 border-green p-3 text-[13.5px]">
-              <div className="font-semibold">Zugänge schon eingerechnet (kommen etwa 24 Stunden nach Auktionsende in den Kader)</div>
+              <div className="font-semibold">Zugänge schon eingerechnet (kommen 25 Stunden nach Auktionsende in den Kader, ab dann spielberechtigt)</div>
               <ul className="mt-1 space-y-0.5 text-label-2">
                 {schwach.zugaenge.map((z) => {
                   const e = schwach.ersetzt.find((x) => x.zugang === z.spieler.name);
