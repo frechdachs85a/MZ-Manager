@@ -147,3 +147,18 @@ export function direkteAntwort(spiele: SpielMuster[], gegner: string) {
     .sort((a, b) => quote(b) - quote(a) || b.tore - b.gegentore - (a.tore - a.gegentore))[0];
   return { gegner, spiele: g.spiele, beste: beste ?? null, antworten: g.antworten };
 }
+
+// Wofür spielen die Topteams einen Stil? (Marcus, 01.11.2026: „Kopfball bei Innenverteidigung nur, wenn über außen gespielt
+// wird, sonst den besten Abwehrspieler zum besten Stürmer“) Stile, die sie überwiegend gegen Gegner über außen spielen
+// (mehr Spiele gegen „über außen“ als gegen „eng“). Schlüssel wie antwortSchluessel: „4-3-3 Flügel/offensive“.
+export function stileGegenAussen(spiele: SpielMuster[]): Set<string> {
+  const z = new Map<string, { aussen: number; eng: number }>();
+  for (const s of spiele) {
+    const k = antwortSchluessel(s.eigen);
+    const e = z.get(k) ?? { aussen: 0, eng: 0 };
+    if (s.gegner.engeMitte) e.eng++;
+    else e.aussen++;
+    z.set(k, e);
+  }
+  return new Set([...z.entries()].filter(([, e]) => e.aussen > e.eng).map(([k]) => k));
+}

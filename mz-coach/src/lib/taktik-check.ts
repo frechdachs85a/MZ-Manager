@@ -10,8 +10,8 @@ import { KOPFBALL_GEWICHT, istInnenverteidigung } from "@/lib/mz/taktik/gegner-g
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { ausdauerPlan, MAX_WECHSEL_SPIEL } from "@/lib/skill-bilanz";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
-import { portfolioAnalyse, stilSchluessel } from "@/lib/portfolio";
 import { formation } from "@/lib/mz/analyse/gegner";
+import { angriffsArtVon, stileGegenAussen, topSpiele } from "@/lib/angriff-abwehr";
 
 // Täglicher Taktik-Check (Marcus, 30.10.2026): Skills ändern sich (Bälle dazu, ältere Spieler verlieren Ausdauer oder
 // Sprint). Für jede Taktik im Archiv: Plätze bleiben, Besetzung neu nach MZ-Wert der Rolle des Platzes (mz-wissen.md,
@@ -192,33 +192,39 @@ export function alterGrenze(db: Database.Database, reiter: string): AlterGrenze 
 }
 
 // Alle Taktiken im Archiv prüfen (gegen den Kader und die Aufstellbarkeit am nächsten Ligaspieltag)
-// Reiter gegen Gegner, die über außen spielen (Marcus, 01.11.2026: „die Taktiken aus unserem Schere-Stein-Papier-System gegen
-// Gegner über außen so anordnen, dass die kopfballstarken Leute in der Innenverteidigung stehen“): die Reiter der Faustregel
-// gegen „mit Außenspielern“ (außenR und die Seitenvariante außenL, mz-wissen.md, Abschnitt 10) und alle Reiter, deren Stil bei
-// den Top 10 gegen „mit Außenspielern“ bewährt ist (Taktik-Portfolio). Liga baut die Seite selbst gegen den Gegner, freund und
-// Altersreiter zählen nicht.
-export function reiterGegenAussen(db: Database.Database): Set<string> {
-  const out = new Set<string>(["außenr", "aussenr", "außenl", "aussenl"]);
-  try {
-    const k = portfolioAnalyse(db).klassen.find((x) => x.klasse === "mit Außenspielern");
-    for (const st of k?.stile ?? []) if (st.bewaehrt) for (const r of st.imArchiv) out.add(r.toLowerCase());
-  } catch {
-    // ohne Top-10-Daten nur die Faustregel
-  }
-  for (const r of [...out]) if (/^liga$/i.test(r) || /^freund/i.test(r) || /^u(18|21|23)\b/i.test(r)) out.delete(r);
-  return out;
+// Reiter gegen Gegner, die über außen spielen (Marcus, 01.11.2026): außenR und die Seitenvariante außenL (Faustregel,
+// mz-wissen.md, Abschnitt 10) und jeder Reiter, dessen Stil (Formation, Taktik, Spielweise) die Topteams überwiegend gegen
+// Gegner über außen spielen (angriff-abwehr.ts, stileGegenAussen). Nur dort Kopfball innen; sonst stehen hinten die stärksten
+// Verteidiger („sonst den besten Abwehrspieler zum besten Stürmer, die sind oft in der Mitte“). Liga baut die Seite selbst
+// gegen den Gegner, freund und Altersreiter zählen nicht.
+export const reiterSchluessel = (xml: string) => {
+  const t = parseTaktikXml(xml);
+  const f = formation(t.pos.filter((p) => p.pos === "normal").map((p) => p.start));
+  return `${f.abwehr}-${f.mittel}-${f.sturm} ${angriffsArtVon(t.team.tactics)}/${t.team.playstyle ?? "?"}`;
+};
+// Kurz zwischengespeichert je Datenbank (taktikCheck läuft für viele Reiter hintereinander)
+const stileCache = new WeakMap<Database.Database, { zeit: number; stile: Set<string> }>();
+function topStileGegenAussen(db: Database.Database): Set<string> {
+  const c = stileCache.get(db);
+  if (c && Date.now() - c.zeit < 60_000) return c.stile;
+  const stile = stileGegenAussen(topSpiele(db));
+  stileCache.set(db, { zeit: Date.now(), stile });
+  return stile;
 }
-
-// Gegen Gegner über außen auch für einen neuen Reiter (noch nicht im Archiv): Stil (Formation, Taktik, Spielweise) ist bei den
-// Top 10 gegen „mit Außenspielern“ bewährt
 export function stilGegenAussen(db: Database.Database, xml: string): boolean {
   try {
-    const t = parseTaktikXml(xml);
-    const schluessel = stilSchluessel(formation(t.pos.filter((p) => p.pos === "normal").map((p) => p.start)).text, t.team.tactics, t.team.playstyle);
-    return !!portfolioAnalyse(db).klassen.find((x) => x.klasse === "mit Außenspielern")?.stile.some((st) => st.bewaehrt && st.schluessel === schluessel);
+    return topStileGegenAussen(db).has(reiterSchluessel(xml));
   } catch {
     return false;
   }
+}
+export function reiterGegenAussen(db: Database.Database): Set<string> {
+  const out = new Set<string>(["außenr", "aussenr", "außenl", "aussenl"]);
+  for (const t of ladeTaktiken(db)) {
+    if (/^liga$/i.test(t.reiter) || /^freund/i.test(t.reiter) || /^u(18|21|23)\b/i.test(t.reiter)) continue;
+    if (stilGegenAussen(db, t.xml)) out.add(t.reiter.toLowerCase());
+  }
+  return out;
 }
 
 // Prüfoptionen eines Reiters: Kopfball innen für Reiter gegen Gegner über außen
