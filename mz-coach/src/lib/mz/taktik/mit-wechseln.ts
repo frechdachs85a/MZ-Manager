@@ -1,6 +1,7 @@
 import { pruefeTaktikGegenKader } from "@/lib/taktik-check";
 import { erzeugeTaktik } from "./erzeugen";
 import { MIN_ABSTAND, MIN_Y } from "./pruefer";
+import { aehnlichsteVorlage, alternativenUebertragen } from "./alternativen";
 
 // Spielstand-Regeln wie in deinen eigenen Reitern (mz-wissen.md, Abschnitt Taktiken: „Gemeinsame Regeln“; Marcus
 // 01.11.2026: „auch Rot-Regelung und Führungsregeln, so wie die Profis wechseln“). Belege aus den Top-10-Spielen:
@@ -106,10 +107,18 @@ export function abstaendeHalten(xml: string): { xml: string; verschoben: string[
 // nicht vergessen“, „die Taktiken müssen immer komplett durchdacht sein“): beste Elf und Bank (erzeugeTaktik, mit
 // Rot-Regel), Spielstand-Regeln wie oben, danach die Ausdauer-Wechsel der täglichen Prüfung (Startspieler unter Ausdauer 8
 // in der 70. durch den besten passenden Bankspieler, höchstens 3 Wechsel).
-export function erzeugeMitWechseln(opt: Parameters<typeof erzeugeTaktik>[0], reiter = "neu") {
+// vorlagen: deine Reiter (Archiv); daraus kommen Alternative 1 und 2 nach dem ähnlichsten Reiter (alternativen.ts).
+export function erzeugeMitWechseln(opt: Parameters<typeof erzeugeTaktik>[0], reiter = "neu", vorlagen: { reiter: string; xml: string }[] = []) {
   const e = erzeugeTaktik(opt);
-  const s = mitSpielstandRegeln(abstaendeHalten(e.xml).xml);
+  let basis = mitSpielstandRegeln(e.xml).xml;
+  const vorbild = vorlagen.length ? aehnlichsteVorlage(basis, vorlagen.filter((v) => !/^(liga|freund)$/i.test(v.reiter) && !/^u(18|21|23)\b/i.test(v.reiter))) : null;
+  const alt = vorbild ? alternativenUebertragen(basis, vorbild.xml) : null;
+  if (alt) basis = alt.xml;
+  const s = { xml: abstaendeHalten(basis).xml, regeln: mitSpielstandRegeln(e.xml).regeln };
   const c = pruefeTaktikGegenKader(reiter, s.xml, opt.kader, opt.spieltag);
-  if (c.fehler) return { ...e, xml: s.xml, spielstand: s.regeln, wechsel: [] as string[], hinweise: [...e.hinweise, `Wechselregeln nicht ergänzt: ${c.fehler}`] };
-  return { ...e, xml: c.xml, spielstand: s.regeln, wechsel: c.wechselregeln };
+  const hinweise = vorbild
+    ? e.hinweise.filter((h) => !h.startsWith("Alternative 1 und 2 sind gleich")).concat(`Alternative 1 und 2 nach dem Vorbild deines Reiters ${vorbild.reiter}.`)
+    : e.hinweise;
+  if (c.fehler) return { ...e, xml: s.xml, spielstand: s.regeln, wechsel: [] as string[], vorbild: vorbild?.reiter, hinweise: [...hinweise, `Wechselregeln nicht ergänzt: ${c.fehler}`] };
+  return { ...e, xml: c.xml, spielstand: s.regeln, wechsel: c.wechselregeln, vorbild: vorbild?.reiter, hinweise };
 }

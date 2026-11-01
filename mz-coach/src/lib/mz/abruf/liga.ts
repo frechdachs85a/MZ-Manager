@@ -510,3 +510,45 @@ export async function regelnAlleErgaenzen(db: Database.Database): Promise<Ergebn
   }
   return { ok, meldung: teile.join(" | ") };
 }
+
+// Alternative 1 und 2 für einen Reiter ohne echte Alternativen nach dem Vorbild deines ähnlichsten Reiters bauen, die
+// App-Wechsel (Ausdauer) auf die WECHSEL_MINUTE ziehen und alles nach voller Prüfung schreiben (Marcus, 01.11.2026 für
+// 343kp: „so anpassen, dass sie optimal ist, Alternative 1 und 2 passend bauen und einfügen“).
+export async function alternativenErgaenzen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  const { ladeTaktiken } = await import("@/lib/db/taktik");
+  const { aehnlichsteVorlage, alternativenUebertragen, hatAlternativen } = await import("@/lib/mz/taktik/alternativen");
+  const { abstaendeHalten, mitSpielstandRegeln } = await import("@/lib/mz/taktik/mit-wechseln");
+  const { parseTaktikXml } = await import("@/lib/mz/taktik/xml");
+  const { WECHSEL_MINUTE, alterGrenze, pruefeTaktikGegenKader } = await import("@/lib/taktik-check");
+  const { ladeKader } = await import("@/lib/db/kader");
+  const { heuteInBerlin } = await import("@/lib/format");
+  const { naechsterLigaspieltag } = await import("@/lib/wissen/startbasis");
+  const alle = ladeTaktiken(db);
+  const t = alle.find((x) => x.reiter === reiter);
+  if (!t) return { ok: false, meldung: `Reiter „${reiter}“ nicht im Archiv.` };
+  if (hatAlternativen(parseTaktikXml(t.xml))) return { ok: true, meldung: `Reiter „${reiter}“ hat schon eigene Alternativen, nichts geändert.` };
+  const vorbild = aehnlichsteVorlage(
+    t.xml,
+    alle.filter((x) => x.reiter !== reiter && !/^(liga|freund)$/i.test(x.reiter) && !/^u(18|21|23)\b/i.test(x.reiter)),
+  );
+  if (!vorbild) return { ok: false, meldung: "Kein eigener Reiter mit echten Alternativen als Vorbild gefunden." };
+  const text: string[] = [`Vorbild: ${vorbild.reiter}`];
+  const a = alternativenUebertragen(t.xml, vorbild.xml);
+  text.push(...a.text);
+  let xml = mitSpielstandRegeln(a.xml).xml;
+  // Ausdauer-Wechsel der App (feste Minute, Spielerwechsel, ohne Spielstand) auf die WECHSEL_MINUTE ziehen
+  xml = xml.replace(/<TacticRule\b[^>]*>/g, (z) =>
+    /check_time="true"/.test(z) && /check_goal_condition="false"/.test(z) && /check_player_event="false"/.test(z) && /out_player="\d+"/.test(z) && /\stime="70"/.test(z)
+      ? z.replace(/\stime="70"/, ` time="${WECHSEL_MINUTE}"`)
+      : z,
+  );
+  if (xml !== a.xml) text.push(`Ausdauer-Wechsel auf die ${WECHSEL_MINUTE}. Minute`);
+  const ab = abstaendeHalten(xml);
+  xml = ab.xml;
+  text.push(...ab.verschoben);
+  const c = pruefeTaktikGegenKader(reiter, xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter));
+  if (!c.fehler) xml = c.xml;
+  const fehlt = await vollstaendigGeprueft(db, reiter, xml);
+  if (fehlt) return { ok: false, meldung: `${text.join("; ")}. ${fehlt}` };
+  return xmlUebernehmen(db, reiter, xml, `Alternativen und Regeln: ${text.join("; ")}`);
+}

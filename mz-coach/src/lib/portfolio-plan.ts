@@ -266,7 +266,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
         kader,
         spieltag,
         kapitaenPid: kapitaen,
-      });
+      }, d.reiter, archiv.map((a) => ({ reiter: a.reiter, xml: a.xml })));
       const name = nameFuer(
         s.schluessel,
         [...namen].filter((n) => n !== d.reiter),

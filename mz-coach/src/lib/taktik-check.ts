@@ -30,7 +30,8 @@ export type AlterGrenze = { von: number; bis: number };
 const istPrio = (s: SpielerDaten) => s.nr !== undefined && s.nr >= PRIO_NR.von && s.nr <= PRIO_NR.bis;
 export const BONUS_JETZT = 0.05;
 export const MIN_GEWINN = 0.2;
-export const WECHSEL_MINUTE = 70;
+// 60. Minute wie in deinen Reitern (Marcus, 01.11.2026: „optimal wie die anderen“); Top 10 wechseln am häufigsten 55. bis 60.
+export const WECHSEL_MINUTE = 60;
 
 export type PlatzAenderung = { rolle: Position; x: number; y: number; alt: string; altWert?: number; neu: string; neuWert: number; grund?: string };
 export type TaktikCheck = {

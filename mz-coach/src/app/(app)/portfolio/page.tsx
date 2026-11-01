@@ -21,7 +21,7 @@ import { archivLaden } from "@/lib/taktik-archiv";
 import { heuteInBerlin } from "@/lib/format";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
-type Umfeld = { kader: SpielerDaten[]; spieltag: Date; kapitaenPid?: number };
+type Umfeld = { kader: SpielerDaten[]; spieltag: Date; kapitaenPid?: number; vorlagen?: { reiter: string; xml: string }[] };
 
 // Plätze des Topteams, besetzt mit deiner besten aufstellbaren Elf (Heatmap = Marktwert); ohne genug Spieler die Koordinaten
 function besetzt(s: StilEintrag, u: Umfeld) {
@@ -50,7 +50,7 @@ function TaktikCode({ s, u }: { s: StilEintrag; u: Umfeld }) {
       kader: u.kader,
       spieltag: u.spieltag,
       kapitaenPid: u.kapitaenPid,
-    });
+    }, "neu", u.vorlagen);
   } catch (e) {
     return <p className="mt-3 text-[13px] text-red">Kein Code möglich: {e instanceof Error ? e.message : String(e)}</p>;
   }
@@ -161,6 +161,7 @@ export default async function Portfolio() {
     kader: ladeKader(db),
     spieltag: lauf?.anstoss ? new Date(new Date(lauf.anstoss).toLocaleString("en-US", { timeZone: "Europe/Berlin" })) : naechsterLigaspieltag(heuteInBerlin()),
     kapitaenPid: Number(archivLaden(db).find((a) => a.taktik?.team.captain)?.taktik?.team.captain) || undefined,
+    vorlagen: archivLaden(db).map((a) => ({ reiter: a.reiter, xml: a.xml })),
   };
   return (
     <>

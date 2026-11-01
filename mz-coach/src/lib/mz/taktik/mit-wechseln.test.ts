@@ -27,7 +27,7 @@ describe("Neu erzeugte Taktik mit Wechselregeln", () => {
   it("bekommt für Startspieler mit Ausdauer unter 8 eine Wechselregel und besteht die Prüfliste", () => {
     const e = erzeugeMitWechseln({ feld, torwart: { x: 103, y: 315 }, tactics: "shortpass", playstyle: "normal", kader, spieltag: new Date("2026-11-01T00:00:00Z") });
     const t = parseTaktikXml(e.xml);
-    const zeitwechsel = t.regeln.filter((r) => r.check_time === "true" && r.time === "70");
+    const zeitwechsel = t.regeln.filter((r) => r.check_time === "true" && r.time === "60" && /^\d+$/.test(r.out_player));
     expect(zeitwechsel.map((r) => r.out_player).sort()).toEqual(["2", "3"]);
     expect(e.wechsel).toHaveLength(2);
     expect(pruefeTaktik(t, kader).fehler).toEqual([]);
