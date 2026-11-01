@@ -437,8 +437,9 @@ async function vollstaendigGeprueft(db: Database.Database, reiter: string, xml: 
   const kader = ladeKader(db);
   const p = pruefeTaktik(parseTaktikXml(xml), kader);
   if (!p.ok) return `Nicht geschrieben, Prüfliste nicht erfüllt: ${p.fehler.map((f) => f.text).join(" ")}`;
-  const { alterGrenze, reiterGegenAussen, reiterOptionen } = await import("@/lib/taktik-check");
-  const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), reiterOptionen(reiterGegenAussen(db), reiter));
+  const { alterGrenze, reiterGegenAussen, stilGegenAussen } = await import("@/lib/taktik-check");
+  const kopfballInnen = reiterGegenAussen(db).has(reiter.toLowerCase()) || stilGegenAussen(db, xml);
+  const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), { kopfballInnen });
   if (c.aenderbar) return `Nicht geschrieben, die tägliche Prüfung würde noch ändern: ${c.aenderungen.length ? "Besetzung, " : ""}${c.wechselregeln.join("; ")}`;
   return null;
 }

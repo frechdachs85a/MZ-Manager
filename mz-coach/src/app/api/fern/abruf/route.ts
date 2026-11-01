@@ -51,17 +51,25 @@ export async function POST(request: Request) {
       .catch((e) => abrufBeenden(db, log, false, `${reiter}: ${e instanceof Error ? e.message : String(e)}`));
     return Response.json({ gestartet: true, art, reiter });
   }
-  if (art === "taktik-uebernehmen" || art === "regeln-ergaenzen" || art === "alternativen") {
+  if (art === "taktik-uebernehmen" || art === "regeln-ergaenzen" || art === "alternativen" || art === "portfolio-uebernehmen") {
     const reiter = url.searchParams.get("reiter") ?? "";
     if (!reiter) return Response.json({ fehler: "reiter fehlt" }, { status: 400 });
     const db = getDb();
     const bremse = fernAbrufFrei(db, `${art}-${reiter}`);
     if (!bremse.frei) return Response.json({ gestartet: false, grund: `Bremse: nächster Abruf ab ${bremse.ab}` }, { status: 429 });
-    const { taktikUebernehmen, regelnErgaenzen, alternativenErgaenzen } = await import("@/lib/mz/abruf/liga");
+    const { taktikUebernehmen, regelnErgaenzen, alternativenErgaenzen, portfolioUebernehmen } = await import("@/lib/mz/abruf/liga");
     // Ergebnis immer ins Protokoll (auch eine Ablehnung der Prüfung oder „nichts geändert“)
     const { abrufBeginnen, abrufBeenden } = await import("@/lib/db/abruf");
     const log = abrufBeginnen(db, `fern-${art}`);
-    void (art === "regeln-ergaenzen" ? regelnErgaenzen(db, reiter) : art === "alternativen" ? alternativenErgaenzen(db, reiter) : taktikUebernehmen(db, reiter))
+    // portfolio-uebernehmen: Vorschlag des Portfolio-Plans in diesen Reiter (Marcus, 01.11.2026: „du darfst passende Taktiken
+    // vorschlagen und ins Portfolio aufnehmen“); volle Prüfung vor dem Schreiben wie auf Klick
+    void (art === "regeln-ergaenzen"
+      ? regelnErgaenzen(db, reiter)
+      : art === "alternativen"
+        ? alternativenErgaenzen(db, reiter)
+        : art === "portfolio-uebernehmen"
+          ? portfolioUebernehmen(db, reiter)
+          : taktikUebernehmen(db, reiter))
       .then((r) => abrufBeenden(db, log, r.ok, `${reiter}: ${r.meldung}`))
       .catch((e) => abrufBeenden(db, log, false, `${reiter}: ${e instanceof Error ? e.message : String(e)}`));
     return Response.json({ gestartet: true, art, reiter });

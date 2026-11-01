@@ -116,6 +116,7 @@ export type PortfolioVorschlag = {
 export type Sinn = { reiter: string; stil: string; probleme: string[]; name?: string; hinweise: string[] };
 export type PortfolioPlan = {
   doppelt: { reiter: string; wie: string; art: "identisch" | "gespiegelt" | "gleicher Stil" }[];
+  leer: string[]; // leere Reiter im Editor (ohne Spieler), werden zuerst gefüllt
   abdeckung: Abdeckung[];
   vorschlaege: PortfolioVorschlag[];
   sinn: Sinn[];
@@ -220,10 +221,16 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     };
   });
 
-  // 3. Freie Reiter (doppelt, keine Jugend) mit Lücken und klar besseren Stilen füllen
-  const frei = doppelt
-    .filter((d) => d.art !== "gespiegelt" && !FEST.test(d.reiter))
-    .sort((a, b) => Number(ZWECK.test(a.reiter)) - Number(ZWECK.test(b.reiter)) || (a.art === b.art ? 0 : a.art === "identisch" ? -1 : 1));
+  // 3. Freie Reiter mit Lücken und klar besseren Stilen füllen. Zuerst leere Reiter im Editor (Marcus, 01.11.2026: „du darfst
+  // passende Taktiken vorschlagen und ins Portfolio aufnehmen“; so wird nichts überschrieben), danach doppelte (keine Jugend).
+  const leer = (ladeEditorReiter(db)?.reiter ?? []).filter((r) => r.spieler === 0).map((r) => r.name);
+  const frei: { reiter: string; wie: string; art: PortfolioPlan["doppelt"][number]["art"] | "leer" }[] = [
+    ...leer.map((r) => ({ reiter: r, wie: "", art: "leer" as const })),
+    ...doppelt
+      .filter((d) => d.art !== "gespiegelt" && !FEST.test(d.reiter))
+      .sort((a, b) => Number(ZWECK.test(a.reiter)) - Number(ZWECK.test(b.reiter)) || (a.art === b.art ? 0 : a.art === "identisch" ? -1 : 1)),
+  ];
+  const grundFrei = (d: (typeof frei)[number]) => (d.art === "leer" ? "leerer Reiter im Editor" : d.art === "identisch" ? `identisch mit ${d.wie}` : `gleicher Stil wie ${d.wie}`);
   const kandidaten = abdeckung
     .map((a) => ({
       a,
@@ -276,7 +283,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
         reiter: d.reiter,
         name,
         art: "stil",
-        grund: d.art === "identisch" ? `identisch mit ${d.wie}` : `gleicher Stil wie ${d.wie}`,
+        grund: grundFrei(d),
         klasse: s.klasse,
         statt: s.statt,
         stil: s.schluessel,
@@ -327,7 +334,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
       name,
       art: "seite",
       vorlage: o.reiter,
-      grund: d.art === "identisch" ? `identisch mit ${d.wie}` : `gleicher Stil wie ${d.wie}`,
+      grund: grundFrei(d),
       klasse: "Seitenvariante",
       stil: stilJe.get(o.reiter)!,
       quote: 0,
@@ -370,7 +377,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     }
     sinn.push({ reiter: a.reiter, stil: st, probleme, name, hinweise });
   }
-  return { doppelt, abdeckung, vorschlaege, sinn, jugend, editorStand: editor?.stand };
+  return { doppelt, leer, abdeckung, vorschlaege, sinn, jugend, editorStand: editor?.stand };
 }
 
 export const vorschlagText = (v: PortfolioVorschlag) =>
