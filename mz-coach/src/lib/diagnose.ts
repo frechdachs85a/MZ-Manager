@@ -249,7 +249,30 @@ export function diagnose(db: Database.Database) {
   } catch (e) {
     ligaTabelle = { fehler: e instanceof Error ? e.message : String(e) };
   }
+  // Regeln je Reiter (Minute, Bedingung, Wechsel/Umstellung), damit der Stand von außen prüfbar ist
+  let regeln: unknown = null;
+  try {
+    regeln = ladeTaktiken(db).map((t) => ({
+      reiter: t.reiter,
+      regeln: [...t.xml.matchAll(/<TacticRule\b[^>]*>/g)].map((m) => {
+        const a = (k: string) => m[0].match(new RegExp(`\\s${k}="([^"]*)"`))?.[1];
+        return [
+          a("check_time") === "true" ? `${a("time")}.` : "",
+          a("check_goal_condition") === "true" ? `${a("goal_condition")} ${a("goals")}` : "",
+          a("check_player_event") === "true" ? a("player_event") : "",
+          a("out_player") !== "no_change" ? `raus ${a("out_player")} rein ${a("in_player_id")}` : "",
+          [a("tactics"), a("playstyle"), a("aggression")].filter((x) => x && x !== "no_change").join("+"),
+          a("formation") !== "no_change" ? `Alt ${a("formation")}` : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+      }),
+    }));
+  } catch (e) {
+    regeln = { fehler: e instanceof Error ? e.message : String(e) };
+  }
   return {
+    regeln,
     ligaTabelle,
     scoutspiele,
     marktGruende,

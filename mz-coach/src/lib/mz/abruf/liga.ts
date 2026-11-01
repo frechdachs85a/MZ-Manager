@@ -465,7 +465,7 @@ export async function lueckeUebernehmen(db: Database.Database, reiter: string): 
 }
 
 // Spielstand-Regeln und Ausdauer-Wechsel in einem bestehenden Reiter ergänzen (auf ausdrücklichen Wunsch, Marcus
-// 01.11.2026 für 343kp). Nur wenn der Reiter noch keine Spielstand-Regeln hat; danach volle Prüfung, erst dann schreiben.
+// 01.11.2026). Nur was fehlt; danach volle Prüfung, erst dann schreiben.
 export async function regelnErgaenzen(db: Database.Database, reiter: string): Promise<Ergebnis> {
   const { ladeTaktiken } = await import("@/lib/db/taktik");
   const { abstaendeHalten, mitSpielstandRegeln } = await import("@/lib/mz/taktik/mit-wechseln");
@@ -483,4 +483,29 @@ export async function regelnErgaenzen(db: Database.Database, reiter: string): Pr
   const fehlt = await vollstaendigGeprueft(db, reiter, xml);
   if (fehlt) return { ok: false, meldung: fehlt };
   return xmlUebernehmen(db, reiter, xml, `Regeln ergänzt: ${[...a.verschoben, ...s.regeln, ...c.wechselregeln].join("; ")}`);
+}
+
+// Alle Reiter auf denselben Stand (Marcus, 01.11.2026: „in jeder Taktik, die ich habe, wo das fehlt … jetzt“): nacheinander
+// regelnErgaenzen für jeden Reiter im Editor außer Liga (baut die Seite selbst aus dem Archiv-Reiter), freund und
+// Altersreitern (Marcus: dort spielt, was da ist). Ergebnis je Reiter im Protokoll.
+export async function regelnAlleErgaenzen(db: Database.Database): Promise<Ergebnis> {
+  const { ladeTaktiken, ladeEditorReiter, istAltersreiter } = await import("@/lib/db/taktik");
+  const { FREUND } = await import("@/lib/freund-check");
+  const { JUGEND } = await import("@/lib/portfolio-plan");
+  const editor = ladeEditorReiter(db);
+  const reiter = ladeTaktiken(db)
+    .map((t) => t.reiter)
+    .filter((r) => !/^liga$/i.test(r) && !FREUND.test(r) && !JUGEND.test(r))
+    .filter((r) => {
+      const e = editor?.reiter.find((x) => x.name.toLowerCase() === r.toLowerCase());
+      return editor ? !!e && !istAltersreiter(e) : true;
+    });
+  const teile: string[] = [];
+  let ok = true;
+  for (const r of reiter) {
+    const e = await regelnErgaenzen(db, r);
+    if (!e.ok) ok = false;
+    teile.push(`${r}: ${e.meldung}`);
+  }
+  return { ok, meldung: teile.join(" | ") };
 }

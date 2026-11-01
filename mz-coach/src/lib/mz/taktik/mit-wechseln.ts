@@ -14,15 +14,23 @@ const SPIELSTAND: { minute: number; lage: "down_by_at_least" | "ahead_by_at_leas
   { minute: 80, lage: "tie", tore: 1, playstyle: "offensive", aggression: "aggressive" },
 ];
 
-// Fehlende Spielstand-Regeln ergänzen (nur wenn die Taktik noch keine hat). Regeln ohne Wirkung (Grundeinstellung schon so)
-// entfallen. Gibt die neue XML und die ergänzten Regeln in Worten zurück.
+// Fehlende Spielstand-Regeln ergänzen, jede einzeln (Marcus, 01.11.2026: „alle auf demselben Stand“): eine Regel gilt als
+// vorhanden, wenn es schon eine Regel mit derselben Spielstand-Bedingung gibt (z. B. „2 Tore Rückstand“), egal zu welcher
+// Minute; bestehende Regeln bleiben unverändert. Regeln ohne Wirkung (Grundeinstellung schon so) entfallen. Gibt die neue
+// XML und die ergänzten Regeln in Worten zurück.
 export function mitSpielstandRegeln(xml: string): { xml: string; regeln: string[] } {
-  if (/check_goal_condition="true"/.test(xml)) return { xml, regeln: [] };
+  const vorhanden = new Set(
+    [...xml.matchAll(/<TacticRule\b[^>]*>/g)]
+      .map((m) => m[0])
+      .filter((z) => /check_goal_condition="true"/.test(z))
+      .map((z) => `${z.match(/\sgoal_condition="([^"]*)"/)?.[1]}:${z.match(/\sgoals="(\d+)"/)?.[1]}`),
+  );
   const team = xml.match(/<Team\b[^>]*>/)?.[0] ?? "";
   const grund = (k: string) => team.match(new RegExp(`${k}="([^"]*)"`))?.[1];
   const zeilen: string[] = [];
   const text: string[] = [];
   for (const r of SPIELSTAND) {
+    if (vorhanden.has(`${r.lage}:${r.tore}`)) continue;
     const tactics = r.tactics && r.tactics !== grund("tactics") ? r.tactics : "no_change";
     const playstyle = r.playstyle && r.playstyle !== grund("playstyle") ? r.playstyle : "no_change";
     const aggression = r.aggression && r.aggression !== grund("aggression") ? r.aggression : "no_change";

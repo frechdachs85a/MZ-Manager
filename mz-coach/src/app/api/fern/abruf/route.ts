@@ -22,6 +22,18 @@ export async function POST(request: Request) {
   const art = url.searchParams.get("art") ?? "";
   // Vorschlag der täglichen Prüfung für einen Reiter übernehmen (nur auf ausdrücklichen Wunsch von Marcus, z. B. 01.11.2026
   // „zieh I nun bitte nach“). Schreibt ausschließlich die von der Prüfung berechnete XML, keine fremde.
+  if (art === "regeln-alle") {
+    const db = getDb();
+    const bremse = fernAbrufFrei(db, art);
+    if (!bremse.frei) return Response.json({ gestartet: false, grund: `Bremse: nächster Abruf ab ${bremse.ab}` }, { status: 429 });
+    const { abrufBeginnen, abrufBeenden } = await import("@/lib/db/abruf");
+    const { regelnAlleErgaenzen } = await import("@/lib/mz/abruf/liga");
+    const log = abrufBeginnen(db, "fern-regeln-alle");
+    void regelnAlleErgaenzen(db)
+      .then((r) => abrufBeenden(db, log, r.ok, r.meldung))
+      .catch((e) => abrufBeenden(db, log, false, e instanceof Error ? e.message : String(e)));
+    return Response.json({ gestartet: true, art });
+  }
   if (art === "taktik-uebernehmen" || art === "regeln-ergaenzen") {
     const reiter = url.searchParams.get("reiter") ?? "";
     if (!reiter) return Response.json({ fehler: "reiter fehlt" }, { status: 400 });
