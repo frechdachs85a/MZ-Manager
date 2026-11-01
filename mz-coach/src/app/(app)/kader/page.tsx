@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { List, Row, Section } from "@/components/ui";
 import { KaderAnsicht } from "@/components/kader-ansicht";
+import { LeistungTabelle } from "@/components/leistung-tabelle";
+import { leistungJeRolle } from "@/lib/spieler-leistung";
 import type { KaderZeile } from "@/components/kader-tabelle";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
@@ -85,6 +87,20 @@ export default async function Kader(props: PageProps<"/kader">) {
           </details>
         )}
         <KaderAnsicht basis="/kader" alle={alleSpieler} params={params} kombis={kombis} />
+        {(() => {
+          const lj = leistungJeRolle(db);
+          const zeilen = alleSpieler
+            .flatMap((sp) => (lj.get(sp.pid) ?? []).map((l) => ({ name: sp.name, l })))
+            .sort((a, b) => a.l.rolle.localeCompare(b.l.rolle) || b.l.minuten - a.l.minuten);
+          return zeilen.length ? (
+            <Section
+              title="Leistung in Spielen je Rolle"
+              footer="Aus deinen gespeicherten Ligaspielen (L) und Scoutspielen (S) mit Stats-XML, je 90 Minuten. Rolle = Startplatz; Eingewechselte zählen auf der Rolle des Spielers, den sie ersetzen. Grau: unter 90 Minuten, wenig Daten. Hilft bei Wechselzeit und Aufstellung: liefert der Ersatz in der Rolle ähnlich viel, kann früher gewechselt werden."
+            >
+              <LeistungTabelle name zeilen={zeilen} />
+            </Section>
+          ) : null;
+        })()}
       </div>
     </>
   );
