@@ -89,7 +89,8 @@ export function abstaendeHalten(xml: string): { xml: string; verschoben: string[
       const dy = p[los].y - p[fest].y;
       const len = Math.hypot(dx, dy) || 1;
       const um = 48 - d;
-      p[los].x = Math.max(0, Math.min(208, Math.round(p[los].x + (dx / len) * um)));
+      // Feld im Editor: x 8 bis 200 (seiten.ts); bis 01.11.2026 0 bis 208, damit landeten Spieler am Rand außerhalb
+      p[los].x = Math.max(8, Math.min(200, Math.round(p[los].x + (dx / len) * um)));
       p[los].y = Math.max(MIN_Y, Math.round(p[los].y + (dy / len) * um));
       verschoben.push(`${kx === "x" ? "Start" : kx === "x1" ? "Alternative 1" : "Alternative 2"}: pid ${p[los].z.match(/pid="(\d+)"/)?.[1]} → ${p[los].x}/${p[los].y}`);
     }

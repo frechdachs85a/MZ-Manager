@@ -152,6 +152,14 @@ export function diagnose(db: Database.Database) {
           doppelt: pl.doppelt,
           abdeckung: pl.abdeckung.map((a) => ({ klasse: a.klasse, spiele: a.spiele, reiter: a.reiter, bester: a.bester?.schluessel, dein: a.dein })),
           vorschlaege: pl.vorschlaege.map(vorschlagText),
+          // Positionen je Vorschlag (Start, Alternative 1, Alternative 2), um abgelehnte Importe nachzuvollziehen
+          positionen: pl.vorschlaege.map((v) => ({
+            reiter: v.reiter,
+            pos: [...v.xml.matchAll(/<Pos\b[^>]*>/g)].map((m) => {
+              const a = (k: string) => m[0].match(new RegExp(`\\s${k}="([^"]*)"`))?.[1];
+              return `${a("pos")} ${a("pid")} ${a("x")}/${a("y")} ${a("x1")}/${a("y1")} ${a("x2")}/${a("y2")}`;
+            }),
+          })),
           sinn: pl.sinn,
           jugend: pl.jugend,
           editorStand: pl.editorStand,
