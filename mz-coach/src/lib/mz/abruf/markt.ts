@@ -9,6 +9,7 @@ import { zugangStatus } from "@/lib/mz/zugang";
 import { parseTransferSuche, type MarktSpieler } from "@/lib/mz/parser/transfer";
 import { ladeKader } from "@/lib/db/kader";
 import { schwachstellenMitZugaengen } from "@/lib/zugaenge";
+import { alsSchwachstellen, taktikLuecken } from "@/lib/taktik-luecken";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { mitFiltern, suchZiele } from "./markt-ziel";
 import { meldungAus, type Ergebnis } from "./kader";
@@ -90,7 +91,10 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
         // Gezielt (Marcus, 26.10.2026): je schwächster Rolle der Startelf mit den Filtern von ManagerZone suchen,
         // Hauptskill der Rolle Stufe für Stufe von 10 abwärts, bis genug Kandidaten da sind; sonst wie bisher den Markt durchgehen
         const start = startelfAusLetztemSpiel(db);
-        const ziele = start ? suchZiele(schwachstellenMitZugaengen(db, start.elf, ladeKader(db)).liste) : [];
+        const sw = start ? schwachstellenMitZugaengen(db, start.elf, ladeKader(db)) : null;
+        // Dazu höchstens ein Ziel für einen fehlenden Spielertyp einer erfolgreichen Top-10-Taktik (Marcus, 01.11.2026)
+        const luecke = sw?.liste.length ? alsSchwachstellen(taktikLuecken(db, sw.kaderMitZugaengen, Math.min(...sw.liste.map((x) => x.wert)))) : [];
+        const ziele = sw ? [...suchZiele(sw.liste), ...suchZiele(luecke, 1).map((z) => ({ ...z, text: `${z.text} (für ${luecke.find((l) => l.rolle === z.rolle)?.fuer})` }))] : [];
         if (ziele.length) {
           // Seiten gleichmäßig auf die Rollen verteilen
           const jeZielSeiten = Math.floor(MAX_SEITEN / ziele.length);

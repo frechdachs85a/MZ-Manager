@@ -1,6 +1,7 @@
 // Transfermarkt: Empfehlung je Schwachstelle mit Spielerprofil und Bietomat, Kandidaten, Schwachstellen, Rahmen.
 
 import Link from "next/link";
+import { stilDe } from "@/lib/mz/analyse/gegner";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Badge, Card, List, Row, Section, Unavailable } from "@/components/ui";
@@ -24,7 +25,7 @@ const komma = (n: number, s = 2) => n.toFixed(s).replace(".", ",");
 export default async function Markt(props: PageProps<"/markt">) {
   await connection();
   const db = getDb();
-  const { kader, start, suche, rahmen, abgelehnt, schwach, r, ergebnis } = marktErgebnis(db);
+  const { kader, start, suche, rahmen, abgelehnt, schwach, luecken, r, ergebnis } = marktErgebnis(db);
   const abruf = letzterAbruf(db, "markt");
   const imBietomat = new Map(
     ladeAuftraege(db)
@@ -80,6 +81,23 @@ export default async function Markt(props: PageProps<"/markt">) {
                   );
                 })}
               </ul>
+            </Card>
+          )}
+          {luecken.length > 0 && (
+            <Card className="mb-3 border-l-4 border-orange p-3 text-[13.5px]">
+              <div className="font-semibold">Erfolgreiche Top-10-Taktiken, für die dir ein Spielertyp fehlt</div>
+              <ul className="mt-1 space-y-1 text-label-2">
+                {luecken.map((l) => (
+                  <li key={l.stil.schluessel}>
+                    <b className="text-label">{stilDe(l.stil.schluessel)}</b> gegen „{l.klasse}“: {l.stil.S} S / {l.stil.U} U / {l.stil.N} N ({Math.round(l.stil.quote * 100)} %)
+                    {l.deinBester ? `, dein bester Stil dagegen ${stilDe(l.deinBester.schluessel)} ${Math.round(l.deinBester.quote * 100)} %` : ", du hast keinen bewährten Stil dagegen"}. Fehlt:{" "}
+                    {l.plaetze.map((p) => `${posDe(p.rolle)} (dein bester: ${p.spieler.name} ${p.wert.toFixed(2).replace(".", ",")})`).join(", ")}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-[12px] text-label-3">
+                „Fehlt“ = dein bester Spieler für diesen Platz ist schwächer als dein heute schwächster Startelf-Platz. Passende Kandidaten stehen unten mit „für …“.
+              </p>
             </Card>
           )}
           <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[13px]">

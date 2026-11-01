@@ -35,7 +35,8 @@ export function rolle(s: Slot): Position {
 }
 
 // ohneWechsel: Startspieler mit Ausdauer unter 8, für den keiner der 3 Wechsel mehr frei ist (Marcus, 30.10.2026)
-export type Schwachstelle = { slot: Slot; rolle: Position; spieler: SpielerDaten; wert: number; ohneWechsel?: boolean };
+// fuer: Platz einer Taktik, die du noch nicht spielen kannst (taktik-luecken.ts), nicht deiner Startelf
+export type Schwachstelle = { slot: Slot; rolle: Position; spieler: SpielerDaten; wert: number; ohneWechsel?: boolean; fuer?: string };
 
 // Jeder Startplatz mit dem MZ-Wert seines Spielers in dieser Rolle, schwächster zuerst. Vorrang haben Plätze, deren
 // Spieler wegen Ausdauer unter 8 ausgewechselt werden müsste, wenn dafür keiner der 3 Wechsel mehr frei ist
@@ -157,7 +158,7 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
     grundJe.set(aktuell, g);
     return null;
   };
-  const elfVorher = schwach.reduce((n, s) => n + s.wert, 0);
+  const elfVorher = schwach.filter((s) => !s.fuer).reduce((n, s) => n + s.wert, 0);
 
   const bewertet = kandidaten.map((k): Bewertung | null => {
     aktuell = k.pid;
@@ -194,13 +195,18 @@ export function bewerteMarkt(kandidaten: MarktSpieler[], schwach: Schwachstelle[
     if (!rahmen.ohneRahmen && bewilligungNoetig && (rahmen.bewilligungenFrei ?? 0) <= 0) return raus("auslaender");
 
     const { ziel, neu, gewinn } = bester;
-    const elfNachher = elfVorher + gewinn;
+    const elfNachher = ziel.fuer ? elfVorher : elfVorher + gewinn;
     const istGroesste = ziel === schwach[0];
-    const gruende = [
-      `${istGroesste ? "Größte Schwachstelle" : "Schwachstelle"}: ${posDe(ziel.rolle)} auf ${ziel.slot.x}/${ziel.slot.y}, dort spielt ${ziel.spieler.name} mit ${ziel.wert.toFixed(2)}.`,
-      `${k.name} hätte als ${posDe(ziel.rolle)} ${neu.toFixed(2)}, also +${gewinn.toFixed(2)}.`,
-      `Startelf gesamt ${r2(elfVorher).toFixed(2)} → ${r2(elfNachher).toFixed(2)} (+${((gewinn / elfVorher) * 100).toFixed(1).replace(".", ",")} %).`,
-    ];
+    const gruende = ziel.fuer
+      ? [
+          `Fehlender Spielertyp für ${ziel.fuer}: ${posDe(ziel.rolle)} auf ${ziel.slot.x}/${ziel.slot.y}, dein bester dort ist ${ziel.spieler.name} mit ${ziel.wert.toFixed(2)}.`,
+          `${k.name} hätte als ${posDe(ziel.rolle)} ${neu.toFixed(2)}, also +${gewinn.toFixed(2)}.`,
+        ]
+      : [
+          `${istGroesste ? "Größte Schwachstelle" : "Schwachstelle"}: ${posDe(ziel.rolle)} auf ${ziel.slot.x}/${ziel.slot.y}, dort spielt ${ziel.spieler.name} mit ${ziel.wert.toFixed(2)}.`,
+          `${k.name} hätte als ${posDe(ziel.rolle)} ${neu.toFixed(2)}, also +${gewinn.toFixed(2)}.`,
+          `Startelf gesamt ${r2(elfVorher).toFixed(2)} → ${r2(elfNachher).toFixed(2)} (+${((gewinn / elfVorher) * 100).toFixed(1).replace(".", ",")} %).`,
+        ];
     const st = staerken(k, ziel.spieler, ziel.rolle);
     if (st.length) gruende.push(`Mehr als ${ziel.spieler.name} in: ${st.join(", ")}.`);
     gruende.push(
