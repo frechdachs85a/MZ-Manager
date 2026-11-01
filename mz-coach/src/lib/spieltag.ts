@@ -30,7 +30,7 @@ import { scoutBericht, scoutEntscheidung } from "@/lib/wissen/scoutspiele";
 import { ladeTaktiken } from "@/lib/db/taktik";
 import { anpassen } from "@/lib/mz/taktik/anpassen";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
-import { gegnerGewichte } from "@/lib/mz/taktik/gegner-gewichte";
+import { gegnerGewichte, istInnenverteidigung, ueberAussenLage } from "@/lib/mz/taktik/gegner-gewichte";
 import { ligaAusArchiv } from "@/lib/mz/taktik/liga-anpassen";
 import { scoutAuswertung } from "@/lib/scout-auswertung";
 import { vorhersage } from "@/lib/vorhersage";
@@ -542,7 +542,9 @@ export function spieltagLage(db: Database.Database) {
     if (taktikCode?.xml && erwartet) {
       try {
         const amSpieltag = lauf?.anstoss ? new Date(new Date(lauf.anstoss).toLocaleString("en-US", { timeZone: "Europe/Berlin" })) : new Date();
-        const c = pruefeTaktikGegenKader(vorschlag.taktik, taktikCode.xml, kaderAlle, amSpieltag);
+        // Spielt er über außen, zählt in der Innenverteidigung der Kopfball schon bei der Auswahl (nicht erst bei der Verteilung)
+        const ueberAussen = ueberAussenLage(erwartet.feld, brief?.einstellungen[0]?.[0]).ueberAussen;
+        const c = pruefeTaktikGegenKader(vorschlag.taktik, taktikCode.xml, kaderAlle, amSpieltag, undefined, { kopfballInnen: ueberAussen });
         const basisXml = c.fehler ? taktikCode.xml : c.xml;
         const checkZeilen = c.fehler ? [`Besetzung nicht geprüft: ${c.fehler}`] : checkKurz(c).map((z) => `Besetzung: ${z}`);
         const a = ligaAusArchiv({ xml: basisXml, kader: kaderAlle, gegner: erwartet.feld, seinStil: brief?.einstellungen[0]?.[0], angriffUeber: erwartet.seiten.angriff });
@@ -554,7 +556,19 @@ export function spieltagLage(db: Database.Database) {
           xml: a.xml,
           feld: t.pos.map((p) => ({ x: p.start.x, y: p.start.y, label: kurzName(p.pid), wert: k.get(p.pid)?.marktwert, torwart: p.pos === "goalie" })) as FeldSpieler[],
           bank: t.subs.map((x) => kurzName(x.pid)),
-          kurz: [`Grundlage: dein Reiter ${vorschlag.taktik} aus dem Archiv${taktikCode.geaendert.length ? ` mit ${taktikCode.geaendert.join(", ")}` : ""}`, ...checkZeilen, ...a.kurz],
+          kurz: [
+            `Grundlage: dein Reiter ${vorschlag.taktik} aus dem Archiv${taktikCode.geaendert.length ? ` mit ${taktikCode.geaendert.join(", ")}` : ""}`,
+            ...checkZeilen,
+            ...a.kurz,
+            ...(ueberAussen
+              ? [
+                  `Innenverteidigung: ${t.pos
+                    .filter((p) => p.pos === "normal" && istInnenverteidigung(p.start.x, p.start.y))
+                    .map((p) => `${kurzName(p.pid)} (Kopfball ${k.get(p.pid)?.skills.kopfball?.wert ?? "?"})`)
+                    .join(", ")}`,
+                ]
+              : []),
+          ],
           hinweise: [] as string[],
         };
       } catch {

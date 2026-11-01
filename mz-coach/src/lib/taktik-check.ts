@@ -6,6 +6,7 @@ import { mzWert, type Position } from "@/lib/mz/formel";
 import { rolle } from "@/lib/mz/analyse/markt";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { verfuegbar, zuordnen } from "@/lib/mz/taktik/erzeugen";
+import { KOPFBALL_GEWICHT, istInnenverteidigung } from "@/lib/mz/taktik/gegner-gewichte";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { ausdauerPlan, MAX_WECHSEL_SPIEL } from "@/lib/skill-bilanz";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
@@ -69,7 +70,18 @@ function tausche(xml: string, a: number, b: number): string {
 }
 
 // Prüft eine Taktik gegen den aktuellen Kader und schlägt die angepasste XML vor
-export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: SpielerDaten[], spieltag: Date, alter?: AlterGrenze): TaktikCheck {
+// kopfballInnen (Formation Liga gegen einen Gegner, der über außen spielt; Marcus, 01.11.2026: „dann wird er in der Mitte
+// einen sehr kopfballstarken Stürmer haben“): Auf den Innenverteidiger-Plätzen zählt zum MZ-Wert ein Zuschlag von
+// KOPFBALL_GEWICHT × Kopfball. Die MZ-Formel für VT gewichtet Kopfball mit 0, ohne Zuschlag käme ein kopfballstarker
+// Verteidiger von der Bank nie in die Mitte. Gewicht ist eigene Setzung (gegner-gewichte.ts).
+export function pruefeTaktikGegenKader(
+  reiter: string,
+  xml: string,
+  kader: SpielerDaten[],
+  spieltag: Date,
+  alter?: AlterGrenze,
+  opt: { kopfballInnen?: boolean } = {},
+): TaktikCheck {
   const t = parseTaktikXml(xml);
   const nachPid = new Map(kader.map((s) => [s.pid, s]));
   const imAlter = (s: SpielerDaten) => !alter || (s.alter !== undefined && s.alter >= alter.von && s.alter <= alter.bis);
@@ -80,12 +92,14 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
   const kandidaten = ja.filter((s) => plaetze.some((p) => wertIn(s, p.rolle) !== undefined));
   if (kandidaten.length < plaetze.length) return { reiter, ok: true, aenderbar: false, aenderungen: [], wechselregeln: [], gewinn: 0, xml, fehler: "Zu wenige aufstellbare Spieler mit bekannten Skills." };
   const prio = (s: SpielerDaten) => (alter && istPrio(s) ? PRIO_BONUS : 0);
-  const kosten = plaetze.map((p) => kandidaten.map((s) => -((wertIn(s, p.rolle) ?? -100) + (s.pid === p.pid ? BONUS_JETZT : 0) + prio(s))));
+  const innen = plaetze.map((p) => !!opt.kopfballInnen && p.rolle === "VT" && istInnenverteidigung(p.x, p.y));
+  const kopf = (s: SpielerDaten | undefined, i: number) => (innen[i] && s ? KOPFBALL_GEWICHT * (s.skills.kopfball?.wert ?? 0) : 0);
+  const kosten = plaetze.map((p, i) => kandidaten.map((s) => -((wertIn(s, p.rolle) ?? -100) + kopf(s, i) + (s.pid === p.pid ? BONUS_JETZT : 0) + prio(s))));
   const zu = zuordnen(kosten);
   const neu = plaetze.map((p, i) => kandidaten[zu[i]]);
-  // Gewinn mit den echten MZ-Werten vorher (auch nicht aufstellbare Spieler zählen mit ihrem Wert)
-  const altSumme = plaetze.reduce((n, p) => n + (wertIn(nachPid.get(p.pid), p.rolle) ?? 0), 0);
-  const neuSumme = plaetze.reduce((n, p, i) => n + (wertIn(neu[i], p.rolle) ?? 0), 0);
+  // Gewinn mit den echten MZ-Werten vorher (auch nicht aufstellbare Spieler zählen mit ihrem Wert), bei kopfballInnen mit Zuschlag
+  const altSumme = plaetze.reduce((n, p, i) => n + (wertIn(nachPid.get(p.pid), p.rolle) ?? 0) + kopf(nachPid.get(p.pid), i), 0);
+  const neuSumme = plaetze.reduce((n, p, i) => n + (wertIn(neu[i], p.rolle) ?? 0) + kopf(neu[i], i), 0);
   const gewinn = Math.round((neuSumme - altSumme) * 100) / 100;
   // Erzwungen: ein Spieler ist nicht aufstellbar (oder zu alt/jung) oder ein Spieler mit Vorrang fehlt in der Elf
   const fehltPrio = alter ? neu.filter((s) => istPrio(s) && !plaetze.some((p) => p.pid === s.pid)) : [];
@@ -123,7 +137,9 @@ export function pruefeTaktikGegenKader(reiter: string, xml: string, kader: Spiel
         grund: verfuegbarPids.has(p.pid)
           ? istPrio(neu[i]) && fehltPrio.includes(neu[i])
             ? `Nr. ${neu[i].nr} soll Spielpraxis bekommen`
-            : undefined
+            : innen[i] && (neu[i].skills.kopfball?.wert ?? 0) > (alt?.skills.kopfball?.wert ?? 0)
+              ? `Kopfball ${neu[i].skills.kopfball?.wert ?? "?"} statt ${alt?.skills.kopfball?.wert ?? "?"} (er spielt über außen)`
+              : undefined
           : alt && !imAlter(alt)
             ? `nicht im Alter ${alter!.von} bis ${alter!.bis}`
             : ausfallGrund(alt),
