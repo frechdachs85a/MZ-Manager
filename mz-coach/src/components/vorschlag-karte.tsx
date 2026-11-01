@@ -28,6 +28,18 @@ function Balken({ label, wert, max = 10, ton }: { label: string; wert: number; m
   );
 }
 
+// Alter groß und farbig (Marcus, 01.11.2026: beim Kauf entscheidend, 1 Mio für einen 20-Jährigen ist mehr wert als für
+// einen 33-Jährigen). Farbe nur als Lesehilfe: bis 23 grün, 24 bis 29 neutral, ab 30 orange.
+function AlterChip({ alter }: { alter?: number }) {
+  const farbe = alter === undefined ? "bg-fill text-label-2" : alter <= 23 ? "bg-green/15 text-green" : alter >= 30 ? "bg-orange/15 text-orange" : "bg-fill text-label";
+  return (
+    <span className={`inline-flex items-baseline gap-1 rounded-[8px] px-2 py-0.5 ${farbe}`} title="Alter">
+      <span className="display text-[20px] font-bold leading-none tabular-nums">{alter ?? "?"}</span>
+      <span className="text-[11px] font-semibold">Jahre</span>
+    </span>
+  );
+}
+
 export type Verbesserung = { rolle: string; statt: string; alt: number; neu: number; gewinn: number; preis?: number };
 
 export function SpielerKarte({
@@ -70,8 +82,9 @@ export function SpielerKarte({
           >
             {k.name}
           </a>
-          <div className="text-[12.5px] text-label-2">
-            {k.alter ?? "?"} J. · {k.nationalitaet ?? "Nationalität ?"}
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px] text-label-2">
+            <AlterChip alter={k.alter} />
+            {k.nationalitaet ?? "Nationalität ?"}
             {badge && <span className="ml-2 rounded-full bg-green/15 px-2 py-0.5 text-[11px] font-semibold text-green">{badge}</span>}
           </div>
           <div className="mt-1 text-[13px]">
