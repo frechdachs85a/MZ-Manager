@@ -55,7 +55,9 @@ export function aehnlichsteVorlage(ziel: string, kandidaten: { reiter: string; x
   return beste ? { reiter: beste.reiter, xml: beste.xml } : null;
 }
 
-const klemm = (p: { x: number; y: number }) => ({ x: Math.max(0, Math.min(208, Math.round(p.x))), y: Math.max(MIN_Y, Math.min(300, Math.round(p.y))) });
+// Feld im Editor: x 8 bis 200 (seiten.ts); bis 01.11.2026 0 bis 208, damit lag in K Pinheiro in Alternative 2 auf x 0 und
+// ManagerZone lehnte ab („befindet sich in einem unzulässigen Raum“)
+const klemm = (p: { x: number; y: number }) => ({ x: Math.max(8, Math.min(200, Math.round(p.x))), y: Math.max(MIN_Y, Math.min(300, Math.round(p.y))) });
 
 // Alternativen aus dem Vorbild übertragen; Rot-Regel (formation 1) nach der Prüfliste auf Alternative 1 ausrichten:
 // 1 Stürmer → Kurzpass, 2 Stürmer mit einem außen → Flügel, 2 Stürmer ohne außen → Kurzpass, sonst Taktik bleibt

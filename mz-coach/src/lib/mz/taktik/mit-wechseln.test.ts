@@ -84,3 +84,15 @@ describe("Führungsregel nur bei offensiver Grundeinstellung", () => {
     expect(unpassendeRegelnEntfernen(xml("offensive")).entfernt).toEqual([]);
   });
 });
+
+describe("abstaendeHalten mit einem Spieler zwischen zwei anderen", () => {
+  it("schiebt alle zu engen Paare gleichzeitig auseinander, bleibt im Feld x 8 bis 200", () => {
+    // Erfundene Aufstellung: Spieler 11 steht zwischen 8 und 10 zu eng, 3 und 4 sind knapp zu eng
+    const P = [[104, 318, "goalie"], [150, 178], [131, 95], [87, 80], [104, 133], [30, 221], [178, 221], [127, 221], [199, 69], [81, 221], [103, 183]] as const;
+    const xml = P.map((p, i) => `<Pos pos="${p[2] ?? "normal"}" pid="${i + 1}" x="${p[0]}" y="${p[1]}" x1="${p[0]}" y1="${p[1]}" x2="${p[0]}" y2="${p[1]}" />`).join("\n");
+    const r = abstaendeHalten(xml);
+    const pts = [...r.xml.matchAll(/pos="normal"[^>]*\sx="(\d+)" y="(\d+)"/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) expect(Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1])).toBeGreaterThanOrEqual(47);
+    expect(pts.every(([x]) => x >= 8 && x <= 200)).toBe(true);
+  });
+});
