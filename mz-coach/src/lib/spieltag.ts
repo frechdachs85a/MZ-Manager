@@ -6,7 +6,8 @@ import { gegnerAnalyseLaden } from "@/lib/gegner-analyse";
 import { spielBericht } from "@/lib/mz/analyse/bericht";
 import { gegenIhn } from "@/lib/mz/analyse/gegen-ihn";
 import { steckbrief } from "@/lib/mz/analyse/steckbrief";
-import { de, formation, stilDe } from "@/lib/mz/analyse/gegner";
+import { ABWEHR_Y, de, formation, stilDe } from "@/lib/mz/analyse/gegner";
+import { istAussen } from "@/lib/mz/taktik/pruefer";
 import { gegnerKlasse, spielMuster, stilText } from "@/lib/mz/analyse/muster";
 import { faelligAb } from "@/lib/spieltag-zeit";
 import { LIGA_MID_AB } from "@/lib/mz/parser/spielliste";
@@ -32,6 +33,7 @@ import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { gegnerGewichte } from "@/lib/mz/taktik/gegner-gewichte";
 import { ligaAusArchiv } from "@/lib/mz/taktik/liga-anpassen";
 import { scoutAuswertung } from "@/lib/scout-auswertung";
+import { vorhersage } from "@/lib/vorhersage";
 import { checkKurz, pruefeTaktikGegenKader } from "@/lib/taktik-check";
 import { mitSpielstandRegeln } from "@/lib/mz/taktik/mit-wechseln";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
@@ -65,7 +67,12 @@ export function spieltagLage(db: Database.Database) {
   const gegner = lauf?.gegnerTid ? gegnerAnalyseLaden(db, lauf.gegnerTid) : null;
   const gegen = gegner ? gegenIhn(gegner.tid, gegner.stats) : null;
   // Typ des Gegners aus seinem neuesten ausgewerteten Ligaspiel (wie die Empfehlung)
-  const neuestes = gegner?.stats.slice().sort((a, b) => (b.datum ?? "").localeCompare(a.datum ?? ""))[0];
+  const juengstes = gegner?.stats.slice().sort((a, b) => (b.datum ?? "").localeCompare(a.datum ?? ""))[0];
+  const brief = gegner ? steckbrief(gegner.tid, gegner.stats) : null;
+  // Wie stellt er gegen DICH auf? (vorhersage.ts: Trend, sonst gegen Gegner wie dich, sonst häufigste). Diese Aufstellung
+  // ist ab hier die Grundlage für Gegnertyp, Faustregel, Duelle und Formation Liga (vorher: sein neuestes Spiel).
+  const vh = gegner && brief ? vorhersage(gegner.tid, gegner.stats, brief, eigeneLigaspiele(db)) : null;
+  const neuestes = (vh && gegner?.stats.find((x) => x.mid === vh.mid)) || juengstes;
   const klasse = neuestes && gegner ? gegnerKlasse(spielMuster(neuestes, gegner.tid, { anonym: true }).eigen) : undefined;
   const top = klasse ? topGegenKlasse(db, klasse) : [];
   const luecke = gegnerLuecke(db, klasse, top);
@@ -104,11 +111,27 @@ export function spieltagLage(db: Database.Database) {
         }
       : null;
   const kaderwert = gegner ? kaderwertVergleich(db, gegner.tid) : null;
-  const brief = gegner ? steckbrief(gegner.tid, gegner.stats) : null;
 
+  // Faustregel (Abschnitt 10) auf die erwartete Aufstellung anwenden, nicht auf sein neuestes Spiel
+  const bezugAusw = neuestes && gegner?.analyse ? gegner.analyse.spiele.find((x) => x.mid === neuestes.mid) : undefined;
+  const bezugTaktik = bezugAusw ? (bezugAusw.formation.abwehr >= 5 || bezugAusw.engeMitte ? "kupass" : "außenR") : undefined;
   const empfehlung = gegner?.analyse?.empfehlung
     ? {
         ...gegner.analyse.empfehlung,
+        ...(bezugAusw && bezugTaktik
+          ? {
+              taktik: bezugTaktik as "kupass" | "außenR",
+              gruende: [
+                ...(vh ? [vh.text] : []),
+                bezugAusw.formation.abwehr >= 5
+                  ? `Fünferkette in der erwarteten Aufstellung (${bezugAusw.formation.text}) → kupass.`
+                  : bezugAusw.engeMitte
+                    ? "Enge Mitte in der erwarteten Aufstellung → kupass."
+                    : "Weder Fünferkette noch enge Mitte in der erwarteten Aufstellung → außenR.",
+                `Enge Mitte in ${gegner.analyse.spiele.filter((x) => x.engeMitte).length} von ${gegner.analyse.spiele.length} seiner Ligaspiele.`,
+              ],
+            }
+          : {}),
         // Der Hinweis "Kaderwert-Vergleich fehlt" entfällt, sobald beide Startelf-Werte da sind
         vorbehalte: gegner.analyse.empfehlung.vorbehalte.filter((v) => !(kaderwert?.eigen && kaderwert.gegner && v.startsWith("Kaderwert-Vergleich fehlt"))),
       }
@@ -122,20 +145,50 @@ export function spieltagLage(db: Database.Database) {
   const regelKurz = (): string[] => {
     const a = gegner?.analyse;
     if (!a || !empfehlung) return [];
-    const neu = a.spiele[0];
+    const neu = bezugAusw ?? a.spiele[0];
     const eng = a.spiele.filter((x) => x.engeMitte).length;
     return [
-      a.urteil === "immer_gleich" ? "Spielt immer gleich → anpassen erlaubt" : a.urteil === "duenn" ? "Wenig Daten → Standard" : "Spielt wechselnd → Standard",
+      vh?.grund === "trend" ? "Trend erkannt → so erwartet" : vh?.grund === "wie-du" ? `Gegen Gegner wie dich → ${neu.formation.text} erwartet` : a.urteil === "duenn" ? "Wenig Daten → Standard" : "Häufigste Aufstellung erwartet",
+      ...(neu.engeMitte ? ["Enge Mitte erwartet"] : []),
       ...(neu.formation.abwehr >= 5 ? [`Fünferkette (${neu.formation.text})`] : []),
       `Enge Mitte in ${eng} von ${a.spiele.length} Spielen`,
       `→ ${empfehlung.taktik}`,
     ];
   };
-  const vorschlag: { taktik: string; quelle: string; begruendung: string; kurz: string[] } | null = scoutWahl
+  const vorschlagRoh: { taktik: string; quelle: string; begruendung: string; kurz: string[] } | null = scoutWahl
     ? { taktik: scoutWahl.reiter, quelle: "Deine Scoutspiele gegen ihn", begruendung: scoutWahl.begruendung, kurz: scoutWahl.kurz }
     : empfehlung
       ? { taktik: empfehlung.taktik, quelle: "Faustregel (mz-wissen.md, Abschnitt 10)", begruendung: `${empfehlung.regel} ${empfehlung.gruende.join(" ")}`.trim(), kurz: regelKurz() }
       : null;
+
+  // Seitenvarianten (Marcus, 01.11.2026: „du sagst außenR, zeigst aber das Bild von außenL“): Greift die Liga über seine
+  // schwächere Abwehrseite an und wäre außenR dafür gespiegelt worden, ist das genau dein außenL. Dann gleich den Reiter
+  // nehmen, der schon auf der richtigen Seite angreift, und überall so nennen.
+  const angriffSeite = (() => {
+    if (!brief || !gegner) return undefined;
+    const elf = (neuestes && brief.spiele.find((x) => x.mid === neuestes.mid)?.elf) || brief.stammElf?.elf;
+    if (!elf) return undefined;
+    return seitenVergleich(elf.map((p) => ({ name: p.name, x: p.x, y: p.y, wert: gkWerte.get(p.pid), torwart: p.torwart }))).angriff;
+  })();
+  const lastig = (reiter: string): "links" | "rechts" | undefined => {
+    const t = archiv.find((a) => a.reiter.toLowerCase() === reiter.toLowerCase())?.taktik;
+    if (!t) return undefined;
+    const vorne = t.pos.filter((p) => p.pos === "normal" && p.start.y < ABWEHR_Y && istAussen(p.start.x));
+    const rechts = vorne.filter((p) => p.start.x >= 104).length;
+    return rechts === vorne.length - rechts ? undefined : rechts > vorne.length - rechts ? "rechts" : "links";
+  };
+  const zwilling = (r: string) => (/^au(ß|ss)enr$/i.test(r) ? r.slice(0, -1) + "L" : /^au(ß|ss)enl$/i.test(r) ? r.slice(0, -1) + "R" : undefined);
+  const vorschlag = (() => {
+    if (!vorschlagRoh || scoutWahl || !angriffSeite) return vorschlagRoh;
+    const z = zwilling(vorschlagRoh.taktik);
+    if (!z || lastig(vorschlagRoh.taktik) === angriffSeite || lastig(z) !== angriffSeite) return vorschlagRoh;
+    return {
+      ...vorschlagRoh,
+      taktik: z,
+      begruendung: `${vorschlagRoh.begruendung} Angriff über deine ${angriffSeite === "rechts" ? "rechte" : "linke"} Seite (seine schwächere Abwehrseite): dafür ${z} statt ${vorschlagRoh.taktik} (gespiegelte Variante).`,
+      kurz: [...vorschlagRoh.kurz.filter((k) => !k.startsWith("→")), `Seine schwächere Seite → ${z}`],
+    };
+  })();
 
   const belege: Beleg[] = [];
   if (scout && scoutWahl) {
@@ -286,12 +339,13 @@ export function spieltagLage(db: Database.Database) {
       ],
     });
     if (brief.stammElf) {
-      const st = brief.spiele.find((x) => x.elf === brief.stammElf!.elf) ?? brief.spiele.at(-1)!;
+      const st = (neuestes && brief.spiele.find((x) => x.mid === neuestes.mid)) || brief.spiele.find((x) => x.elf === brief.stammElf!.elf) || brief.spiele.at(-1)!;
       const abw = brief.stammElf.abweichungen.filter((x) => /anderen Plätzen/.test(x.text));
       kurzfassung.push({
         titel: "Erwartete Formation",
         punkte: [
           `${st.formation} · ${st.einstellung}`,
+          ...(vh ? [vh.text] : []),
           brief.stammElf.trend
             ? `Trend: die letzten ${brief.stammElf.trend} Spiele genau so (insgesamt ${brief.stammElf.positionen} von ${brief.stammElf.von})`
             : `So in ${brief.stammElf.positionen} von ${brief.stammElf.von} Spielen`,
@@ -422,7 +476,8 @@ export function spieltagLage(db: Database.Database) {
     brief?.stammElf && gegner
       ? (() => {
           const werte = new Map(ladeGegnerKader(db, gegner.tid).map((k) => [k.pid, k.wert ?? undefined]));
-          const elf = brief.stammElf!.elf;
+          // Erwartete Elf = Vorhersage (vorhersage.ts), sonst die Stammelf
+          const elf = (neuestes && brief.spiele.find((x) => x.mid === neuestes.mid)?.elf) || brief.stammElf!.elf;
           const summe = elf.reduce((n, p) => n + (werte.get(p.pid) ?? 0), 0);
           return {
             feld: elf.map((p) => ({ x: p.x, y: p.y, label: p.name.split(" ").at(-1)!, wert: werte.get(p.pid), torwart: p.torwart })),
@@ -585,6 +640,7 @@ export function spieltagLage(db: Database.Database) {
     klasse,
     top,
     luecke,
+    vorhersage: vh,
     empfehlung,
     belege,
   };

@@ -120,6 +120,7 @@ export function diagnose(db: Database.Database) {
     const l = spieltagLage(db);
     analyse = {
       vorschlag: l.vorschlag,
+      vorhersage: l.vorhersage,
       anpassungen: l.anpassungen,
       taktikCode: l.taktikCode ? { art: l.taktikCode.art, geaendert: l.taktikCode.geaendert } : null,
       kurzfassung: l.kurzfassung,
