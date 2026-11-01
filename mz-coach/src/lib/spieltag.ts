@@ -241,7 +241,21 @@ export function spieltagLage(db: Database.Database) {
     const rechts = vorne.filter((p) => p.start.x >= 104).length;
     return rechts === vorne.length - rechts ? undefined : rechts > vorne.length - rechts ? "rechts" : "links";
   };
-  const zwilling = (r: string) => (/^au(ß|ss)enr$/i.test(r) ? r.slice(0, -1) + "L" : /^au(ß|ss)enl$/i.test(r) ? r.slice(0, -1) + "R" : undefined);
+  // Seitenvariante eines Reiters: außenR ↔ außenL, sonst ein anderer Reiter mit gleichem Stil (Formation, Taktik, Spielweise),
+  // der auf die andere Seite angreift (z. B. 532flo ↔ 532flR, Portfolio 01.11.2026)
+  const stilVon = (r: string) => {
+    const t = archiv.find((a) => a.reiter.toLowerCase() === r.toLowerCase())?.taktik;
+    if (!t) return undefined;
+    return `${formation(t.pos.filter((p) => p.pos === "normal").map((p) => p.start)).text} ${t.team.tactics}/${t.team.playstyle}`;
+  };
+  const zwilling = (r: string) => {
+    if (/^au(ß|ss)enr$/i.test(r)) return r.slice(0, -1) + "L";
+    if (/^au(ß|ss)enl$/i.test(r)) return r.slice(0, -1) + "R";
+    const st = stilVon(r);
+    const seite = lastig(r);
+    if (!st || !seite) return undefined;
+    return archiv.find((a) => a.reiter !== r && !/^liga$/i.test(a.reiter) && stilVon(a.reiter) === st && lastig(a.reiter) && lastig(a.reiter) !== seite)?.reiter;
+  };
   const vorschlag = (() => {
     if (!vorschlagRoh || scoutWahl || !angriffSeite) return vorschlagRoh;
     const z = zwilling(vorschlagRoh.taktik);
