@@ -1,4 +1,5 @@
 import "server-only";
+import { berlinStunde } from "@/lib/format";
 import type Database from "better-sqlite3";
 import { abrufBeenden, abrufBeginnen, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
 import { zugangStatus } from "@/lib/mz/zugang";
@@ -214,7 +215,6 @@ export function dateienEinlesen(db: Database.Database, dateien: { name: string; 
 // (Berlin), nur mit eingerichtetem Zugang. Wie beim Markt zählt ein fehlgeschlagener Versuch (keine Login-Wiederholung).
 export const KADER_STUNDE = 5;
 const berlinTag = (d: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(d);
-const berlinStunde = (d: Date) => Number(new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" }).format(d));
 // Ist der tägliche Kaderabruf fällig?
 export function kaderFaellig(db: Database.Database, jetzt = new Date()): boolean {
   if (!zugangStatus(db).eingerichtet) return false;
