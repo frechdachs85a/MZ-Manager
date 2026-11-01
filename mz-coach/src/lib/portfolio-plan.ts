@@ -3,7 +3,7 @@ import { ladeKader } from "@/lib/db/kader";
 import { heuteInBerlin } from "@/lib/format";
 import { formation } from "@/lib/mz/analyse/gegner";
 import { erzeugeMitWechseln } from "@/lib/mz/taktik/mit-wechseln";
-import { portfolioAnalyse, regelcheck, stilSchluessel, type StilEintrag } from "@/lib/portfolio";
+import { MIN_QUOTE, portfolioAnalyse, regelcheck, stilSchluessel, type StilEintrag } from "@/lib/portfolio";
 import { istAussen, STURM_Y } from "@/lib/mz/taktik/pruefer";
 import { archivLaden } from "@/lib/taktik-archiv";
 import { istAltersreiter, ladeEditorReiter } from "@/lib/db/taktik";
@@ -37,6 +37,8 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
 export const JUGEND = /^u(18|21|23)\b/i;
 export const BESSER = 0.1;
+// Mindestzahl Top-10-Spiele über alle Gegner, damit ein Stil ins vollständige Portfolio kommt (eigene Setzung)
+export const MIN_SPIELE_BREITE = 5;
 export const SPIEGEL_TOLERANZ = 6; // Punkte (eigene Setzung)
 // außenR und kupass nennt die Faustregel (mz-wissen.md, Abschnitt 10) und die Scoutauswertung beim Namen: bleiben
 const FEST = /^(liga|außenr|außenl|kupass)$/i;
@@ -254,6 +256,35 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     }
     if (!neu) break;
   }
+  // 3b. Vollständiges Portfolio (Marcus, 01.11.2026: „ein Portfolio von allen guten Taktiken der Topteams, um auf alles reagieren
+  // zu können“): jeder Stil (Formation, Taktik, Spielweise), den die Topteams über alle Gegner zusammen mindestens
+  // MIN_SPIELE_BREITE-mal spielten und mit mindestens MIN_QUOTE Punktquote, kommt in einen leeren Reiter, wenn du ihn noch
+  // nicht hast. Meistgespielte zuerst. Nur leere Reiter, damit nichts überschrieben wird.
+  const leereFrei = frei.filter((d) => d.art === "leer").length;
+  const gesamt = new Map<string, StilEintrag & { klasse: string }>();
+  for (const k of p.klassen)
+    for (const st of k.stile) {
+      const g = gesamt.get(st.schluessel);
+      if (!g) gesamt.set(st.schluessel, { ...st, klasse: k.klasse, teams: [...st.teams] });
+      else {
+        const S = g.S + st.S, U = g.U + st.U, N = g.N + st.N, n = S + U + N;
+        gesamt.set(st.schluessel, {
+          ...(st.spiele > g.spiele ? { ...st, klasse: k.klasse } : g),
+          S, U, N, spiele: n, quote: (S + U * 0.5) / n,
+          teams: [...new Set([...g.teams, ...st.teams])],
+          imArchiv: [...new Set([...g.imArchiv, ...st.imArchiv])],
+        });
+      }
+    }
+  const breite = [...gesamt.values()]
+    .filter((x) => x.spiele >= MIN_SPIELE_BREITE && x.quote >= MIN_QUOTE && !x.imArchiv.length && !stileDrin.has(x.schluessel))
+    .sort((a, b) => b.spiele - a.spiele || b.quote - a.quote);
+  for (const b of breite) {
+    if (luecken.length >= leereFrei) break;
+    luecken.push({ ...b, klasse: `alle Gegner (${b.S}/${b.U}/${b.N})` });
+    stileDrin.add(b.schluessel);
+  }
+
   const kader = ladeKader(db);
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
   const vorschlaege: PortfolioVorschlag[] = [];
