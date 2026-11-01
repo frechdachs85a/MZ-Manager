@@ -3,7 +3,7 @@ import { FORMEL_SKILLS, type Skills } from "@/lib/mz/skills";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { parseTaktikXml } from "./xml";
 import { pruefeTaktik } from "./pruefer";
-import { erzeugeMitWechseln, mitSpielstandRegeln } from "./mit-wechseln";
+import { abstaendeHalten, erzeugeMitWechseln, mitSpielstandRegeln } from "./mit-wechseln";
 
 // Erfundene Testdaten: zwei Startspieler mit Ausdauer 7, genug Bank
 const sk = (w: number, ausdauer = 9, torwart = 2): Skills =>
@@ -42,5 +42,21 @@ describe("Neu erzeugte Taktik mit Wechselregeln", () => {
       "80 tie no_change/offensive/aggressive", // 70. Führung → normal entfällt, ist schon normal
     ]);
     expect(mitSpielstandRegeln(e.xml).xml).toBe(e.xml);
+  });
+});
+
+describe("Mindestabstand halten", () => {
+  it("schiebt zu enge Stürmer auseinander, der vorderste an y 63 bleibt, alle drei Aufstellungen", () => {
+    const p = (pid: number, x: number, y: number) => `<Pos pos="normal" pid="${pid}" x="${x}" y="${y}" x1="${x}" y1="${y}" x2="${x}" y2="${y}" pt="1" fk="1" />`;
+    const xml = `<SoccerTactics>\n<Team tactics="shortpass" playstyle="normal" aggression="normal" captain="2" />\n<Pos pos="goalie" pid="1" x="103" y="315" x1="103" y1="315" x2="103" y2="315" />\n${p(2, 105, 63)}\n${p(3, 72, 96)}\n${p(4, 135, 98)}\n</SoccerTactics>`;
+    const r = abstaendeHalten(xml);
+    const t = parseTaktikXml(r.xml);
+    const pos = (pid: number) => t.pos.find((x) => x.pid === pid)!;
+    expect(pos(2).start).toEqual({ x: 105, y: 63 });
+    for (const k of ["start", "alt1", "alt2"] as const) {
+      const a = [2, 3, 4].map((pid) => pos(pid)[k]!);
+      for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) expect(Math.hypot(a[i].x - a[j].x, a[i].y - a[j].y)).toBeGreaterThanOrEqual(47);
+    }
+    expect(abstaendeHalten(r.xml).verschoben).toEqual([]);
   });
 });

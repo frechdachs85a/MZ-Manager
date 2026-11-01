@@ -1,5 +1,6 @@
 import { pruefeTaktikGegenKader } from "@/lib/taktik-check";
 import { erzeugeTaktik } from "./erzeugen";
+import { MIN_ABSTAND, MIN_Y } from "./pruefer";
 
 // Spielstand-Regeln wie in deinen eigenen Reitern (mz-wissen.md, Abschnitt Taktiken: „Gemeinsame Regeln“; Marcus
 // 01.11.2026: „auch Rot-Regelung und Führungsregeln, so wie die Profis wechseln“). Belege aus den Top-10-Spielen:
@@ -35,13 +36,54 @@ export function mitSpielstandRegeln(xml: string): { xml: string; regeln: string[
   return { xml: zeilen.length ? xml.replace(/<\/SoccerTactics>/, `${zeilen.join("\n")}\n</SoccerTactics>`) : xml, regeln: text };
 }
 
+// Mindestabstand halten (Prüfliste Regel 2: Feldspieler mindestens 47 auseinander, y mindestens 63). Aufstellungen von
+// Topteams aus der Stats-XML liegen nach dem Umrechnen manchmal knapp darunter (343kp, 01.11.2026: 46,1 und 46,7).
+// Je Aufstellung (x/y, x1/y1, x2/y2) wird der Spieler eines zu engen Paars, der nicht an der Grenze y = 63 steht, um das
+// Nötige vom anderen weggeschoben (Ziel 48, ganze Zahlen), bis alle Abstände passen. Torwart bleibt, wie er ist.
+export function abstaendeHalten(xml: string): { xml: string; verschoben: string[] } {
+  const zeilen = [...xml.matchAll(/<Pos\b[^>]*\/?>/g)].map((m) => m[0]);
+  const attr = (z: string, k: string) => Number(z.match(new RegExp(`\\s${k}="(-?\\d+)"`))?.[1]);
+  const feld = zeilen.filter((z) => !/pos="goalie"/.test(z));
+  const neu = new Map(feld.map((z) => [z, z]));
+  const verschoben: string[] = [];
+  for (const [kx, ky] of [["x", "y"], ["x1", "y1"], ["x2", "y2"]]) {
+    const p = feld.map((z) => ({ z, x: attr(z, kx), y: attr(z, ky) })).filter((q) => Number.isFinite(q.x) && Number.isFinite(q.y));
+    for (let runde = 0; runde < 60; runde++) {
+      let paar: [number, number, number] | null = null;
+      for (let i = 0; i < p.length; i++)
+        for (let j = i + 1; j < p.length; j++) {
+          const d = Math.hypot(p[i].x - p[j].x, p[i].y - p[j].y);
+          if (d < MIN_ABSTAND && (!paar || d < paar[2])) paar = [i, j, d];
+        }
+      if (!paar) break;
+      const [i, j, d] = paar;
+      // Wer bewegt sich: nicht der an der vorderen Grenze; sonst der zweite
+      const [fest, los] = p[j].y <= MIN_Y && p[i].y > MIN_Y ? [j, i] : [i, j];
+      const dx = p[los].x - p[fest].x || 1;
+      const dy = p[los].y - p[fest].y;
+      const len = Math.hypot(dx, dy) || 1;
+      const um = 48 - d;
+      p[los].x = Math.max(0, Math.min(208, Math.round(p[los].x + (dx / len) * um)));
+      p[los].y = Math.max(MIN_Y, Math.round(p[los].y + (dy / len) * um));
+      verschoben.push(`${kx === "x" ? "Start" : kx === "x1" ? "Alternative 1" : "Alternative 2"}: pid ${p[los].z.match(/pid="(\d+)"/)?.[1]} → ${p[los].x}/${p[los].y}`);
+    }
+    for (const q of p) {
+      const alt = neu.get(q.z)!;
+      neu.set(q.z, alt.replace(new RegExp(`(\\s${kx}=")-?\\d+(")`), `$1${q.x}$2`).replace(new RegExp(`(\\s${ky}=")-?\\d+(")`), `$1${q.y}$2`));
+    }
+  }
+  let out = xml;
+  for (const [alt, n] of neu) out = out.replace(alt, n);
+  return { xml: out, verschoben };
+}
+
 // Neu erzeugte Taktik vollständig (Marcus, 01.11.2026: beim Import von 343kp fehlten die Wechselregeln; „das darfst du
 // nicht vergessen“, „die Taktiken müssen immer komplett durchdacht sein“): beste Elf und Bank (erzeugeTaktik, mit
 // Rot-Regel), Spielstand-Regeln wie oben, danach die Ausdauer-Wechsel der täglichen Prüfung (Startspieler unter Ausdauer 8
 // in der 70. durch den besten passenden Bankspieler, höchstens 3 Wechsel).
 export function erzeugeMitWechseln(opt: Parameters<typeof erzeugeTaktik>[0], reiter = "neu") {
   const e = erzeugeTaktik(opt);
-  const s = mitSpielstandRegeln(e.xml);
+  const s = mitSpielstandRegeln(abstaendeHalten(e.xml).xml);
   const c = pruefeTaktikGegenKader(reiter, s.xml, opt.kader, opt.spieltag);
   if (c.fehler) return { ...e, xml: s.xml, spielstand: s.regeln, wechsel: [] as string[], hinweise: [...e.hinweise, `Wechselregeln nicht ergänzt: ${c.fehler}`] };
   return { ...e, xml: c.xml, spielstand: s.regeln, wechsel: c.wechselregeln };
