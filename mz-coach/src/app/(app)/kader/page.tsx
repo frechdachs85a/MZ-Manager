@@ -1,9 +1,12 @@
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
-import { List, Row, Section } from "@/components/ui";
+import Link from "next/link";
+import { Card, List, Row, Section } from "@/components/ui";
 import { KaderAnsicht } from "@/components/kader-ansicht";
 import { LeistungTabelle } from "@/components/leistung-tabelle";
-import { leistungJeRolle } from "@/lib/spieler-leistung";
+import { imVisier, leistungJeRolle, MIN_MINUTEN } from "@/lib/spieler-leistung";
+import { startelfAusLetztemSpiel } from "@/lib/db/markt";
+import { posDe } from "@/lib/mz/formel";
 import type { KaderZeile } from "@/components/kader-tabelle";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
@@ -89,16 +92,43 @@ export default async function Kader(props: PageProps<"/kader">) {
         <KaderAnsicht basis="/kader" alle={alleSpieler} params={params} kombis={kombis} />
         {(() => {
           const lj = leistungJeRolle(db);
+          const elf = new Set(startelfAusLetztemSpiel(db)?.elf.map((x) => x.pid) ?? []);
+          const namen = new Map(alleSpieler.map((x) => [x.pid, x.name]));
+          const visier = imVisier(lj, elf, namen);
           const zeilen = alleSpieler
-            .flatMap((sp) => (lj.get(sp.pid) ?? []).map((l) => ({ name: sp.name, l })))
-            .sort((a, b) => a.l.rolle.localeCompare(b.l.rolle) || b.l.minuten - a.l.minuten);
+            .flatMap((sp) => (lj.get(sp.pid) ?? []).map((l) => ({ name: sp.name, l, startelf: elf.has(sp.pid) })))
+            .sort((a, b) => a.l.rolle.localeCompare(b.l.rolle) || Number(b.l.minuten >= MIN_MINUTEN) - Number(a.l.minuten >= MIN_MINUTEN) || b.l.minuten - a.l.minuten);
           return zeilen.length ? (
-            <Section
-              title="Leistung in Spielen je Rolle"
-              footer="Aus deinen gespeicherten Ligaspielen (L) und Scoutspielen (S) mit Stats-XML, je 90 Minuten. Rolle = Startplatz; Eingewechselte zählen auf der Rolle des Spielers, den sie ersetzen. Grau: unter 90 Minuten, wenig Daten. Hilft bei Wechselzeit und Aufstellung: liefert der Ersatz in der Rolle ähnlich viel, kann früher gewechselt werden."
-            >
-              <LeistungTabelle name zeilen={zeilen} />
-            </Section>
+            <>
+              <Section
+                title="Im Visier: Bankspieler mit starken Werten"
+                footer={`Bankspieler (nicht in der Startelf des letzten Spiels), die in ihrer Rolle bei Toren, Vorlagen oder Schüssen aufs Tor je 90 Minuten besser sind als jeder Startspieler dort. Nur ab ${MIN_MINUTEN} Minuten in der Rolle.`}
+              >
+                {visier.length ? (
+                  <Card className="divide-y divide-separator">
+                    {visier.map((v) => (
+                      <div key={`${v.pid}-${v.rolle}`} className="px-4 py-2.5 text-[14px]">
+                        <Link href={`/kader/${v.pid}`} className="font-semibold hover:underline">
+                          {v.name}
+                        </Link>{" "}
+                        <span className="text-label-2">
+                          als {posDe(v.rolle)} ({v.minuten} Min.):
+                        </span>{" "}
+                        {v.besser.join("; ")}
+                      </div>
+                    ))}
+                  </Card>
+                ) : (
+                  <p className="text-[14px] text-label-2">Derzeit kein Bankspieler mit genug Spielzeit, der einen Startspieler in seiner Rolle übertrifft.</p>
+                )}
+              </Section>
+              <Section
+                title="Leistung in Spielen je Rolle"
+                footer={`Alle Spieler mit Einsatzzeit aus deinen gespeicherten Ligaspielen (L) und Scoutspielen (S) mit Stats-XML, je 90 Minuten. Rolle = Startplatz; Eingewechselte zählen auf der Rolle des Spielers, den sie ersetzen. Startelf/Bank = Startelf des letzten Spiels. Grau: unter ${MIN_MINUTEN} Minuten in der Rolle, zu wenig Daten zum Vergleichen.`}
+              >
+                <LeistungTabelle name zeilen={zeilen} />
+              </Section>
+            </>
           ) : null;
         })()}
       </div>

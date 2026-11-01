@@ -22,7 +22,9 @@ export type Leistung = {
   quellen: { liga: number; scout: number };
 };
 
-export const MIN_MINUTEN = 90; // darunter nur als Hinweis „wenig Daten“
+// Mindestspielzeit je Rolle, ab der ein Spieler bewertet und verglichen wird: etwa zwei volle Spiele (Festlegung, kein
+// Spielwert; bei 90 würde ein einzelnes Spiel zu viel entscheiden, Marcus 01.11.2026: „Mindestmaß an Spielzeit festlegen“)
+export const MIN_MINUTEN = 180;
 
 const zahl = (x?: string) => Number(x ?? 0) || 0;
 
@@ -79,3 +81,30 @@ export function leistungJeRolle(db: Database.Database): Map<number, Leistung[]> 
 
 // Pro 90 Minuten
 export const je90 = (n: number, minuten: number) => (minuten ? Math.round((n / minuten) * 90 * 100) / 100 : 0);
+
+export type ImVisier = { pid: number; name: string; rolle: Position; minuten: number; besser: string[] };
+
+// Bankspieler (nicht in der Startelf des letzten Spiels), die in ihrer Rolle bei Toren, Vorlagen oder Schüssen aufs Tor
+// je 90 Minuten besser sind als jeder bewertbare Startspieler in dieser Rolle. Nur bewertbare Spieler (MIN_MINUTEN).
+export function imVisier(leistung: Map<number, Leistung[]>, startelf: Set<number>, namen: Map<number, string>): ImVisier[] {
+  const werte = [
+    { k: "tore" as const, text: "Tore" },
+    { k: "vorlagen" as const, text: "Vorlagen" },
+    { k: "schuesseAufsTor" as const, text: "Schüsse aufs Tor" },
+  ];
+  const zeilen = [...leistung.entries()].flatMap(([pid, l]) => l.filter((x) => x.minuten >= MIN_MINUTEN).map((x) => ({ pid, l: x })));
+  const out: ImVisier[] = [];
+  for (const z of zeilen) {
+    if (startelf.has(z.pid)) continue;
+    const stamm = zeilen.filter((x) => startelf.has(x.pid) && x.l.rolle === z.l.rolle);
+    if (!stamm.length) continue;
+    const besser: string[] = [];
+    for (const w of werte) {
+      const meins = je90(z.l[w.k], z.l.minuten);
+      const best = Math.max(...stamm.map((x) => je90(x.l[w.k], x.l.minuten)));
+      if (meins > best && meins > 0) besser.push(`${w.text} ${meins.toFixed(2).replace(".", ",")} je 90 (bester Startspieler ${best.toFixed(2).replace(".", ",")})`);
+    }
+    if (besser.length) out.push({ pid: z.pid, name: namen.get(z.pid) ?? `pid ${z.pid}`, rolle: z.l.rolle, minuten: z.l.minuten, besser });
+  }
+  return out.sort((a, b) => b.besser.length - a.besser.length || b.minuten - a.minuten);
+}

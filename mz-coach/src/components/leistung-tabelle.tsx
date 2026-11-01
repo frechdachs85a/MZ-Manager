@@ -7,7 +7,7 @@ const th = "px-3 py-2 text-right font-semibold first:pl-4 first:text-left last:p
 const td = "px-3 py-1.5 text-right tabular-nums first:pl-4 first:text-left last:pr-4";
 
 // Leistung je Rolle aus Spielen (je 90 Minuten); Zeilen mit wenig Spielzeit grau (Marcus, 01.11.2026)
-export function LeistungTabelle({ zeilen, name }: { zeilen: { name?: string; l: Leistung }[]; name?: boolean }) {
+export function LeistungTabelle({ zeilen, name }: { zeilen: { name?: string; l: Leistung; startelf?: boolean }[]; name?: boolean }) {
   return (
     <Card className="overflow-x-auto">
       <table className="w-full min-w-[620px] text-[13.5px]">
@@ -25,14 +25,24 @@ export function LeistungTabelle({ zeilen, name }: { zeilen: { name?: string; l: 
           </tr>
         </thead>
         <tbody className="divide-y divide-separator">
-          {zeilen.map(({ name: n, l }, i) => (
-            <tr key={i} className={l.minuten < MIN_MINUTEN ? "text-label-3" : ""} title={l.minuten < MIN_MINUTEN ? "Weniger als 90 Minuten: wenig Daten" : undefined}>
-              {name && <td className={td}>{n}</td>}
+          {zeilen.map(({ name: n, l, startelf }, i) => (
+            <tr key={i} className={l.minuten < MIN_MINUTEN ? "text-label-3" : ""} title={l.minuten < MIN_MINUTEN ? `Unter ${MIN_MINUTEN} Minuten in dieser Rolle: zu wenig Daten, wird nicht verglichen` : undefined}>
+              {name && (
+                <td className={td}>
+                  {n}
+                  {startelf !== undefined && (
+                    <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold ${startelf ? "bg-tint/12 text-tint" : "bg-fill text-label-2"}`}>{startelf ? "Startelf" : "Bank"}</span>
+                  )}
+                </td>
+              )}
               <td className={td}>{posDe(l.rolle)}</td>
               <td className={td}>
                 {l.spiele} <span className="text-label-3">({l.quellen.liga} L / {l.quellen.scout} S)</span>
               </td>
-              <td className={td}>{l.minuten}</td>
+              <td className={td}>
+                {l.minuten}
+                {l.minuten < MIN_MINUTEN && <span className="block text-[10.5px]">zu wenig Daten</span>}
+              </td>
               <td className={td}>{k(je90(l.tore, l.minuten))}</td>
               <td className={td}>{k(je90(l.vorlagen, l.minuten))}</td>
               <td className={td}>{k(je90(l.schuesseAufsTor, l.minuten))}</td>
