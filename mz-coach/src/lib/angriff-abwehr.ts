@@ -53,9 +53,9 @@ export function getrennt(spiele: SpielMuster[]) {
   };
 }
 
+export const topSpiele = (db: Database.Database) => topAuswertung(db).teams.flatMap((t) => [...t.liga.spiele, ...t.weltliga.spiele]);
 export function angriffAbwehrGetrennt(db: Database.Database) {
-  const { teams } = topAuswertung(db);
-  return getrennt(teams.flatMap((t) => [...t.liga.spiele, ...t.weltliga.spiele]));
+  return getrennt(topSpiele(db));
 }
 
 // Mindestzahl Spiele je Zelle, damit eine Zelle zählt (eigene Setzung; darunter entscheidet der Zufall zu viel)
@@ -90,4 +90,19 @@ export function datenWahl(g: ReturnType<typeof getrennt>, seineKette: string, se
       `Abwehr gegen seinen Angriff ${seinAngriffArt} (Top 10): ${b.map((z) => `${z.schluessel.replace(` gegen ${seinAngriffArt}`, "")} ${komma(z.gegentore)} Gegentore (${z.spiele} Spiele)`).join(", ")} → ${kette}.`,
     ],
   };
+}
+
+// Gegen welche Formation spielten die Topteams was (Marcus, 01.11.2026: „genau gucken, gegen welchen Gegner die Top-Teams
+// welche Taktik gespielt haben; Abwehr, Sturm und Mittelfeld beachten“): Schlüssel des Gegners = Abwehr-Mittelfeld-Sturm
+// seiner Startaufstellung plus Angriff über außen/eng; je Topteam-Antwort Formation und Einstellung (Taktik/Spielweise).
+export const formationKurz = (s: Stil) => `${s.formation.abwehr}-${s.formation.mittel}-${s.formation.sturm}`;
+export const gegnerSchluessel = (s: Stil) => `${formationKurz(s)} ${seinAngriff(s)}`;
+export const antwortSchluessel = (s: Stil) => `${formationKurz(s)} ${angriffsArt(s)}/${s.playstyle ?? "?"}`;
+
+export function gegenFormation(spiele: SpielMuster[]) {
+  const m = new Map<string, SpielMuster[]>();
+  for (const s of spiele) m.set(gegnerSchluessel(s.gegner), [...(m.get(gegnerSchluessel(s.gegner)) ?? []), s]);
+  return [...m.entries()]
+    .map(([gegner, sp]) => ({ gegner, spiele: sp.length, antworten: tabelle(sp, (s) => antwortSchluessel(s.eigen)).sort((a, b) => b.spiele - a.spiele) }))
+    .sort((a, b) => b.spiele - a.spiele);
 }
