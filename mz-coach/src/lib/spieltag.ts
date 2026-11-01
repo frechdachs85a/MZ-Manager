@@ -33,6 +33,7 @@ import { gegnerGewichte } from "@/lib/mz/taktik/gegner-gewichte";
 import { ligaAusArchiv } from "@/lib/mz/taktik/liga-anpassen";
 import { scoutAuswertung } from "@/lib/scout-auswertung";
 import { checkKurz, pruefeTaktikGegenKader } from "@/lib/taktik-check";
+import { mitSpielstandRegeln } from "@/lib/mz/taktik/mit-wechseln";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 
 // Spieltag (Auftrag Marcus, 26.10.2026): Spielbericht des letzten Ligaspiels und Taktikvorschlag für das nächste,
@@ -538,9 +539,13 @@ export function spieltagLage(db: Database.Database) {
           .map(([k, v]) => `${k}="${v.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`)
           .join(" ")} />`;
       const e = regeln.length ? erzeugeTaktik({ ...basis, regeln: regeln.map(zeile) }) : erst;
+      // Auch ohne Archiv-Grundlage vollständig (Marcus, 01.11.2026: „denke immer an sowas, wenn es um Taktiken geht“):
+      // fehlende Spielstand-Regeln wie in deinen Reitern, danach die Ausdauer-Wechsel der täglichen Prüfung
+      const mitStand = mitSpielstandRegeln(e.xml);
+      const voll = pruefeTaktikGegenKader(vorschlag.taktik, mitStand.xml, kaderAlle, spieltagDatum);
       return {
         reiter: vorschlag.taktik,
-        xml: e.xml,
+        xml: voll.fehler ? mitStand.xml : voll.xml,
         feld: e.elf.map((b) => ({ x: b.platz.x, y: b.platz.y, label: b.spieler.name.split(" ").at(-1)!, wert: b.spieler.marktwert, torwart: b.platz.torwart })) as FeldSpieler[],
         bank: e.bank.map((b) => b.spieler.name.split(" ").at(-1)!),
         kurz: [...(g?.kurz ?? ["Keine erwartete Aufstellung des Gegners: beste Elf ohne Gegnerbezug"]), ...(weg.length ? [`Wechselregeln nicht übernommen (Spieler nicht in Elf/Bank): ${weg.join(", ")}`] : [])],
