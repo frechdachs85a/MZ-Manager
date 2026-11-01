@@ -37,6 +37,9 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
 export const JUGEND = /^u(18|21|23)\b/i;
 export const BESSER = 0.1;
+// Nutzbare Reiter im Editor: A bis L (Marcus, 01.11.2026: „Taktiken kann ich nur bis L haben, die ab M sind ausgegraut und
+// nicht nutzbar“). Leere Reiter dahinter werden nie gefüllt.
+export const LETZTER_REITER = "l";
 // Mindestzahl Top-10-Spiele über alle Gegner, damit ein Stil ins vollständige Portfolio kommt (eigene Setzung)
 export const MIN_SPIELE_BREITE = 5;
 export const SPIEGEL_TOLERANZ = 6; // Punkte (eigene Setzung)
@@ -225,7 +228,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
 
   // 3. Freie Reiter mit Lücken und klar besseren Stilen füllen. Zuerst leere Reiter im Editor (Marcus, 01.11.2026: „du darfst
   // passende Taktiken vorschlagen und ins Portfolio aufnehmen“; so wird nichts überschrieben), danach doppelte (keine Jugend).
-  const leer = (ladeEditorReiter(db)?.reiter ?? []).filter((r) => r.spieler === 0).map((r) => r.name);
+  const leer = (ladeEditorReiter(db)?.reiter ?? []).filter((r) => r.spieler === 0 && r.slot.toLowerCase() <= LETZTER_REITER).map((r) => r.name);
   const frei: { reiter: string; wie: string; art: PortfolioPlan["doppelt"][number]["art"] | "leer" }[] = [
     ...leer.map((r) => ({ reiter: r, wie: "", art: "leer" as const })),
     ...doppelt
@@ -276,11 +279,33 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
         });
       }
     }
+  // 6. Seitenvarianten: einseitige Reiter ohne Gegenstück auf der anderen Seite
+  const seiteJe = new Map(archiv.map((a) => [a.reiter, eckSeite(a.taktik!.pos.filter((x) => x.pos === "normal").map((x) => x.start))]));
+  // Identische Kopien zählen nicht (sie sind frei und werden überschrieben)
+  const kopien = new Set(doppelt.filter((d) => d.art === "identisch").map((d) => d.reiter));
+  const ohneGegenstueck = archiv.filter((a) => {
+    if (kopien.has(a.reiter)) return false;
+    const seite = seiteJe.get(a.reiter);
+    if (seite !== "rechts" && seite !== "links") return false;
+    return !archiv.some(
+      (b) =>
+        b.reiter !== a.reiter &&
+        !kopien.has(b.reiter) &&
+        stilJe.get(b.reiter) === stilJe.get(a.reiter) &&
+        seiteJe.get(b.reiter) === (seite === "rechts" ? "links" : "rechts"),
+    );
+  });
+  // Seitenvarianten bewährter Stile gehen vor neue Stile (wenige freie Reiter: erst die Seite der besten Antworten abdecken)
+  const bewaehrtGesamt = (st?: string) => {
+    const g = st ? gesamt.get(st) : undefined;
+    return !!g && g.spiele >= MIN_SPIELE_BREITE && g.quote >= MIN_QUOTE;
+  };
+  const spiegelWichtig = ohneGegenstueck.filter((a) => bewaehrtGesamt(stilJe.get(a.reiter)));
   const breite = [...gesamt.values()]
     .filter((x) => x.spiele >= MIN_SPIELE_BREITE && x.quote >= MIN_QUOTE && !x.imArchiv.length && !stileDrin.has(x.schluessel))
     .sort((a, b) => b.spiele - a.spiele || b.quote - a.quote);
   for (const b of breite) {
-    if (luecken.length >= leereFrei) break;
+    if (luecken.length >= leereFrei - spiegelWichtig.length) break;
     luecken.push({ ...b, klasse: `alle Gegner (${b.S}/${b.U}/${b.N})` });
     stileDrin.add(b.schluessel);
   }
@@ -329,25 +354,11 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     }
   }
 
-  // 6. Seitenvarianten: einseitige Reiter ohne Gegenstück auf der anderen Seite
-  const seiteJe = new Map(archiv.map((a) => [a.reiter, eckSeite(a.taktik!.pos.filter((x) => x.pos === "normal").map((x) => x.start))]));
-  // Identische Kopien zählen nicht (sie sind frei und werden überschrieben)
-  const kopien = new Set(doppelt.filter((d) => d.art === "identisch").map((d) => d.reiter));
-  const ohneGegenstueck = archiv.filter((a) => {
-    if (kopien.has(a.reiter)) return false;
-    const seite = seiteJe.get(a.reiter);
-    if (seite !== "rechts" && seite !== "links") return false;
-    return !archiv.some(
-      (b) =>
-        b.reiter !== a.reiter &&
-        !kopien.has(b.reiter) &&
-        stilJe.get(b.reiter) === stilJe.get(a.reiter) &&
-        seiteJe.get(b.reiter) === (seite === "rechts" ? "links" : "rechts"),
-    );
-  });
   const belegt = new Set(vorschlaege.map((v) => v.reiter));
   const nochFrei = frei.filter((d) => !belegt.has(d.reiter) && !ohneGegenstueck.some((o) => o.reiter === d.reiter));
-  for (const [i, o] of ohneGegenstueck.entries()) {
+  // Zuerst die Seitenvarianten bewährter Stile, danach die übrigen
+  const spiegelReihe = [...spiegelWichtig, ...ohneGegenstueck.filter((o) => !spiegelWichtig.includes(o))];
+  for (const [i, o] of spiegelReihe.entries()) {
     const d = nochFrei[i];
     if (!d) break;
     const andere = seiteJe.get(o.reiter) === "rechts" ? "L" : "R";
