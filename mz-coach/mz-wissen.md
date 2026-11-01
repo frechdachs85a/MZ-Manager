@@ -71,6 +71,9 @@ Laufen gegen die Aufstellung aus dem letzten Ligaspiel des Gegners. Der Gegner s
 ## 4. Taktik-Editor: Regeln und Grenzen
 
 - x ca. 8 bis 200, y vorne mindestens 63, tiefste getestete Feldposition y 267
+- Liegt ein Spieler außerhalb (auch in Alternative 1 oder 2), lehnt ManagerZone den Import ab: „Fehler in Taktik: K – Nummer 10 befindet sich in einem unzulässigen Raum“ (01.11.2026, Pinheiro in Alternative 2 auf x 0). „Nummer“ = Rückennummer. Die App verschiebt deshalb nur innerhalb x 8 bis 200.
+- Ein leerer Reiter (0 Spieler) hat keinen Altersregler; nach dem ersten Import steht er auf 16 bis 38 (Meldung „Altersregler hat sich geändert“ ist dann harmlos, 01.11.2026 Reiter J).
+- Nutzbar sind die Reiter A bis L, ab M ausgegraut (Marcus, 01.11.2026).
 - Mindestabstand zwischen Spielern ca. 47
 - Zonen: Abwehr y ≥ 215 (belegt am Spielbericht Sydney FC vom 25.10.2026: Spieler bei y 215 = „Vert.“, bei y 190 = „Mi.“; korrigiert am 26.10.2026, vorher hier 222), 212 zählt als Mittelfeld, 213 und 214 nicht belegt. Sturm y ≤ 110 (112 = Mittelfeld, 111 nicht belegt)
 - Höchstens 3 Stürmer
@@ -113,6 +116,7 @@ Reihenfolge: Sprint, Ausdauer, Spielübersicht, Passen, Schuss, Kopfball, Torwar
 - Flügel: .25 .20 .06 .04 .05 0 0 .15 .05 .15 .05
 - Sturm: .23 .15 .05 .04 .28 .03 0 .15 .02 0 .05
 Standards, Form, Alter, Größe zählen nicht.
+Herkunft (geprüft 01.11.2026): ManagerZone veröffentlicht keine Formel. Die Gewichte sind aus dem Rechner von mzlive.eu (mzlive.eu/calculator) zurückgerechnet. Im MZ-Forum (Thread „The oxi.se top11 tool back online on new domain“, rondootje, 12.04.2024) stehen die Technik-Gewichte wörtlich: k .09, d .08, m .12, w .15, f .15, a .1 – genau wie oben. Kopfball-Gewichte stehen dort nicht; ein anderer Nutzer schreibt, das Tool bewerte Flanken/Kopfball nicht richtig. Kleine Gewichte (0 / 0,02 / 0,03) sind aus der Rückrechnung nicht sicher von 0 zu trennen. Marcus bezweifelt Kopfball 0 bei VT gegenüber 0,02 beim Sechser; zum Prüfen: im mzlive-Rechner nur Kopfball um 1 erhöhen (mzlive.eu ist in der Cloud-Sitzung gesperrt). Deshalb der eigene Kopfball-Zuschlag innen (Abschnitt 17).
 
 ## 7. Spieler-Regeln von Marcus
 
@@ -133,6 +137,27 @@ Standards, Form, Alter, Größe zählen nicht.
 - Test- und Scoutspiele kosten Geld, neue Taktiken lieber live gegen schwache Ligagegner testen
 
 ## 8. Taktiken im Editor (Reiter)
+
+Stand 01.11.2026 abends (vom Portfolio nach Top-10-Daten gebaut, Marcus: „Liga, freund und U18 sind fix, den Rest kannst du bauen, wie es nötig ist“). Namensschema: Formation + Taktik (fl = Flügel, kp = Kurzpass, lb = lange Bälle) + Spielweise (o = offensiv, d = defensiv, nichts = normal), höchstens 6 Zeichen; R/L am Ende = Angriffsseite.
+
+| Reiter | Name | Inhalt | Kopfball innen |
+|---|---|---|---|
+| A | außenR | 4-3-3 Flügel offensiv, Ecke rechts | ja |
+| B | außenL | 4-3-3 Flügel offensiv, Ecke links | ja |
+| C | 532flR | 5-3-2 Flügel offensiv, Angriff rechts (ersetzt kupass = 4-3-3 Kurzpass normal, bei Top 10 nicht bewährt) | ja |
+| D | 442flL | 4-4-2 Flügel normal, Angriff links (ersetzt 3313of/343flo = 3-4-3 Flügel offensiv, nicht bewährt) | nein |
+| E | 532flo | 5-3-2 Flügel offensiv, Angriff links (bis 01.11. „532de“), Lyon-Kopie | ja |
+| F | U18 | fest | nein |
+| G | Liga | fest, schreibt die Seite gegen den nächsten Gegner | je nach Gegner |
+| H | freund | fest | nein |
+| I | 343kp | 3-4-3 Kurzpass normal, gegen eng stehende Gegner | nein |
+| J | 433fl | 4-3-3 Flügel normal (Top 10: 6/1/3 in 10 Spielen) | nein |
+| K | 442fl | 4-4-2 Flügel normal, Angriff rechts (Top 10: 3/2/1) | nein |
+| L | 442flo | 4-4-2 Flügel offensiv (Top 10: 4/0/2) | nein |
+
+„Kopfball innen: ja“ = die Topteams spielen den Stil überwiegend gegen Gegner über außen; dort stehen die kopfballstarken Verteidiger innen (Nazarov Kb 9, Vranken Kb 9, Pinheiro Kb 8).
+
+Alte Tabelle (Beschreibung von Marcus, 25.10.2026), zur Nachvollziehbarkeit:
 
 | Reiter | Inhalt | Einsatz |
 |---|---|---|
@@ -187,6 +212,14 @@ Hinweis: Marktwerte sind die Werte vom Abrufdatum, nicht vom Spieltag. Alles Zus
 ### Aus dem MZ-Forum (Erfahrungsberichte, nicht offiziell)
 - Taktik-Guide (topic 12766444): Flügelspiel braucht Flügelspieler mit Sprint/Ausdauer mind. 9/8, Flanken mind. 8; Kurzpass braucht Passen, Spielübersicht, Technik überall; ein Spieler im Mittelkreis fängt die Abstöße ab; Verteidiger so nah wie möglich an die gegnerischen Flügelspieler; Abwehr in zwei Linien, nie die ganze Abwehr in den Strafraum.
 - Form-Thread (topic 12023582): Form ist ein Multiplikator, jeder Ball zählt; Form wird dienstags berechnet; Liga- und Freundschaftsspiele wirken positiv und negativ (Überspielen möglich), Pokale, Freundschaftsligen und Herausforderungen nur positiv; alle Spieler im Aufgebot (auch ungenutzte Bank) bekommen denselben Formeffekt; Trainingslager ändert die Form nicht; Faustregel bei Form 7 bis 10: 4 Freundschaftsspiele plus 2 Ligaspiele pro Woche.
+
+Ergänzung 01.11.2026 (190 Top-10-Spiele mit Startaufstellung beider Teams, je Team 19):
+- 9 von 10 Topteams stellen je nach Gegner um (zweite Aufstellung in mindestens 20 % der Spiele); nur THE ROKERY PIMKIS spielt fast immer 3-4-3 Kurzpass normal.
+- Muster: gegen Gegner über außen Flügel (4-3-3 Flügel offensiv, Pure Lyonnaise 5-3-2 Flügel offensiv 6/0/0 gegen 4-3-3 über außen); gegen eng stehende Gegner mit Dreier-/Viererkette (3-4-3, 4-4-2, 3-5-2 eng) 3-4-3 Kurzpass; gegen 5-3-2 eng trotzdem Flügel (4-3-3 Flügel offensiv 7/0/2) – widerspricht der alten Faustregel „Fünferkette → kupass“.
+- Größte Gruppe: 4-3-3 über außen (60 Spiele): 4-3-3 Flügel offensiv 32/0/7 (Tore 3,77 : 1,18), 5-3-2 Flügel offensiv 8/0/0 (4,50 : 0,63).
+- Real Kikkabu mit 4-3-3 Kurzpass normal gegen 4-3-3 über außen 0/0/2 und gegen 4-4-2 eng 0/0/2 (Grund, kupass zu ersetzen).
+- Getrennt: Abwehr gegen Außenangriff – Fünferkette 1,06 Gegentore (17 Spiele), Viererkette 1,58 (66), Dreierkette 2,31 (13). Angriff – Flügel gegen Viererkette 3,88 Tore (82), gegen 3er-Kette 3,67 (12); Kurzpass gegen Fünferkette 3,75 (8).
+- Zahlen zeigen Zusammenhang, keinen Beweis für Ursache; Topteams sind meist stärker als ihre Gegner. In der Diagnose: getrennt (angriff, abwehr, gesamt, gegenFormation, teams).
 
 ## 10. Faustregeln Gegneranalyse
 
@@ -387,3 +420,16 @@ Arbeitsweise
 - Fehleranalyse Biene Maja (01.11.2026, 1:1): Die Liga-Abwehr gab jedem Abwehrplatz den Aufschlag seines nächsten Angreifers; zwei Plätze (x 127 und x 175) zählten so beide für Galvan, Nazarov landete außen, wo niemand angriff (Galvan spielte gegen Zahl, Salqvist gegen Chille). Korrigiert: jeder Angreifer gehört genau zu einem Abwehrplatz (nächster, eins zu eins). Außerdem galt als erwartete Elf die häufigste der Saison, bei Gleichstand die älteste; jetzt: hat er zuletzt mindestens zweimal hintereinander gleich aufgestellt, gilt diese neueste Elf (Trend), sonst die häufigste, bei Gleichstand die neueste.
 - Vorhersage „wie spielt er gegen mich?“ (Marcus, 01.11.2026: Schere, Stein, Papier; Kern des Programms): 1. Trend: zuletzt mindestens zweimal hintereinander gleich aufgestellt → so erwartet. 2. Wechselt er: seine Aufstellung zuletzt gegen Gegner wie dich (dein Gegnertyp aus deinen letzten 3 Ligaspielen: Fünferkette, enge Mitte, mit Außenspielern). 3. Sonst seine häufigste. Die erwartete Aufstellung ist Grundlage für Gegnertyp, Faustregel (Fünferkette/enge Mitte → kupass, sonst außenR), Top-10-Belege, Duelle und Formation Liga.
 - Seitenvarianten: Greift die Liga über seine schwächere Abwehrseite an und wäre außenR dafür gespiegelt worden, gilt gleich außenL (und umgekehrt), überall gleich benannt (01.11.2026: „du sagst außenR, zeigst aber außenL“).
+
+Ergänzungen 01.11.2026 abends:
+- Nächster Ligaspieltag (ligaspieltag, db/spieltag.ts): Anstoß aus dem Spielplan, solange nicht vorbei; sonst Regel mittwochs/sonntags, aber nicht der heutige Tag, wenn das heutige Spiel schon ausgewertet ist. Fehler bis dahin: am Sonntagabend galt noch der Sonntag, Rückkehrer aus dem Trainingslager am Dienstag zählten fürs Mittwochsspiel nicht.
+- Trainingslager: endet es vor dem Spieltag, ist der Spieler einsetzbar („wieder einsatzbereit“); endet es am Spieltag selbst, gilt er als unklar und wird nicht eingeplant.
+- Abstände: Startaufstellungen der Topteams liegen nach dem Umrechnen aus der Stats-XML manchmal knapp unter 47. Die App schiebt alle zu engen Paare gleichzeitig auseinander und prüft nach dem Runden erneut (vorher pendelte ein Spieler zwischen zwei anderen hin und her, und Runden ließ Abstände wieder unter 47 fallen).
+- Alternativen 1 und 2 stehen nicht im Spielbericht; bei kopierten Topteam-Aufstellungen überträgt die App die Verschiebungen aus dem ähnlichsten eigenen Reiter.
+- Seitenvariante: Die Seitenwahl tauscht jeden Reiter gegen einen mit gleichem Stil, der auf seine schwächere Abwehrseite angreift (außenR ↔ außenL, 532flR ↔ 532flo, 442fl ↔ 442flL).
+- Prüf-Gate und Portfolio-Übernahme: Kopfball innen nach dem Stil der XML, die geschrieben wird, nicht nach dem bisherigen Inhalt des Reiters.
+- Fern-Zugang (nur Claude): zusätzlich art=portfolio-uebernehmen&reiter=, art=umbenennen&reiter=&name=; Diagnose zeigt gegenAussen, getrennt, ligaEinsatz (nicht bereite Spieler, Liga mit Zugängen), portfolio.positionen.
+- Offen: Die App wertet einen Eckstürmer (z. B. Hyuga auf x 8 / y 63) als Flügel, nicht als Stürmer. Dadurch wird als 50.-Minuten-Ersatz für Hyuga Mauer (Flügel 7,99) statt Cavalcante (Flügel 7,51, Sturm 8,61) gewählt. Ob ManagerZone den Eckstürmer eher wie Flügel oder Sturm bewertet, ist nicht belegt; Marcus fragen bzw. an Spielen prüfen.
+- Zugang Anier Atarratze (pid 226107839, 28, VT): gekauft 31.10.2026 22:04 für 1.400.002 EUR von ZET (Bietomat), Skills Sp 9 Au 8 Sü 6 Pa 7 Sch 2 Kb 0 Tw 1 Te 9 Zk 10 Fl 10 Erf 10, VT-Wert 9,01. Mit Kopfball 0 gehört er gegen Außen-Gegner nach außen, nicht innen.
+- Rückkehrer aus dem Trainingslager am Di 03.11.2026: Fleur (12, Torwart 8,36), Misugi (16, Sturm 8,33), Peschke (18, MF 8,37 / VT 8,36), Scholze (20, Sturm 8,00).
+
