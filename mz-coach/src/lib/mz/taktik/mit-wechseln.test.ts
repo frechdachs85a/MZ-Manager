@@ -3,7 +3,7 @@ import { FORMEL_SKILLS, type Skills } from "@/lib/mz/skills";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { parseTaktikXml } from "./xml";
 import { pruefeTaktik } from "./pruefer";
-import { abstaendeHalten, erzeugeMitWechseln, mitSpielstandRegeln } from "./mit-wechseln";
+import { abstaendeHalten, erzeugeMitWechseln, mitSpielstandRegeln, unpassendeRegelnEntfernen } from "./mit-wechseln";
 
 // Erfundene Testdaten: zwei Startspieler mit Ausdauer 7, genug Bank
 const sk = (w: number, ausdauer = 9, torwart = 2): Skills =>
@@ -68,5 +68,19 @@ describe("Spielstand-Regeln einzeln ergänzen", () => {
     expect(r.regeln.map((x) => x.split(":")[0])).toEqual(["ab 65. bei 2 Toren Rückstand", "ab 70. bei Führung", "ab 80. bei Gleichstand"]);
     expect(r.xml).toContain('time="55"');
     expect(mitSpielstandRegeln(r.xml).regeln).toEqual([]);
+  });
+});
+
+describe("Führungsregel nur bei offensiver Grundeinstellung", () => {
+  const regel = `<TacticRule name="Taktikregel" check_time="true" time="70" check_goal_condition="true" goal_condition="ahead_by_at_least" goals="1" check_player_event="false" player_event_player_type="anyone" player_event="receives_yellow" out_player="no_change" in_player_id="NULL" tactics="no_change" playstyle="normal" aggression="no_change" formation="no_change" />`;
+  const xml = (ps: string) => `<SoccerTactics>\n<Team tactics="shortpass" playstyle="${ps}" aggression="passive" captain="2" />\n\t${regel}\n</SoccerTactics>`;
+  it("entfernt sie bei defensiv und ergänzt sie dort nicht", () => {
+    const r = unpassendeRegelnEntfernen(xml("defensive"));
+    expect(r.xml).not.toContain("ahead_by_at_least");
+    expect(r.entfernt).toHaveLength(1);
+    expect(mitSpielstandRegeln(r.xml).xml).not.toContain("ahead_by_at_least");
+  });
+  it("lässt sie bei offensiv", () => {
+    expect(unpassendeRegelnEntfernen(xml("offensive")).entfernt).toEqual([]);
   });
 });
