@@ -182,7 +182,7 @@ export function pruefeTaktikGegenKader(
       if (kand && kand.pid !== rein && (!jetztOk || w(kand) >= w(jetzt) + MIN_GEWINN)) {
         neuRein.set(ri, kand.pid);
         vergeben.add(kand.pid);
-        bank.push(`${r.time}. für ${kurz(nachPid.get(raus), raus)}: ${kurz(jetzt, rein)}${jetzt ? ` ${komma(w(jetzt))}` : ""} → ${kurz(kand)} ${komma(w(kand))}${jetztOk ? "" : ` (${kurz(jetzt, rein)} ${ausfallGrund(jetzt)})`}`);
+        bank.push(`${r.time}. für ${kurz(nachPid.get(raus), raus)}: ${kurz(jetzt, rein)}${jetzt ? ` ${komma(w(jetzt))}` : ""} → ${kurz(kand)} ${komma(w(kand))}${jetztOk ? "" : ` (${kurz(jetzt, rein)} ${elf.has(rein) ? "steht in der Elf" : vergeben.has(rein) ? "schon für eine andere Regel eingeplant" : ausfallGrund(jetzt)})`}`);
       } else if (jetztOk) vergeben.add(rein);
     });
     // 2. und 3. Bankplätze in Reihenfolge der XML
