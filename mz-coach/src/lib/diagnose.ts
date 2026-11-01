@@ -9,7 +9,11 @@ import { letzterLauf } from "@/lib/db/spieltag";
 import { bewerteMarkt } from "@/lib/mz/analyse/markt";
 import { mzWert } from "@/lib/mz/formel";
 import { FORMEL_SKILLS } from "@/lib/mz/skills";
-import { checkKurz, reiterGegenAussen, taktikCheck } from "@/lib/taktik-check";
+import { checkKurz, pruefeTaktikGegenKader, reiterGegenAussen, taktikCheck } from "@/lib/taktik-check";
+import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
+import { alsKader, zugaenge } from "@/lib/zugaenge";
+import { heuteInBerlin } from "@/lib/format";
+import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 import { istInnenverteidigung } from "@/lib/mz/taktik/gegner-gewichte";
 import { angriffAbwehrGetrennt, gegenFormation, teamWechsel, topSpiele, topTeamsMitSpielen } from "@/lib/angriff-abwehr";
 import { portfolioPlan, vorschlagText } from "@/lib/portfolio-plan";
@@ -283,6 +287,28 @@ export function diagnose(db: Database.Database) {
   } catch (e) {
     regeln = { fehler: e instanceof Error ? e.message : String(e) };
   }
+  // Einsatz im nächsten Ligaspiel (Trainingslager-Rückkehrer) und Liga mit den Zugängen (Marcus, 01.11.2026: „wer kommt bis
+  // dahin aus dem Trainingslager, und mit dem Neuen: wen rausnehmen, wen dafür?“)
+  let ligaEinsatz: unknown = null;
+  try {
+    const spieltag = naechsterLigaspieltag(heuteInBerlin());
+    const kaderL = ladeKader(db);
+    const nichtBereit = kaderL
+      .map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }))
+      .filter(({ e }) => e.lage !== "bereit")
+      .map(({ s, e }) => ({ nr: s.nr, name: s.name, lage: e.lage, text: e.text, ende: s.trainingslagerInfo?.ende }));
+    const liga = ladeTaktiken(db).find((t) => /^liga$/i.test(t.reiter));
+    const neu = zugaenge(db, kaderL).map((z) => ({ ...alsKader(z.spieler), status: { aufstellbar: true } }));
+    const mit = liga ? pruefeTaktikGegenKader("Liga", liga.xml, [...kaderL, ...neu], spieltag, undefined, { kopfballInnen: true }) : null;
+    ligaEinsatz = {
+      spieltag: spieltag.toISOString(),
+      nichtBereit,
+      zugaenge: neu.map((z) => z.name),
+      ligaMitZugaengen: mit ? { aenderungen: checkKurz(mit), fehler: mit.fehler } : null,
+    };
+  } catch (e) {
+    ligaEinsatz = { fehler: e instanceof Error ? e.message : String(e) };
+  }
   // Angriff und Abwehr getrennt aus den Top-10-Spielen (Marcus, 01.11.2026)
   let getrenntAuswertung: unknown = null;
   try {
@@ -318,6 +344,7 @@ export function diagnose(db: Database.Database) {
     leistung = { fehler: e instanceof Error ? e.message : String(e) };
   }
   return {
+    ligaEinsatz,
     getrennt: getrenntAuswertung,
     gegenAussen,
     leistung,
