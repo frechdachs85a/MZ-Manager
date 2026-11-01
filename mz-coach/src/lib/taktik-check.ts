@@ -10,6 +10,7 @@ import { KOPFBALL_GEWICHT, istInnenverteidigung } from "@/lib/mz/taktik/gegner-g
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { ausdauerPlan, MAX_WECHSEL_SPIEL } from "@/lib/skill-bilanz";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
+import { portfolioAnalyse } from "@/lib/portfolio";
 
 // Täglicher Taktik-Check (Marcus, 30.10.2026): Skills ändern sich (Bälle dazu, ältere Spieler verlieren Ausdauer oder
 // Sprint). Für jede Taktik im Archiv: Plätze bleiben, Besetzung neu nach MZ-Wert der Rolle des Platzes (mz-wissen.md,
@@ -138,7 +139,7 @@ export function pruefeTaktikGegenKader(
           ? istPrio(neu[i]) && fehltPrio.includes(neu[i])
             ? `Nr. ${neu[i].nr} soll Spielpraxis bekommen`
             : innen[i] && (neu[i].skills.kopfball?.wert ?? 0) > (alt?.skills.kopfball?.wert ?? 0)
-              ? `Kopfball ${neu[i].skills.kopfball?.wert ?? "?"} statt ${alt?.skills.kopfball?.wert ?? "?"} (er spielt über außen)`
+              ? `Kopfball ${neu[i].skills.kopfball?.wert ?? "?"} statt ${alt?.skills.kopfball?.wert ?? "?"} (gegen Gegner über außen)`
               : undefined
           : alt && !imAlter(alt)
             ? `nicht im Alter ${alter!.von} bis ${alter!.bis}`
@@ -190,15 +191,36 @@ export function alterGrenze(db: Database.Database, reiter: string): AlterGrenze 
 }
 
 // Alle Taktiken im Archiv prüfen (gegen den Kader und die Aufstellbarkeit am nächsten Ligaspieltag)
+// Reiter gegen Gegner, die über außen spielen (Marcus, 01.11.2026: „die Taktiken aus unserem Schere-Stein-Papier-System gegen
+// Gegner über außen so anordnen, dass die kopfballstarken Leute in der Innenverteidigung stehen“): die Reiter der Faustregel
+// gegen „mit Außenspielern“ (außenR und die Seitenvariante außenL, mz-wissen.md, Abschnitt 10) und alle Reiter, deren Stil bei
+// den Top 10 gegen „mit Außenspielern“ bewährt ist (Taktik-Portfolio). Liga baut die Seite selbst gegen den Gegner, freund und
+// Altersreiter zählen nicht.
+export function reiterGegenAussen(db: Database.Database): Set<string> {
+  const out = new Set<string>(["außenr", "aussenr", "außenl", "aussenl"]);
+  try {
+    const k = portfolioAnalyse(db).klassen.find((x) => x.klasse === "mit Außenspielern");
+    for (const st of k?.stile ?? []) if (st.bewaehrt) for (const r of st.imArchiv) out.add(r.toLowerCase());
+  } catch {
+    // ohne Top-10-Daten nur die Faustregel
+  }
+  for (const r of [...out]) if (/^liga$/i.test(r) || /^freund/i.test(r) || /^u(18|21|23)\b/i.test(r)) out.delete(r);
+  return out;
+}
+
+// Prüfoptionen eines Reiters: Kopfball innen für Reiter gegen Gegner über außen
+export const reiterOptionen = (gegenAussen: Set<string>, reiter: string) => ({ kopfballInnen: gegenAussen.has(reiter.toLowerCase()) });
+
 export function taktikCheck(db: Database.Database): TaktikCheck[] {
   const kader = ladeKader(db);
+  const aussen = reiterGegenAussen(db);
   const spieltag = naechsterLigaspieltag(heuteInBerlin());
   // Nur Reiter, die es im Editor gibt (sobald der Editor einmal gelesen wurde); „Liga“ schreibt die Seite selbst
   const editor = ladeEditorReiter(db);
   const da = (r: string) => !/^liga$/i.test(r) && (!editor || editor.reiter.some((e) => e.name.toLowerCase() === r.toLowerCase()));
   return ladeTaktiken(db).filter((t) => da(t.reiter)).map((t) => {
     try {
-      return pruefeTaktikGegenKader(t.reiter, t.xml, kader, spieltag, alterGrenze(db, t.reiter));
+      return pruefeTaktikGegenKader(t.reiter, t.xml, kader, spieltag, alterGrenze(db, t.reiter), reiterOptionen(aussen, t.reiter));
     } catch (e) {
       return { reiter: t.reiter, ok: true, aenderbar: false, aenderungen: [], wechselregeln: [], gewinn: 0, xml: t.xml, fehler: e instanceof Error ? e.message : String(e) };
     }

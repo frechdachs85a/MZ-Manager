@@ -109,6 +109,6 @@ describe("Taktik-Check: höchstens 3 Wechsel", () => {
     const r = pruefeTaktikGegenKader("a", xml(), [...k, bank], tag, undefined, { kopfballInnen: true });
     const t = parseTaktikXml(r.xml);
     expect(t.pos.find((p) => p.start.x === 104 && p.start.y === 250)?.pid).toBe(12);
-    expect(r.aenderungen.find((a) => a.neu === "12")?.grund).toBe("Kopfball 9 statt 3 (er spielt über außen)");
+    expect(r.aenderungen.find((a) => a.neu === "12")?.grund).toBe("Kopfball 9 statt 3 (gegen Gegner über außen)");
   });
 });
