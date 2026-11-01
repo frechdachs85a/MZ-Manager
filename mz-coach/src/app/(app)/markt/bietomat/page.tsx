@@ -44,6 +44,15 @@ export default async function BietomatSeite() {
         anzahl={{ "/markt": vorschlaege, "/markt/watchlist": watchAnzahl, "/markt/bietomat": auftraege.filter((a) => a.status === "aktiv").length }}
       />
       <div className="seite">
+        {/* Spieler selbst eintragen ganz oben (Marcus, 01.11.2026: war unter dem Protokoll nicht zu finden) */}
+        <div id="neu" className="scroll-mt-20">
+          <Section
+            title="Spieler selbst eintragen"
+            footer="Spielernummer oder Name eintippen: Suche über das Feld Name/ID von ManagerZone, sonst mit den Standardfiltern der Marktseite. Mehrere Treffer: aus der Liste wählen. Danach Endpreis eingeben, der Bietomat bietet dann automatisch."
+          >
+            <Bietomat saldo={saldo} />
+          </Section>
+        </div>
         {/* Deine Gebote als Spielerkarten wie in Vorschläge und Watchlist, dazu dein Gebot (Marcus, 31.10.2026) */}
         <Section title="Deine Gebote" footer="Der Bietomat bietet kurz vor Schluss Stufe für Stufe bis höchstens zum Endpreis, auch bei Verlängerung.">
           {auftraege.length ? (
@@ -98,7 +107,7 @@ export default async function BietomatSeite() {
           ) : (
             <Unavailable
               title="Gebote"
-              reason="Noch kein Gebot. Spieler auf der Watchlist mit einem Endpreis in den Bietomat geben oder unten per Nummer laden."
+              reason="Noch kein Gebot. Spieler auf der Watchlist mit einem Endpreis in den Bietomat geben oder oben per Nummer oder Name eintragen."
             />
           )}
         </Section>
@@ -194,12 +203,6 @@ export default async function BietomatSeite() {
       </div>
       <div className="seite flex flex-col lg:grid lg:grid-cols-2 lg:gap-x-8">
         <div className="order-2 lg:order-2">
-          <Section
-            title="Neuer Auftrag"
-            footer="Spielernummer oder Name eintippen: Suche über das Feld Name/ID von ManagerZone, sonst mit den Standardfiltern der Marktseite. Mehrere Treffer: aus der Liste wählen."
-          >
-            <Bietomat saldo={saldo} />
-          </Section>
           <Section title="Automatisches Bieten">
             <List>
               <Row
