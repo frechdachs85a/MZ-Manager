@@ -10,7 +10,8 @@ import { KOPFBALL_GEWICHT, istInnenverteidigung } from "@/lib/mz/taktik/gegner-g
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { ausdauerPlan, MAX_WECHSEL_SPIEL } from "@/lib/skill-bilanz";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
-import { portfolioAnalyse } from "@/lib/portfolio";
+import { portfolioAnalyse, stilSchluessel } from "@/lib/portfolio";
+import { formation } from "@/lib/mz/analyse/gegner";
 
 // Täglicher Taktik-Check (Marcus, 30.10.2026): Skills ändern sich (Bälle dazu, ältere Spieler verlieren Ausdauer oder
 // Sprint). Für jede Taktik im Archiv: Plätze bleiben, Besetzung neu nach MZ-Wert der Rolle des Platzes (mz-wissen.md,
@@ -206,6 +207,18 @@ export function reiterGegenAussen(db: Database.Database): Set<string> {
   }
   for (const r of [...out]) if (/^liga$/i.test(r) || /^freund/i.test(r) || /^u(18|21|23)\b/i.test(r)) out.delete(r);
   return out;
+}
+
+// Gegen Gegner über außen auch für einen neuen Reiter (noch nicht im Archiv): Stil (Formation, Taktik, Spielweise) ist bei den
+// Top 10 gegen „mit Außenspielern“ bewährt
+export function stilGegenAussen(db: Database.Database, xml: string): boolean {
+  try {
+    const t = parseTaktikXml(xml);
+    const schluessel = stilSchluessel(formation(t.pos.filter((p) => p.pos === "normal").map((p) => p.start)).text, t.team.tactics, t.team.playstyle);
+    return !!portfolioAnalyse(db).klassen.find((x) => x.klasse === "mit Außenspielern")?.stile.some((st) => st.bewaehrt && st.schluessel === schluessel);
+  } catch {
+    return false;
+  }
 }
 
 // Prüfoptionen eines Reiters: Kopfball innen für Reiter gegen Gegner über außen
