@@ -10,6 +10,7 @@ import { FREUND } from "@/lib/freund-check";
 import { istAltersreiter, ladeEditorReiter } from "@/lib/db/taktik";
 import { archivLaden } from "@/lib/taktik-archiv";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Fehlende Spielertypen für erfolgreiche Top-10-Taktiken (Marcus, 01.11.2026): Gibt es einen bei den Top 10 bewährten
 // Stil, der gegen einen Gegnertyp besser abschneidet als dein bester bewährter Stil dagegen, den du aber nicht als Reiter
@@ -34,7 +35,7 @@ export const MAX_STILE = 3;
 export function taktikLuecken(db: Database.Database, kaderEcht: SpielerDaten[], schwelle: number): TaktikLuecke[] {
   // Ob dir ein Spielertyp fehlt, hängt nicht am Trainingslager oder einer Verletzung: alle als einsetzbar rechnen
   const kader = kaderEcht.map((s) => ({ ...s, status: { ...s.status, trainingslager: false, verletzt: false, gesperrt: false, aufstellbar: true } }));
-  const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const spieltag = ligaspieltag(db);
   const besetzen = (feld: { x: number; y: number }[], torwart: { x: number; y: number } | undefined, tactics?: string, playstyle?: string) => {
     try {
       return erzeugeTaktik({ feld, torwart, tactics, playstyle, kader, spieltag })

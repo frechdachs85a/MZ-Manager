@@ -10,6 +10,7 @@ import { istAltersreiter, ladeEditorReiter } from "@/lib/db/taktik";
 import { FREUND } from "@/lib/freund-check";
 import { spiegelX } from "@/lib/mz/taktik/gegner-gewichte";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Portfolio-Plan (Marcus, 30.10.2026: die Reiter sollen ein Portfolio sein, optimal für dein Team und abwechslungsreich,
 // damit es gegen jeden Gegnertyp eine gute Antwort gibt). Täglich aus dem Archiv und den Top-10-Spielen:
@@ -326,7 +327,7 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   }
 
   const kader = ladeKader(db);
-  const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const spieltag = ligaspieltag(db);
   const vorschlaege: PortfolioVorschlag[] = [];
   const namen = new Set(archiv.map((a) => a.reiter));
   for (const [i, d] of frei.entries()) {

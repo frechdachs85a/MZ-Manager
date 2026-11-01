@@ -5,7 +5,7 @@ import { ladeRohseite, letzteRohseite } from "@/lib/db/abruf";
 import { tabelleAus } from "@/lib/mz/parser/tabelle";
 import { TEAM } from "@/lib/wissen/startbasis";
 import { scoutAuswertung } from "@/lib/scout-auswertung";
-import { letzterLauf } from "@/lib/db/spieltag";
+import { letzterLauf, ligaspieltag } from "@/lib/db/spieltag";
 import { bewerteMarkt } from "@/lib/mz/analyse/markt";
 import { mzWert } from "@/lib/mz/formel";
 import { FORMEL_SKILLS } from "@/lib/mz/skills";
@@ -291,15 +291,16 @@ export function diagnose(db: Database.Database) {
   // dahin aus dem Trainingslager, und mit dem Neuen: wen rausnehmen, wen dafür?“)
   let ligaEinsatz: unknown = null;
   try {
-    const spieltag = naechsterLigaspieltag(heuteInBerlin());
+    const spieltag = ligaspieltag(db);
     const kaderL = ladeKader(db);
     const nichtBereit = kaderL
       .map((s) => ({ s, e: einsatzImLigaspiel(s, spieltag) }))
       .filter(({ e }) => e.lage !== "bereit")
       .map(({ s, e }) => ({ nr: s.nr, name: s.name, lage: e.lage, text: e.text, ende: s.trainingslagerInfo?.ende }));
-    const liga = ladeTaktiken(db).find((t) => /^liga$/i.test(t.reiter));
+    // Liga so, wie die Seite sie gegen den Gegner baut (spieltagLage), dann mit den Zugängen erneut prüfen
+    const ligaXml = spieltagLage(db).liga?.xml;
     const neu = zugaenge(db, kaderL).map((z) => ({ ...alsKader(z.spieler), status: { aufstellbar: true } }));
-    const mit = liga ? pruefeTaktikGegenKader("Liga", liga.xml, [...kaderL, ...neu], spieltag, undefined, { kopfballInnen: true }) : null;
+    const mit = ligaXml ? pruefeTaktikGegenKader("Liga", ligaXml, [...kaderL, ...neu], spieltag, undefined, { kopfballInnen: true }) : null;
     ligaEinsatz = {
       spieltag: spieltag.toISOString(),
       nichtBereit,
