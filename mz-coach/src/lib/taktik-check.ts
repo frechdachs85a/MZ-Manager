@@ -30,8 +30,10 @@ export type AlterGrenze = { von: number; bis: number };
 const istPrio = (s: SpielerDaten) => s.nr !== undefined && s.nr >= PRIO_NR.von && s.nr <= PRIO_NR.bis;
 export const BONUS_JETZT = 0.05;
 export const MIN_GEWINN = 0.2;
-// 60. Minute wie in deinen Reitern (Marcus, 01.11.2026: „optimal wie die anderen“); Top 10 wechseln am häufigsten 55. bis 60.
-export const WECHSEL_MINUTE = 60;
+// 70. Minute für Ausdauer unter 8 (Marcus, 01.11.2026, eigene Daten): Hyuga mit Ausdauer 7 schafft es bis etwa zur 75. bis 80.
+// und ist deutlich wirksamer als sein Ersatz (außenR: 8 Vorlagen bis zur 50., Ishizaki danach 0 Vorlagen, Zweikämpfe 2:11).
+// Die Top-10-Zahl (häufigste Wechselminute 55.) gilt für alle Wechsel und setzt einen gleich guten Ersatz voraus.
+export const WECHSEL_MINUTE = 70;
 
 export type PlatzAenderung = { rolle: Position; x: number; y: number; alt: string; altWert?: number; neu: string; neuWert: number; grund?: string };
 export type TaktikCheck = {
