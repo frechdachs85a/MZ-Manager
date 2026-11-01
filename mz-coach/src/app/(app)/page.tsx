@@ -25,12 +25,13 @@ import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
 import { StatusBadges } from "@/components/status";
 import { datumZeit, heuteInBerlin } from "@/lib/format";
 import { naechsterLigaspieltag, TEAM } from "@/lib/wissen/startbasis";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Seite Zentrale
 export default async function Uebersicht() {
   await connection(); // Datum pro Anfrage, nicht beim Build
-  const spieltag = naechsterLigaspieltag(heuteInBerlin());
   const db = getDb();
+  const spieltag = ligaspieltag(db);
   const { bilanz, warnungen: verlust } = skillBilanz(db, 14);
   // Reiter, bei denen die Taktikseite eine Änderung vorschlägt (Besetzung/Wechsel, überschreiben, Name, freund)
   const taktikReiter = reiterUebersicht(db)

@@ -20,6 +20,7 @@ import { ALLE_SKILLS, SKILL_LABEL } from "@/lib/mz/skills";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { ScoutAbzeichen } from "@/components/scout-abzeichen";
 import { ladeKombis, scoutEinstufung, skillPrognose, type ScoutEinstufung } from "@/lib/scout";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Seite eines eigenen Spielers
 export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
@@ -226,7 +227,7 @@ const stand = (iso?: string) => (iso ? `Stand ${datumZeit(iso)}` : "Seite noch n
 function StatusListe({ s }: { s: SpielerDaten }) {
   const st = s.status ?? {};
   const ss = s.statusStand ?? {};
-  const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const spieltag = ligaspieltag(getDb());
   const einsatz = einsatzImLigaspiel(s, spieltag);
   const tl = s.trainingslagerInfo;
   const jaNein = (v?: boolean) => (v === undefined ? "nicht verfügbar" : v ? "ja" : "nein");

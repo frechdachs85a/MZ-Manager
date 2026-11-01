@@ -7,6 +7,7 @@ import { erzeugeMitWechseln } from "@/lib/mz/taktik/mit-wechseln";
 import { JUGEND, nameFuer } from "@/lib/portfolio-plan";
 import type { StilEintrag } from "@/lib/portfolio";
 import { archivLaden } from "@/lib/taktik-archiv";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Portfolio-Lücke gegen den nächsten Ligagegner (Marcus, 31.10.2026): Gibt es gegen den Typ des Gegners einen bei den
 // Top 10 bewährten Stil, den du nicht als Reiter hast, und ist er besser als dein bester Stil gegen diesen Typ, dann ein
@@ -45,7 +46,7 @@ export function gegnerLuecke(db: Database.Database, klasse: string | undefined, 
       playstyle: m?.[2],
       aggression: fehlend.haerte[0]?.[0],
       kader: ladeKader(db),
-      spieltag: naechsterLigaspieltag(heuteInBerlin()),
+      spieltag: ligaspieltag(db),
     }, "neu", ladeTaktiken(db));
   } catch {
     return null; // zu wenige aufstellbare Spieler

@@ -8,6 +8,7 @@ import { TAKTIK_PFAD, meldungAus, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
 import { ladeTaktiken, loescheTaktik, speichereFortschritt, speichereTaktikXml } from "@/lib/db/taktik";
 import { reiterAusEditor, reiterSpeichern, type GelesenerReiter } from "./editor-reiter";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Formation "Liga" in ManagerZone hinterlegen (Auftrag Marcus, 26.10.2026): nach jeder Spieltag-Analyse die berechnete
 // Aufstellung gegen den nächsten Gegner in den Editor-Reiter mit dem Namen "Liga" schreiben. Welcher Reiter im Spiel
@@ -441,7 +442,7 @@ async function vollstaendigGeprueft(db: Database.Database, reiter: string, xml: 
   // Maßgeblich ist der Stil der XML, die geschrieben wird (nicht der bisherige Inhalt des Reiters): wird 343flo durch 442flL
   // ersetzt, gilt der Stil von 442flL. außenR und außenL immer (Faustregel).
   const kopfballInnen = /^au(ß|ss)en[rl]$/i.test(reiter) || stilGegenAussen(db, xml);
-  const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), { kopfballInnen });
+  const c = pruefeTaktikGegenKader(reiter, xml, kader, ligaspieltag(db), alterGrenze(db, reiter), { kopfballInnen });
   if (c.aenderbar) return `Nicht geschrieben, die tägliche Prüfung würde noch ändern: ${c.aenderungen.length ? "Besetzung, " : ""}${c.wechselregeln.join("; ")}`;
   return null;
 }
@@ -456,7 +457,7 @@ export async function portfolioUebernehmen(db: Database.Database, reiter: string
   const { ladeKader } = await import("@/lib/db/kader");
   const { heuteInBerlin } = await import("@/lib/format");
   const { naechsterLigaspieltag } = await import("@/lib/wissen/startbasis");
-  const c = pruefeTaktikGegenKader(reiter, v.xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), undefined, { kopfballInnen: stilGegenAussen(db, v.xml) });
+  const c = pruefeTaktikGegenKader(reiter, v.xml, ladeKader(db), ligaspieltag(db), undefined, { kopfballInnen: stilGegenAussen(db, v.xml) });
   const xml = c.fehler ? v.xml : c.xml;
   const fehlt = await vollstaendigGeprueft(db, reiter, xml);
   if (fehlt) return { ok: false, meldung: fehlt };
@@ -491,7 +492,7 @@ export async function regelnErgaenzen(db: Database.Database, reiter: string): Pr
   const s = mitSpielstandRegeln(a.xml);
   // Altersreiter (U18): nur Spieler im Alter, keine Ausdauer-Wechsel (wie die tägliche Prüfung)
   const { alterGrenze, reiterGegenAussen, reiterOptionen } = await import("@/lib/taktik-check");
-  const c = pruefeTaktikGegenKader(reiter, s.xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), reiterOptionen(reiterGegenAussen(db), reiter));
+  const c = pruefeTaktikGegenKader(reiter, s.xml, ladeKader(db), ligaspieltag(db), alterGrenze(db, reiter), reiterOptionen(reiterGegenAussen(db), reiter));
   const xml = c.fehler ? s.xml : c.xml;
   if (xml === t.xml) return { ok: true, meldung: `Reiter „${reiter}“ hat schon alle Regeln, nichts geändert.` };
   const fehlt = await vollstaendigGeprueft(db, reiter, xml);
@@ -557,7 +558,7 @@ export async function alternativenErgaenzen(db: Database.Database, reiter: strin
   xml = ab.xml;
   text.push(...ab.verschoben);
   const { reiterGegenAussen, reiterOptionen } = await import("@/lib/taktik-check");
-  const c = pruefeTaktikGegenKader(reiter, xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), reiterOptionen(reiterGegenAussen(db), reiter));
+  const c = pruefeTaktikGegenKader(reiter, xml, ladeKader(db), ligaspieltag(db), alterGrenze(db, reiter), reiterOptionen(reiterGegenAussen(db), reiter));
   if (!c.fehler) xml = c.xml;
   const fehlt = await vollstaendigGeprueft(db, reiter, xml);
   if (fehlt) return { ok: false, meldung: `${text.join("; ")}. ${fehlt}` };

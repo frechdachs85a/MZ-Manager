@@ -9,6 +9,7 @@ import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { heuteInBerlin } from "@/lib/format";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Bälle der letzten 14 Tage mit Folgen (Marcus, 31.10.2026): je Spieler Rückennummer, MZ-Wert vorher und jetzt und ob er
 // es DURCH DIE BÄLLE in eine Taktik schafft oder herausfällt (01.11.2026: nur dann, nicht wenn er ohnehin drin wäre).
@@ -84,7 +85,7 @@ export function taktikFolgen(
 
 // Für die Zentrale: alles je pid
 export function baelleFolgen(db: Database.Database, bilanz: Bilanz[], kader: KaderEintrag[]) {
-  const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const spieltag = ligaspieltag(db);
   const imEditor = new Set(taktikCheck(db).filter((c) => !c.fehler).map((c) => c.reiter));
   const reiter = ladeTaktiken(db)
     .filter((t) => imEditor.has(t.reiter) && !/^freund$/i.test(t.reiter))

@@ -12,6 +12,7 @@ import { ausdauerPlan, MAX_WECHSEL_SPIEL } from "@/lib/skill-bilanz";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 import { formation } from "@/lib/mz/analyse/gegner";
 import { angriffsArtVon, stileGegenAussen, topSpiele } from "@/lib/angriff-abwehr";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Täglicher Taktik-Check (Marcus, 30.10.2026): Skills ändern sich (Bälle dazu, ältere Spieler verlieren Ausdauer oder
 // Sprint). Für jede Taktik im Archiv: Plätze bleiben, Besetzung neu nach MZ-Wert der Rolle des Platzes (mz-wissen.md,
@@ -233,7 +234,7 @@ export const reiterOptionen = (gegenAussen: Set<string>, reiter: string) => ({ k
 export function taktikCheck(db: Database.Database): TaktikCheck[] {
   const kader = ladeKader(db);
   const aussen = reiterGegenAussen(db);
-  const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const spieltag = ligaspieltag(db);
   // Nur Reiter, die es im Editor gibt (sobald der Editor einmal gelesen wurde); „Liga“ schreibt die Seite selbst
   const editor = ladeEditorReiter(db);
   const da = (r: string) => !/^liga$/i.test(r) && (!editor || editor.reiter.some((e) => e.name.toLowerCase() === r.toLowerCase()));

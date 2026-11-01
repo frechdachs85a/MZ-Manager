@@ -12,6 +12,7 @@ import { JUGEND, nameFuer, NAME_MAX, portfolioPlan, type PortfolioPlan, type Por
 import { archivLaden, type ArchivEintrag } from "@/lib/taktik-archiv";
 import { checkKurz, taktikCheck, type TaktikCheck } from "@/lib/taktik-check";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
+import { ligaspieltag } from "@/lib/db/spieltag";
 
 // Übersicht je Reiter für die Taktikseite (Marcus, 31.10.2026: dort deine Reiter automatisch aus dem Editor, dazu je
 // Reiter die Verbesserungsvorschläge, ob alles abgedeckt ist, was weg kann, Spieler tauschen, Wechsel anders, U18 und freund,
@@ -47,7 +48,7 @@ export function reiterUebersicht(db: Database.Database): ReiterUebersicht {
   const plan = portfolioPlan(db);
   const checks = taktikCheck(db);
   const kader = ladeKader(db);
-  const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const spieltag = ligaspieltag(db);
 
   // Wichtigste Spieler: Startelf des letzten Ligaspiels nach MZ-Wert
   const start = startelfAusLetztemSpiel(db);

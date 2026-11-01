@@ -11,7 +11,7 @@ import { de } from "@/lib/mz/analyse/gegner";
 import { MIN_QUOTE, MIN_SPIELE, portfolioAnalyse, type StilEintrag } from "@/lib/portfolio";
 import { KopierKnopf } from "@/components/kopier-knopf";
 import { ladeKader } from "@/lib/db/kader";
-import { letzterLauf } from "@/lib/db/spieltag";
+import { letzterLauf, ligaspieltag } from "@/lib/db/spieltag";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { erzeugeMitWechseln } from "@/lib/mz/taktik/mit-wechseln";
 import { pruefeTaktik } from "@/lib/mz/taktik/pruefer";
@@ -159,7 +159,7 @@ export default async function Portfolio() {
   const lauf = letzterLauf(db, true);
   const u: Umfeld = {
     kader: ladeKader(db),
-    spieltag: lauf?.anstoss ? new Date(new Date(lauf.anstoss).toLocaleString("en-US", { timeZone: "Europe/Berlin" })) : naechsterLigaspieltag(heuteInBerlin()),
+    spieltag: lauf?.anstoss ? new Date(new Date(lauf.anstoss).toLocaleString("en-US", { timeZone: "Europe/Berlin" })) : ligaspieltag(db),
     kapitaenPid: Number(archivLaden(db).find((a) => a.taktik?.team.captain)?.taktik?.team.captain) || undefined,
     vorlagen: archivLaden(db).map((a) => ({ reiter: a.reiter, xml: a.xml })),
   };

@@ -2,6 +2,7 @@
 
 import type Database from "better-sqlite3";
 import type { ListenSpiel } from "@/lib/mz/parser/spielliste";
+import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
 export type SpieltagLauf = {
   id: number;
@@ -99,4 +100,25 @@ export function fehlversucheSeitOk(db: Database.Database): { anzahl: number; let
   const ok = (db.prepare("SELECT max(id) AS id FROM spieltag_lauf WHERE ok = 1").get() as { id: number | null }).id ?? 0;
   const r = db.prepare("SELECT COUNT(*) AS n, max(gestartet) AS z FROM spieltag_lauf WHERE id > ? AND ok = 0").get(ok) as { n: number; z: string | null };
   return { anzahl: r.n, letzter: r.z };
+}
+
+// Datum des nächsten Ligaspiels (Kalendertag in Berlin, 0 Uhr lokal wie naechsterLigaspieltag). Zuerst der Anstoß aus dem
+// Spielplan (letzter erfolgreicher Spieltag-Lauf), solange er nicht vorbei ist. Sonst die Regel „mittwochs und sonntags“,
+// aber nicht der heutige Tag, wenn das heutige Ligaspiel schon ausgewertet ist. Fehler bis 01.11.2026: am Sonntagabend galt
+// noch der Sonntag als nächster Spieltag, Rückkehrer aus dem Trainingslager am Di 03.11. zählten fürs Mittwochsspiel nicht.
+export function ligaspieltag(db: Database.Database, jetzt = new Date()): Date {
+  const berlinTag = (d: Date) => {
+    const t = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).map((p) => [p.type, p.value]));
+    return new Date(Number(t.year), Number(t.month) - 1, Number(t.day));
+  };
+  const l = letzterLauf(db, true);
+  if (l?.anstoss && Date.parse(l.anstoss) > jetzt.getTime() - 2 * 3600_000) return berlinTag(new Date(l.anstoss));
+  const heute = berlinTag(jetzt);
+  const regel = naechsterLigaspieltag(heute);
+  if (regel.getTime() === heute.getTime() && l && berlinTag(new Date(l.gestartet)).getTime() === heute.getTime()) {
+    const morgen = new Date(heute);
+    morgen.setDate(morgen.getDate() + 1);
+    return naechsterLigaspieltag(morgen);
+  }
+  return regel;
 }
