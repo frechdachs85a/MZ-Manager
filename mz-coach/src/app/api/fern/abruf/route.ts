@@ -29,7 +29,12 @@ export async function POST(request: Request) {
     const bremse = fernAbrufFrei(db, `${art}-${reiter}`);
     if (!bremse.frei) return Response.json({ gestartet: false, grund: `Bremse: nächster Abruf ab ${bremse.ab}` }, { status: 429 });
     const { taktikUebernehmen, regelnErgaenzen } = await import("@/lib/mz/abruf/liga");
-    void (art === "regeln-ergaenzen" ? regelnErgaenzen(db, reiter) : taktikUebernehmen(db, reiter)).catch(() => {});
+    // Ergebnis immer ins Protokoll (auch eine Ablehnung der Prüfung oder „nichts geändert“)
+    const { abrufBeginnen, abrufBeenden } = await import("@/lib/db/abruf");
+    const log = abrufBeginnen(db, `fern-${art}`);
+    void (art === "regeln-ergaenzen" ? regelnErgaenzen(db, reiter) : taktikUebernehmen(db, reiter))
+      .then((r) => abrufBeenden(db, log, r.ok, `${reiter}: ${r.meldung}`))
+      .catch((e) => abrufBeenden(db, log, false, `${reiter}: ${e instanceof Error ? e.message : String(e)}`));
     return Response.json({ gestartet: true, art, reiter });
   }
   if (!(art in ABRUFE)) return Response.json({ fehler: "art muss kader, markt, top, spieltag, wertscan, liga, gebotsformular, scoutspiele, tabelle oder gebotsuebersicht sein" }, { status: 400 });
