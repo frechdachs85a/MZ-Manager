@@ -552,3 +552,23 @@ export async function alternativenErgaenzen(db: Database.Database, reiter: strin
   if (fehlt) return { ok: false, meldung: `${text.join("; ")}. ${fehlt}` };
   return xmlUebernehmen(db, reiter, xml, `Alternativen und Regeln: ${text.join("; ")}`);
 }
+
+// Minute eines bestimmten Spielerwechsels in einem Reiter setzen (auf ausdrücklichen Wunsch, Marcus 01.11.2026: außenR wie
+// außenL, Hyuga/Ishizaki gleich stark → früh wechseln wie die Topteams). Nur diese eine Regel, danach volle Prüfung.
+export async function wechselMinuteSetzen(db: Database.Database, reiter: string, raus: number, rein: number, minute: number): Promise<Ergebnis> {
+  const { ladeTaktiken } = await import("@/lib/db/taktik");
+  const t = ladeTaktiken(db).find((x) => x.reiter === reiter);
+  if (!t) return { ok: false, meldung: `Reiter „${reiter}“ nicht im Archiv.` };
+  if (!Number.isInteger(minute) || minute < 1 || minute > 90) return { ok: false, meldung: "Minute ungültig." };
+  let gefunden = 0;
+  const xml = t.xml.replace(/<TacticRule\b[^>]*>/g, (z) => {
+    if (!new RegExp(`out_player="${raus}"`).test(z) || !new RegExp(`in_player_id="${rein}"`).test(z) || !/check_time="true"/.test(z)) return z;
+    gefunden++;
+    return z.replace(/\stime="\d+"/, ` time="${minute}"`);
+  });
+  if (gefunden !== 1) return { ok: false, meldung: `Wechsel ${raus} → ${rein} in „${reiter}“ ${gefunden ? "mehrfach" : "nicht"} gefunden, nichts geändert.` };
+  if (xml === t.xml) return { ok: true, meldung: `Wechsel steht schon in der ${minute}. Minute.` };
+  const fehlt = await vollstaendigGeprueft(db, reiter, xml);
+  if (fehlt) return { ok: false, meldung: fehlt };
+  return xmlUebernehmen(db, reiter, xml, `Wechsel ${raus} → ${rein} auf die ${minute}. Minute`);
+}
