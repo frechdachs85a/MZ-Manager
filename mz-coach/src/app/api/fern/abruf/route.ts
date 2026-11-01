@@ -34,6 +34,23 @@ export async function POST(request: Request) {
       .catch((e) => abrufBeenden(db, log, false, e instanceof Error ? e.message : String(e)));
     return Response.json({ gestartet: true, art });
   }
+  if (art === "wechsel-minute") {
+    const reiter = url.searchParams.get("reiter") ?? "";
+    const raus = Number(url.searchParams.get("raus"));
+    const rein = Number(url.searchParams.get("rein"));
+    const minute = Number(url.searchParams.get("minute"));
+    if (!reiter || !raus || !rein || !minute) return Response.json({ fehler: "reiter, raus, rein, minute nötig" }, { status: 400 });
+    const db = getDb();
+    const bremse = fernAbrufFrei(db, `${art}-${reiter}`);
+    if (!bremse.frei) return Response.json({ gestartet: false, grund: `Bremse: nächster Abruf ab ${bremse.ab}` }, { status: 429 });
+    const { abrufBeginnen, abrufBeenden } = await import("@/lib/db/abruf");
+    const { wechselMinuteSetzen } = await import("@/lib/mz/abruf/liga");
+    const log = abrufBeginnen(db, "fern-wechsel-minute");
+    void wechselMinuteSetzen(db, reiter, raus, rein, minute)
+      .then((r) => abrufBeenden(db, log, r.ok, `${reiter}: ${r.meldung}`))
+      .catch((e) => abrufBeenden(db, log, false, `${reiter}: ${e instanceof Error ? e.message : String(e)}`));
+    return Response.json({ gestartet: true, art, reiter });
+  }
   if (art === "taktik-uebernehmen" || art === "regeln-ergaenzen" || art === "alternativen") {
     const reiter = url.searchParams.get("reiter") ?? "";
     if (!reiter) return Response.json({ fehler: "reiter fehlt" }, { status: 400 });
