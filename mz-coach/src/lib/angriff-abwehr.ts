@@ -106,3 +106,44 @@ export function gegenFormation(spiele: SpielMuster[]) {
     .map(([gegner, sp]) => ({ gegner, spiele: sp.length, antworten: tabelle(sp, (s) => antwortSchluessel(s.eigen)).sort((a, b) => b.spiele - a.spiele) }))
     .sort((a, b) => b.spiele - a.spiele);
 }
+
+// Stellt ein Topteam je nach Gegner um? (Marcus, 01.11.2026) Je Team: wie oft welche Aufstellung, und bei mehr als einer
+// Aufstellung gegen welche Gegner-Formation welche Antwort. Nur so ist „gegen diesen Gegner spielen sie das“ belegt; spielt
+// ein Team immer gleich, zeigt die Tabelle je Formation nur seinen Hausstil.
+export type TeamWechsel = {
+  team: string;
+  rang: number;
+  spiele: number;
+  aufstellungen: { stil: string; spiele: number }[];
+  stelltUm: boolean; // zweite Aufstellung in mindestens 20 % der Spiele
+  gegen: { gegner: string; antworten: { stil: string; spiele: number; S: number; U: number; N: number }[] }[];
+};
+
+export function teamWechsel(teams: { name: string; rang: number; spiele: SpielMuster[] }[]): TeamWechsel[] {
+  return teams.map((t) => {
+    const zaehl = new Map<string, number>();
+    for (const s of t.spiele) zaehl.set(antwortSchluessel(s.eigen), (zaehl.get(antwortSchluessel(s.eigen)) ?? 0) + 1);
+    const aufstellungen = [...zaehl.entries()].map(([stil, spiele]) => ({ stil, spiele })).sort((a, b) => b.spiele - a.spiele);
+    const stelltUm = aufstellungen.length > 1 && aufstellungen[1].spiele >= 0.2 * t.spiele.length;
+    const gegen = gegenFormation(t.spiele).map((g) => ({
+      gegner: g.gegner,
+      antworten: g.antworten.map((z) => ({ stil: z.schluessel, spiele: z.spiele, S: z.S, U: z.U, N: z.N })),
+    }));
+    return { team: t.name, rang: t.rang, spiele: t.spiele.length, aufstellungen, stelltUm, gegen };
+  });
+}
+
+export const topTeamsMitSpielen = (db: Database.Database) =>
+  topAuswertung(db).teams.map((t) => ({ name: t.name, rang: t.rang, spiele: [...t.liga.spiele, ...t.weltliga.spiele] }));
+
+// Direkte Antwort auf genau diese Gegner-Formation (Abwehr-Mittelfeld-Sturm + über außen/eng): beste Antwort mit mindestens
+// MIN_SPIELE_ZELLE Spielen nach Punktequote (Sieg 1, Remis 0,5), bei Gleichstand nach Tordifferenz je Spiel.
+export function direkteAntwort(spiele: SpielMuster[], gegner: string) {
+  const g = gegenFormation(spiele).find((x) => x.gegner === gegner);
+  if (!g) return null;
+  const quote = (z: Zelle) => (z.S + z.U * 0.5) / z.spiele;
+  const beste = g.antworten
+    .filter((z) => z.spiele >= MIN_SPIELE_ZELLE)
+    .sort((a, b) => quote(b) - quote(a) || b.tore - b.gegentore - (a.tore - a.gegentore))[0];
+  return { gegner, spiele: g.spiele, beste: beste ?? null, antworten: g.antworten };
+}

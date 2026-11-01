@@ -31,7 +31,7 @@ import { ladeTaktiken } from "@/lib/db/taktik";
 import { anpassen } from "@/lib/mz/taktik/anpassen";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { gegnerGewichte, istInnenverteidigung, ueberAussenLage } from "@/lib/mz/taktik/gegner-gewichte";
-import { angriffAbwehrGetrennt, angriffsArtVon, datenWahl, ketteName } from "@/lib/angriff-abwehr";
+import { MIN_SPIELE_ZELLE, angriffAbwehrGetrennt, angriffsArtVon, datenWahl, direkteAntwort, ketteName, topSpiele } from "@/lib/angriff-abwehr";
 import { ligaAusArchiv } from "@/lib/mz/taktik/liga-anpassen";
 import { scoutAuswertung } from "@/lib/scout-auswertung";
 import { vorhersage } from "@/lib/vorhersage";
@@ -120,19 +120,52 @@ export function spieltagLage(db: Database.Database) {
   // seinen Angriff“; „die Werte der Top-Teams sind federführend“): Angriffsstil nach seiner Kette, eigene Kette nach seinem
   // Angriff. Gewählt wird dein Reiter mit genau diesem Stil und dieser Kette (ohne Liga, freund, Altersreiter); gibt es keinen
   // oder zu wenige Top-10-Spiele, gilt die alte Faustregel.
+  // Vorrang hat die direkte Antwort der Topteams auf genau seine Formation (Abwehr-Mittelfeld-Sturm + über außen/eng), wenn sie
+  // mindestens 8 Spiele hat (Marcus, 01.11.2026: „genau gucken, gegen welchen Gegner die Top-Teams welche Taktik gespielt haben“).
+  const waehlbar = archiv.filter((a) => a.taktik && !/^liga$/i.test(a.reiter) && !/^freund/i.test(a.reiter) && !/^u(18|21|23)\b/i.test(a.reiter));
+  const vorzug = <T extends { reiter: string }>(l: T[]) => l.find((a) => /^au(ß|ss)enr$/i.test(a.reiter)) ?? l[0]; // außenR vor außenL, die Seitenwahl tauscht danach
   const wahl = (() => {
     if (!bezugAusw) return null;
     try {
-      const w = datenWahl(angriffAbwehrGetrennt(db), ketteName(bezugAusw.formation.abwehr), bezugAusw.engeMitte ? "eng" : "über außen");
+      const spiele = topSpiele(db);
+      const f = bezugAusw.formation;
+      const gegnerKey = `${f.abwehr}-${f.mittel}-${f.sturm} ${bezugAusw.engeMitte ? "eng" : "über außen"}`;
+      const d = direkteAntwort(spiele, gegnerKey);
+      const komma = (n: number) => n.toFixed(2).replace(".", ",");
+      if (d?.beste) {
+        const b = d.beste;
+        const [form, einst] = [b.schluessel.split(" ")[0], b.schluessel.split(" ").slice(1).join(" ")];
+        const passend = waehlbar.filter((a) => {
+          const feld = a.taktik!.pos.filter((p) => p.pos === "normal").map((p) => p.start);
+          const fo = formation(feld);
+          return `${fo.abwehr}-${fo.mittel}-${fo.sturm}` === form && angriffsArtVon(a.taktik!.team.tactics) === einst.split("/")[0];
+        });
+        const r = vorzug(passend);
+        const text = [
+          `Gegen ${gegnerKey} spielten die Topteams (${d.spiele} Spiele): ${d.antworten
+            .slice(0, 4)
+            .map((z) => `${z.schluessel} ${z.S}/${z.U}/${z.N}`)
+            .join(", ")}.`,
+          `Beste Antwort mit mindestens ${MIN_SPIELE_ZELLE} Spielen: ${b.schluessel} ${b.S}/${b.U}/${b.N}, Tore ${komma(b.tore)} : ${komma(b.gegentore)} je Spiel.`,
+        ];
+        if (r) return { text, kurz: [`Topteams gegen ${gegnerKey}: ${b.schluessel} ${b.S}/${b.U}/${b.N}`], reiter: r.reiter, beschreibung: b.schluessel };
+      }
+      const w = datenWahl(angriffAbwehrGetrennt(db), ketteName(f.abwehr), bezugAusw.engeMitte ? "eng" : "über außen");
       if (!w) return null;
-      const passend = archiv.filter((a) => {
-        if (!a.taktik || /^liga$/i.test(a.reiter) || /^freund/i.test(a.reiter) || /^u(18|21|23)\b/i.test(a.reiter)) return false;
-        const hinten = a.taktik.pos.filter((p) => p.pos === "normal" && p.start.y >= ABWEHR_Y).length;
-        return angriffsArtVon(a.taktik.team.tactics) === w.angriff.art && ketteName(hinten) === w.abwehr.kette;
+      const passend = waehlbar.filter((a) => {
+        const hinten = a.taktik!.pos.filter((p) => p.pos === "normal" && p.start.y >= ABWEHR_Y).length;
+        return angriffsArtVon(a.taktik!.team.tactics) === w.angriff.art && ketteName(hinten) === w.abwehr.kette;
       });
-      // außenR vor außenL (die Seitenwahl tauscht danach), sonst der erste passende
-      const r = passend.find((a) => /^au(ß|ss)enr$/i.test(a.reiter)) ?? passend[0];
-      return r ? { ...w, reiter: r.reiter } : { ...w, reiter: undefined };
+      const r = vorzug(passend);
+      const vorab = d
+        ? [`Gegen ${gegnerKey} nur ${d.spiele} Top-10-Spiele, keine Antwort mit mindestens ${MIN_SPIELE_ZELLE} Spielen → Angriff und Abwehr getrennt.`]
+        : [`Gegen ${gegnerKey} keine Top-10-Spiele → Angriff und Abwehr getrennt.`];
+      return {
+        text: [...vorab, ...w.text],
+        kurz: [`Angriff: ${w.angriff.art} gegen seine ${ketteName(f.abwehr)}`, `Abwehr: ${w.abwehr.kette} gegen seinen Angriff ${bezugAusw.engeMitte ? "eng" : "über außen"}`],
+        reiter: r?.reiter,
+        beschreibung: `${w.angriff.art} und ${w.abwehr.kette}`,
+      };
     } catch {
       return null;
     }
@@ -148,11 +181,11 @@ export function spieltagLage(db: Database.Database) {
                 ? [
                     ...(vh ? [vh.text] : []),
                     ...wahl.text,
-                    `Dein Reiter mit ${wahl.angriff.art} und ${wahl.abwehr.kette}: ${wahl.reiter}.`,
+                    `Dein Reiter dafür (${wahl.beschreibung}): ${wahl.reiter}.`,
                   ]
                 : [
                 ...(vh ? [vh.text] : []),
-                ...(wahl ? [...wahl.text, `Kein Reiter mit ${wahl.angriff.art} und ${wahl.abwehr.kette} → alte Faustregel.`] : []),
+                ...(wahl ? [...wahl.text, `Kein Reiter mit ${wahl.beschreibung} → alte Faustregel.`] : []),
                 bezugAusw.formation.abwehr >= 5
                   ? `Fünferkette in der erwarteten Aufstellung (${bezugAusw.formation.text}) → kupass.`
                   : bezugAusw.engeMitte
@@ -180,7 +213,7 @@ export function spieltagLage(db: Database.Database) {
     return [
       vh?.grund === "trend" ? "Trend erkannt → so erwartet" : vh?.grund === "wie-du" ? `Gegen Gegner wie dich → ${neu.formation.text} erwartet` : a.urteil === "duenn" ? "Wenig Daten → Standard" : "Häufigste Aufstellung erwartet",
       ...(wahl?.reiter
-        ? [`Angriff: ${wahl.angriff.art} gegen seine ${ketteName(neu.formation.abwehr)}`, `Abwehr: ${wahl.abwehr.kette} gegen seinen Angriff ${neu.engeMitte ? "eng" : "über außen"}`]
+        ? wahl.kurz
         : [...(neu.engeMitte ? ["Enge Mitte erwartet"] : []), ...(neu.formation.abwehr >= 5 ? [`Fünferkette (${neu.formation.text})`] : [])]),
       `Enge Mitte in ${eng} von ${a.spiele.length} Spielen`,
       `→ ${empfehlung.taktik}`,

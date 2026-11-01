@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SpielMuster, Stil } from "@/lib/mz/analyse/muster";
-import { datenWahl, getrennt } from "./angriff-abwehr";
+import { datenWahl, direkteAntwort, getrennt, teamWechsel } from "./angriff-abwehr";
 
 // Erfundene Spiele (keine echten Daten)
 const stil = (tactic: string, hinten: number, aussen: boolean): Stil =>
@@ -39,5 +39,18 @@ describe("Angriff und Abwehr getrennt", () => {
     expect(w.angriff).toMatchObject({ art: "Flügel", tore: 4 });
     expect(w.abwehr).toMatchObject({ kette: "Fünferkette", gegentore: 1 });
     expect(datenWahl(r, "Fünferkette", "über außen")).toBeNull();
+  });
+
+  it("direkte Antwort: beste Aufstellung gegen genau diese Formation ab 8 Spielen; Team stellt um oder nicht", () => {
+    const viele = (n: number, e: Stil, g: Stil, t: number, gt: number) => Array.from({ length: n }, () => spiel(e, g, t, gt));
+    const gegner = stil("wings", 3, true); // 3-5-2 über außen
+    const sp = [...viele(8, stil("wings", 5, true), gegner, 3, 1), ...viele(9, stil("wings", 4, true), gegner, 1, 2), ...viele(2, stil("shortpass", 3, false), gegner, 5, 0)];
+    const d = direkteAntwort(sp, "3-5-2 über außen")!;
+    expect(d.spiele).toBe(19);
+    expect(d.beste?.schluessel).toBe("5-3-2 Flügel/?");
+    expect(direkteAntwort(sp, "4-3-3 eng")).toBeNull();
+    const t = teamWechsel([{ name: "A", rang: 1, spiele: sp }, { name: "B", rang: 2, spiele: viele(5, stil("wings", 4, true), gegner, 2, 0) }]);
+    expect(t[0].stelltUm).toBe(true);
+    expect(t[1].stelltUm).toBe(false);
   });
 });

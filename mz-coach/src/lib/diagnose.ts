@@ -11,7 +11,7 @@ import { mzWert } from "@/lib/mz/formel";
 import { FORMEL_SKILLS } from "@/lib/mz/skills";
 import { checkKurz, reiterGegenAussen, taktikCheck } from "@/lib/taktik-check";
 import { istInnenverteidigung } from "@/lib/mz/taktik/gegner-gewichte";
-import { angriffAbwehrGetrennt, gegenFormation, topSpiele } from "@/lib/angriff-abwehr";
+import { angriffAbwehrGetrennt, gegenFormation, teamWechsel, topSpiele, topTeamsMitSpielen } from "@/lib/angriff-abwehr";
 import { portfolioPlan, vorschlagText } from "@/lib/portfolio-plan";
 import { ladeEditorReiter, ladeTaktiken } from "@/lib/db/taktik";
 import { leistungJeRolle } from "@/lib/spieler-leistung";
@@ -278,7 +278,7 @@ export function diagnose(db: Database.Database) {
   // Angriff und Abwehr getrennt aus den Top-10-Spielen (Marcus, 01.11.2026)
   let getrenntAuswertung: unknown = null;
   try {
-    getrenntAuswertung = { ...angriffAbwehrGetrennt(db), gegenFormation: gegenFormation(topSpiele(db)) };
+    getrenntAuswertung = { ...angriffAbwehrGetrennt(db), gegenFormation: gegenFormation(topSpiele(db)), teams: teamWechsel(topTeamsMitSpielen(db)) };
   } catch (e) {
     getrenntAuswertung = { fehler: e instanceof Error ? e.message : String(e) };
   }
