@@ -26,6 +26,11 @@ describe("gegnerGewichte", () => {
     expect(g.ueberAussen).toBe(false);
     expect(g.kopfball.every((k) => !k)).toBe(true);
   });
+  it("Einstellung Flügel ohne Angreifer außen: eng, kein Kopfball-Bonus", () => {
+    const g = gegnerGewichte({ feld: meine, gegner: [{ x: 90, y: 60, wert: 900_000 }, { x: 118, y: 60, wert: 900_000 }], seinStil: "Flügel / normal / normal" });
+    expect(g.ueberAussen).toBe(false);
+    expect(g.kurz[0]).toBe("Er spielt eng (Einstellung Flügel, aber kein Angreifer außen) → hinten die zweikampfstärksten Verteidiger, Kopfball egal");
+  });
   it("spiegelt eine einseitige Formation zur schwächeren Seite", () => {
     const einseitig = meine.map((p) => (p.x === 30 ? { x: 104, y: 120 } : p)); // nur rechts außen (x 180)
     const g = gegnerGewichte({ feld: einseitig, gegner: [], angriffUeber: "links" });

@@ -2,8 +2,9 @@ import { ABWEHR_Y } from "@/lib/mz/analyse/gegner";
 import { istAussen, STURM_Y } from "./pruefer";
 
 // Besetzung gegen einen bestimmten Gegner (Regeln von Marcus, 26.10.2026):
-// 1. Spielt er über außen (Einstellung Flügel oder Stürmer/Flügelspieler außen), stehen in der Innenverteidigung die
-//    Spieler mit dem besten Kopfball. Spielt er eng, zählt hinten nur die Stärke.
+// 1. Spielt er über außen (ein Stürmer/Flügelspieler außen, der flanken kann), stehen in der Innenverteidigung die
+//    Spieler mit dem besten Kopfball. Spielt er eng, zählt hinten nur die Stärke (VT-Formel, Zweikampf am höchsten gewichtet).
+//    Marcus, 01.11.2026: Die Einstellung „Flügel“ allein reicht nicht; nur ein echter Außenangreifer flankt in die Mitte.
 // 2. Wo seine stärksten Angreifer stehen, stehen deine stärksten Verteidiger.
 // 3. Angreifen dort, wo seine Abwehr schwächer ist: ist deine Formation einseitig, wird sie dafür gespiegelt.
 // Die Gewichte (bis +15 % für den Platz gegenüber seinem stärksten Angreifer, Kopfball × 0,08) sind eigene
@@ -26,14 +27,15 @@ export type GegnerGewichte = {
 
 const mio = (n: number) => `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`;
 
-// Spielt er über außen? Einstellung Flügel oder ein Angreifer außen vor der Abwehr (seine Angreifer in deiner Sicht)
+// Spielt er über außen? Nur wenn er wirklich einen Angreifer außen vor der Abwehr hat (seine Angreifer in deiner Sicht).
+// Die Einstellung Flügel wird nur im Text genannt.
 export function ueberAussenLage(gegner: GegnerFeld[], seinStil?: string) {
   const angreifer = gegner
     .filter((p) => !p.torwart && (p.y <= STURM_Y || (istAussen(p.x) && p.y < ABWEHR_Y)))
     .map((p) => ({ ...p, x: spiegelX(p.x) }));
   const fluegelStil = /^Flügel/i.test(seinStil ?? "");
   const aussenAngreifer = angreifer.filter((p) => istAussen(p.x));
-  return { angreifer, fluegelStil, aussenAngreifer, ueberAussen: fluegelStil || aussenAngreifer.length > 0 };
+  return { angreifer, fluegelStil, aussenAngreifer, ueberAussen: aussenAngreifer.length > 0 };
 }
 
 // Innenverteidiger-Platz (für den Kopfball-Zuschlag): Abwehr, nicht außen, kein Torwart
@@ -51,8 +53,8 @@ export function gegnerGewichte(opt: {
   const { angreifer, fluegelStil, aussenAngreifer, ueberAussen } = ueberAussenLage(opt.gegner, opt.seinStil);
   kurz.push(
     ueberAussen
-      ? `Er spielt über außen (${[fluegelStil ? "Einstellung Flügel" : "", aussenAngreifer.length ? `${aussenAngreifer.length} Angreifer außen` : ""].filter(Boolean).join(", ")}) → Innenverteidiger nach Kopfball`
-      : "Er spielt eng → hinten die stärksten Verteidiger, Kopfball nachrangig",
+      ? `Er spielt über außen (${[`${aussenAngreifer.length} Angreifer außen`, fluegelStil ? "Einstellung Flügel" : ""].filter(Boolean).join(", ")}) → Innenverteidiger nach Kopfball`
+      : `Er spielt eng${fluegelStil ? " (Einstellung Flügel, aber kein Angreifer außen)" : ""} → hinten die zweikampfstärksten Verteidiger, Kopfball egal`,
   );
 
   // Einseitige Formation zur schwächeren Seite drehen: Außen vor der Abwehr links gegen rechts zählen
