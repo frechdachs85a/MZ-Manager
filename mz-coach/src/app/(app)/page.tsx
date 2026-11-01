@@ -11,6 +11,7 @@ import { WertDiff } from "@/components/elf-wert";
 import { hatVorschlag, reiterUebersicht } from "@/lib/reiter-uebersicht";
 import { sperreGiltFuerLiga } from "@/lib/mz/taktik/erzeugen";
 import { skillBilanz, AUSDAUER_GRENZE } from "@/lib/skill-bilanz";
+import { schwachstellenMitZugaengen } from "@/lib/zugaenge";
 import { baelleFolgen, type TaktikFolge } from "@/lib/baelle-taktik";
 import { posDe } from "@/lib/mz/formel";
 import { stilDe } from "@/lib/mz/analyse/gegner";
@@ -18,7 +19,6 @@ import { spieltagCheckliste } from "@/lib/checkliste";
 
 import { ZoomFeld } from "@/components/zoom-feld";
 import { SpielerProfil } from "@/components/spieler-profil";
-import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
 import { einsatzImLigaspiel } from "@/lib/mz/einsatz";
@@ -52,7 +52,7 @@ export default async function Uebersicht() {
   const start = startelfAusLetztemSpiel(db);
   const st = spieltagLage(db);
   const check = spieltagCheckliste(db);
-  const schwach = start ? schwachstellen(start.elf, kader).liste[0] : undefined;
+  const schwach = start ? schwachstellenMitZugaengen(db, start.elf, kader).liste[0] : undefined;
   // Pokalsperren zählen fürs Ligaspiel nicht
   const nichtDabei = new Set([...fehlen.map((x) => x.s.pid), ...gesperrt.filter(sperreGiltFuerLiga).map((s) => s.pid)]).size;
   const kurzDatum = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(spieltag);

@@ -7,8 +7,8 @@ import { ladeFreundTeam } from "@/lib/db/freunde";
 import { zugangStatus } from "@/lib/mz/zugang";
 import { parseTransferSuche, type MarktSpieler } from "@/lib/mz/parser/transfer";
 import { ladeKader } from "@/lib/db/kader";
+import { schwachstellenMitZugaengen } from "@/lib/zugaenge";
 import { startelfAusLetztemSpiel } from "@/lib/db/markt";
-import { schwachstellen } from "@/lib/mz/analyse/markt";
 import { mitFiltern, suchZiele } from "./markt-ziel";
 import { meldungAus, type Ergebnis } from "./kader";
 import { mitMzSitzung, MzFehler } from "./sitzung";
@@ -89,7 +89,7 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
         // Gezielt (Marcus, 26.10.2026): je schwächster Rolle der Startelf mit den Filtern von ManagerZone suchen,
         // Hauptskill der Rolle Stufe für Stufe von 10 abwärts, bis genug Kandidaten da sind; sonst wie bisher den Markt durchgehen
         const start = startelfAusLetztemSpiel(db);
-        const ziele = start ? suchZiele(schwachstellen(start.elf, ladeKader(db)).liste) : [];
+        const ziele = start ? suchZiele(schwachstellenMitZugaengen(db, start.elf, ladeKader(db)).liste) : [];
         if (ziele.length) {
           // Seiten gleichmäßig auf die Rollen verteilen
           const jeZielSeiten = Math.floor(MAX_SEITEN / ziele.length);

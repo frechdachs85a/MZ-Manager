@@ -64,6 +64,24 @@ export default async function Markt(props: PageProps<"/markt">) {
           title="Vorschläge"
           footer="Die 30 Spieler aus der letzten Marktsuche, die deine Startelf am meisten verbessern. Preis-Leistung = MZ-Gewinn je Million Mindestpreis (höheres aus Startgebot und aktuellem Gebot; der Endpreis kann höher liegen). Annehmen setzt ihn auf die Watchlist, Ablehnen blendet ihn aus."
         >
+          {schwach && schwach.zugaenge.length > 0 && (
+            <Card className="mb-3 border-l-4 border-green p-3 text-[13.5px]">
+              <div className="font-semibold">Zugänge schon eingerechnet (kommen etwa 24 Stunden nach Auktionsende in den Kader)</div>
+              <ul className="mt-1 space-y-0.5 text-label-2">
+                {schwach.zugaenge.map((z) => {
+                  const e = schwach.ersetzt.find((x) => x.zugang === z.spieler.name);
+                  return (
+                    <li key={z.spieler.pid}>
+                      <b className="text-label">{z.spieler.name}</b> ({z.spieler.alter ?? "?"} J.)
+                      {e
+                        ? `: übernimmt ${posDe(e.rolle)} statt ${e.statt} (${e.alt.toFixed(2).replace(".", ",")} → ${e.neu.toFixed(2).replace(".", ",")}); gesucht wird jetzt für die nächste Schwachstelle.`
+                        : ": verbessert keinen Startplatz, ändert die Suche nicht."}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
           <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[13px]">
             <span className="mr-1 text-label-2">Sortieren:</span>
             {[
