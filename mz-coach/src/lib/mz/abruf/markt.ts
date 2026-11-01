@@ -1,4 +1,5 @@
 import "server-only";
+import { berlinStunde } from "@/lib/format";
 import type Database from "better-sqlite3";
 import { parse } from "node-html-parser";
 import { abrufBeenden, abrufBeginnen, letzteRohseite, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
@@ -170,8 +171,6 @@ export async function marktAbrufen(db: Database.Database, opt = { manuell: false
 }
 
 const berlinTag = (d: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(d);
-const berlinStunde = (d: Date) =>
-  Number(new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" }).format(d));
 
 // Einmal am Tag ab STUNDE Uhr (Berlin), nur mit eingerichtetem Zugang. Ein fehlgeschlagener Versuch
 // zählt auch: kein zweiter Versuch am selben Tag (keine Login-Wiederholung, Sperrgefahr).

@@ -38,3 +38,10 @@ export function spielDatum(d?: string): string | undefined {
   const m = d?.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
   return m ? `${m[3]}.${m[2]}.${m[1]}${m[4] ? `, ${m[4]}:${m[5]}` : ""}` : d;
 }
+
+// Stunde in Berlin (0 bis 23). Über formatToParts, weil „de-DE“ bei Stunde allein „05 Uhr“ liefert und Number("05 Uhr")
+// NaN ist; damit liefen die Abrufe ab Mitternacht statt ab 4, 5 und 6 Uhr (gefunden 01.11.2026).
+export function berlinStunde(d: Date): number {
+  const h = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" }).formatToParts(d).find((p) => p.type === "hour")?.value;
+  return Number(h);
+}

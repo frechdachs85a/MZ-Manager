@@ -1,4 +1,5 @@
 import "server-only";
+import { berlinStunde } from "@/lib/format";
 import type Database from "better-sqlite3";
 import { abrufBeenden, abrufBeginnen, letzterAbruf, speichereRohseite } from "@/lib/db/abruf";
 import { ladeTeamSpiele, speichereSpielliste } from "@/lib/db/gegner";
@@ -144,8 +145,6 @@ export async function topAbrufen(db: Database.Database, opt = { manuell: false }
 }
 
 const berlinTag = (d: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(d);
-const berlinStunde = (d: Date) =>
-  Number(new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" }).format(d));
 
 // Täglicher Lauf ab 4 Uhr (Berlin), vor der Marktsuche; ein Versuch je Tag. Die Top-10-Listen darin nur wöchentlich.
 export function topFaellig(db: Database.Database, jetzt = new Date()): boolean {
