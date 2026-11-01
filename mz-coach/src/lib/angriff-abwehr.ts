@@ -86,8 +86,8 @@ export function datenWahl(g: ReturnType<typeof getrennt>, seineKette: string, se
     angriff: { art, tore: a[0].tore, spiele: a[0].spiele },
     abwehr: { kette, gegentore: b[0].gegentore, spiele: b[0].spiele },
     text: [
-      `Angriff gegen seine ${seineKette} (Top 10): ${a.map((z) => `${z.schluessel.replace(` gegen ${seineKette}`, "")} ${komma(z.tore)} Tore (${z.spiele} Spiele)`).join(", ")} → ${art}`,
-      `Abwehr gegen seinen Angriff ${seinAngriffArt} (Top 10): ${b.map((z) => `${z.schluessel.replace(` gegen ${seinAngriffArt}`, "")} ${komma(z.gegentore)} Gegentore (${z.spiele} Spiele)`).join(", ")} → ${kette}`,
+      `Angriff gegen seine ${seineKette} (Top 10): ${a.map((z) => `${z.schluessel.replace(` gegen ${seineKette}`, "")} ${komma(z.tore)} Tore (${z.spiele} Spiele)`).join(", ")} → ${art}.`,
+      `Abwehr gegen seinen Angriff ${seinAngriffArt} (Top 10): ${b.map((z) => `${z.schluessel.replace(` gegen ${seinAngriffArt}`, "")} ${komma(z.gegentore)} Gegentore (${z.spiele} Spiele)`).join(", ")} → ${kette}.`,
     ],
   };
 }
