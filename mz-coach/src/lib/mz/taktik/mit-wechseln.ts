@@ -31,6 +31,8 @@ export function mitSpielstandRegeln(xml: string): { xml: string; regeln: string[
   const text: string[] = [];
   for (const r of SPIELSTAND) {
     if (vorhanden.has(`${r.lage}:${r.tore}`)) continue;
+    // Führung → normal beruhigt nur eine offensive Grundeinstellung; bei defensiv würde sie offensiver (Marcus, 01.11.2026, U18)
+    if (r.lage === "ahead_by_at_least" && grund("playstyle") !== "offensive") continue;
     const tactics = r.tactics && r.tactics !== grund("tactics") ? r.tactics : "no_change";
     const playstyle = r.playstyle && r.playstyle !== grund("playstyle") ? r.playstyle : "no_change";
     const aggression = r.aggression && r.aggression !== grund("aggression") ? r.aggression : "no_change";
@@ -42,6 +44,21 @@ export function mitSpielstandRegeln(xml: string): { xml: string; regeln: string[
     text.push(`ab ${r.minute}. bei ${lage}: ${[tactics, playstyle, aggression].filter((x) => x !== "no_change").join(" + ")}`);
   }
   return { xml: zeilen.length ? xml.replace(/<\/SoccerTactics>/, `${zeilen.join("\n")}\n</SoccerTactics>`) : xml, regeln: text };
+}
+
+// Unpassende Führungsregel entfernen: „bei Führung auf normal“ in einer defensiven Taktik macht sie offensiver statt ruhiger
+// (Marcus, 01.11.2026: bei U18 herausnehmen). Nur diese eine Art Regel, alles andere bleibt.
+export function unpassendeRegelnEntfernen(xml: string): { xml: string; entfernt: string[] } {
+  const team = xml.match(/<Team\b[^>]*>/)?.[0] ?? "";
+  if (team.match(/playstyle="([^"]*)"/)?.[1] !== "defensive") return { xml, entfernt: [] };
+  const entfernt: string[] = [];
+  const out = xml.replace(/[ \t]*<TacticRule\b[^>]*>\r?\n?/g, (z) => {
+    const ist = /check_goal_condition="true"/.test(z) && /\sgoal_condition="ahead_by_at_least"/.test(z) && /playstyle="normal"/.test(z) && /tactics="no_change"/.test(z) && /aggression="no_change"/.test(z) && /out_player="no_change"/.test(z);
+    if (!ist) return z;
+    entfernt.push(`ab ${z.match(/\stime="(\d+)"/)?.[1]}. bei Führung: normal (entfernt, Taktik spielt defensiv)`);
+    return "";
+  });
+  return { xml: out, entfernt };
 }
 
 // Mindestabstand halten (Prüfliste Regel 2: Feldspieler mindestens 47 auseinander, y mindestens 63). Aufstellungen von

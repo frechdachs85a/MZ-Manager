@@ -469,14 +469,15 @@ export async function lueckeUebernehmen(db: Database.Database, reiter: string): 
 // 01.11.2026). Nur was fehlt; danach volle Prüfung, erst dann schreiben.
 export async function regelnErgaenzen(db: Database.Database, reiter: string): Promise<Ergebnis> {
   const { ladeTaktiken } = await import("@/lib/db/taktik");
-  const { abstaendeHalten, mitSpielstandRegeln } = await import("@/lib/mz/taktik/mit-wechseln");
+  const { abstaendeHalten, mitSpielstandRegeln, unpassendeRegelnEntfernen } = await import("@/lib/mz/taktik/mit-wechseln");
   const { pruefeTaktikGegenKader } = await import("@/lib/taktik-check");
   const { ladeKader } = await import("@/lib/db/kader");
   const { heuteInBerlin } = await import("@/lib/format");
   const { naechsterLigaspieltag } = await import("@/lib/wissen/startbasis");
   const t = ladeTaktiken(db).find((x) => x.reiter === reiter);
   if (!t) return { ok: false, meldung: `Reiter „${reiter}“ nicht im Archiv.` };
-  const a = abstaendeHalten(t.xml);
+  const u = unpassendeRegelnEntfernen(t.xml);
+  const a = abstaendeHalten(u.xml);
   const s = mitSpielstandRegeln(a.xml);
   // Altersreiter (U18): nur Spieler im Alter, keine Ausdauer-Wechsel (wie die tägliche Prüfung)
   const { alterGrenze } = await import("@/lib/taktik-check");
@@ -485,7 +486,7 @@ export async function regelnErgaenzen(db: Database.Database, reiter: string): Pr
   if (xml === t.xml) return { ok: true, meldung: `Reiter „${reiter}“ hat schon alle Regeln, nichts geändert.` };
   const fehlt = await vollstaendigGeprueft(db, reiter, xml);
   if (fehlt) return { ok: false, meldung: fehlt };
-  return xmlUebernehmen(db, reiter, xml, `Regeln ergänzt: ${[...a.verschoben, ...s.regeln, ...c.wechselregeln].join("; ")}`);
+  return xmlUebernehmen(db, reiter, xml, `Regeln angepasst: ${[...u.entfernt, ...a.verschoben, ...s.regeln, ...c.wechselregeln].join("; ")}`);
 }
 
 // Alle Reiter auf denselben Stand (Marcus, 01.11.2026: „in jeder Taktik, die ich habe, wo das fehlt … jetzt“): nacheinander
