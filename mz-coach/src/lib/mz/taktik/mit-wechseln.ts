@@ -1,14 +1,48 @@
 import { pruefeTaktikGegenKader } from "@/lib/taktik-check";
 import { erzeugeTaktik } from "./erzeugen";
 
-// Neu erzeugte Taktik gleich mit den Ausdauer-Wechselregeln (Marcus, 01.11.2026: beim Import von 343kp fehlten sie; „das
-// darfst du nicht vergessen“). Die Erzeugung stellt die beste Elf und die Bank auf; die tägliche Prüfung (taktik-check.ts)
-// ergänzt danach dieselben Regeln wie bei jedem Reiter: Startspieler mit Ausdauer unter 8 werden in der 70. Minute durch den
-// besten passenden Bankspieler ersetzt, höchstens 3 Wechsel. Geht die Prüfung nicht, bleibt die erzeugte Taktik und der
-// Hinweis steht in `hinweise`.
+// Spielstand-Regeln wie in deinen eigenen Reitern (mz-wissen.md, Abschnitt Taktiken: „Gemeinsame Regeln“; Marcus
+// 01.11.2026: „auch Rot-Regelung und Führungsregeln, so wie die Profis wechseln“). Belege aus den Top-10-Spielen:
+// Umstellen bei Rückstand in der 65. holt mehr Punkte (0,57 gegen 0,43), bei Führung in der 70. auf normal hält den Sieg
+// etwas öfter (88 % gegen 84 %, kleine Stichprobe). Alternative 2 (in deinen Reitern bei 2 Toren Rückstand) wird nicht
+// gesetzt, weil Alternative 1 und 2 bei erzeugten Taktiken gleich der Startaufstellung sind.
+const SPIELSTAND: { minute: number; lage: "down_by_at_least" | "ahead_by_at_least" | "tie"; tore: number; tactics?: string; playstyle?: string; aggression?: string }[] = [
+  { minute: 60, lage: "down_by_at_least", tore: 1, playstyle: "offensive", aggression: "aggressive" },
+  { minute: 65, lage: "down_by_at_least", tore: 2, tactics: "shortpass", aggression: "aggressive" },
+  { minute: 70, lage: "ahead_by_at_least", tore: 1, playstyle: "normal" },
+  { minute: 80, lage: "tie", tore: 1, playstyle: "offensive", aggression: "aggressive" },
+];
+
+// Fehlende Spielstand-Regeln ergänzen (nur wenn die Taktik noch keine hat). Regeln ohne Wirkung (Grundeinstellung schon so)
+// entfallen. Gibt die neue XML und die ergänzten Regeln in Worten zurück.
+export function mitSpielstandRegeln(xml: string): { xml: string; regeln: string[] } {
+  if (/check_goal_condition="true"/.test(xml)) return { xml, regeln: [] };
+  const team = xml.match(/<Team\b[^>]*>/)?.[0] ?? "";
+  const grund = (k: string) => team.match(new RegExp(`${k}="([^"]*)"`))?.[1];
+  const zeilen: string[] = [];
+  const text: string[] = [];
+  for (const r of SPIELSTAND) {
+    const tactics = r.tactics && r.tactics !== grund("tactics") ? r.tactics : "no_change";
+    const playstyle = r.playstyle && r.playstyle !== grund("playstyle") ? r.playstyle : "no_change";
+    const aggression = r.aggression && r.aggression !== grund("aggression") ? r.aggression : "no_change";
+    if (tactics === "no_change" && playstyle === "no_change" && aggression === "no_change") continue;
+    zeilen.push(
+      `\t<TacticRule name="Taktikregel" check_time="true" time="${r.minute}" check_goal_condition="true" goal_condition="${r.lage}" goals="${r.tore}" check_player_event="false" player_event_player_type="anyone" player_event="receives_yellow" out_player="no_change" in_player_id="NULL" tactics="${tactics}" playstyle="${playstyle}" aggression="${aggression}" formation="no_change" />`,
+    );
+    const lage = r.lage === "tie" ? "Gleichstand" : r.lage === "ahead_by_at_least" ? `Führung` : `${r.tore} Tor${r.tore > 1 ? "en" : ""} Rückstand`;
+    text.push(`ab ${r.minute}. bei ${lage}: ${[tactics, playstyle, aggression].filter((x) => x !== "no_change").join(" + ")}`);
+  }
+  return { xml: zeilen.length ? xml.replace(/<\/SoccerTactics>/, `${zeilen.join("\n")}\n</SoccerTactics>`) : xml, regeln: text };
+}
+
+// Neu erzeugte Taktik vollständig (Marcus, 01.11.2026: beim Import von 343kp fehlten die Wechselregeln; „das darfst du
+// nicht vergessen“, „die Taktiken müssen immer komplett durchdacht sein“): beste Elf und Bank (erzeugeTaktik, mit
+// Rot-Regel), Spielstand-Regeln wie oben, danach die Ausdauer-Wechsel der täglichen Prüfung (Startspieler unter Ausdauer 8
+// in der 70. durch den besten passenden Bankspieler, höchstens 3 Wechsel).
 export function erzeugeMitWechseln(opt: Parameters<typeof erzeugeTaktik>[0], reiter = "neu") {
   const e = erzeugeTaktik(opt);
-  const c = pruefeTaktikGegenKader(reiter, e.xml, opt.kader, opt.spieltag);
-  if (c.fehler) return { ...e, wechsel: [] as string[], hinweise: [...e.hinweise, `Wechselregeln nicht ergänzt: ${c.fehler}`] };
-  return { ...e, xml: c.xml, wechsel: c.wechselregeln };
+  const s = mitSpielstandRegeln(e.xml);
+  const c = pruefeTaktikGegenKader(reiter, s.xml, opt.kader, opt.spieltag);
+  if (c.fehler) return { ...e, xml: s.xml, spielstand: s.regeln, wechsel: [] as string[], hinweise: [...e.hinweise, `Wechselregeln nicht ergänzt: ${c.fehler}`] };
+  return { ...e, xml: c.xml, spielstand: s.regeln, wechsel: c.wechselregeln };
 }

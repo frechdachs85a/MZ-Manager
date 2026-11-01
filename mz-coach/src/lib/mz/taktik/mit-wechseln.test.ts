@@ -3,7 +3,7 @@ import { FORMEL_SKILLS, type Skills } from "@/lib/mz/skills";
 import type { SpielerDaten } from "@/lib/mz/spieler";
 import { parseTaktikXml } from "./xml";
 import { pruefeTaktik } from "./pruefer";
-import { erzeugeMitWechseln } from "./mit-wechseln";
+import { erzeugeMitWechseln, mitSpielstandRegeln } from "./mit-wechseln";
 
 // Erfundene Testdaten: zwei Startspieler mit Ausdauer 7, genug Bank
 const sk = (w: number, ausdauer = 9, torwart = 2): Skills =>
@@ -31,5 +31,16 @@ describe("Neu erzeugte Taktik mit Wechselregeln", () => {
     expect(zeitwechsel.map((r) => r.out_player).sort()).toEqual(["2", "3"]);
     expect(e.wechsel).toHaveLength(2);
     expect(pruefeTaktik(t, kader).fehler).toEqual([]);
+  });
+
+  it("bekommt Spielstand-Regeln wie deine Reiter, ohne wirkungslose, und nur einmal", () => {
+    const e = erzeugeMitWechseln({ feld, torwart: { x: 103, y: 315 }, tactics: "shortpass", playstyle: "normal", kader, spieltag: new Date("2026-11-01T00:00:00Z") });
+    const r = parseTaktikXml(e.xml).regeln.filter((x) => x.check_goal_condition === "true");
+    expect(r.map((x) => `${x.time} ${x.goal_condition} ${x.tactics}/${x.playstyle}/${x.aggression}`)).toEqual([
+      "60 down_by_at_least no_change/offensive/aggressive",
+      "65 down_by_at_least no_change/no_change/aggressive", // schon Kurzpass
+      "80 tie no_change/offensive/aggressive", // 70. Führung → normal entfällt, ist schon normal
+    ]);
+    expect(mitSpielstandRegeln(e.xml).xml).toBe(e.xml);
   });
 });
