@@ -56,9 +56,18 @@ export function spiellisteHtmlAus(antwort: string): string | null {
 // <dd class="odd"><dl …><dd …>; node-html-parser schließt dabei das äußere dd und hängt den Inhalt flach an die
 // Liste (am echten Spielplan vom 26.10.2026 gesehen). Dann wird das HTML an den Zeilenanfängen geteilt und jede
 // Zeile einzeln gelesen; die Abfragen unten brauchen nur die Klassen innerhalb der Zeile.
+// Seit 01.11.2026 steht bei kommenden Spielen zusätzlich „Wechsel zwischen den Taktiken“ (Auswahl der Reiter) in der Zeile;
+// damit verschachtelt node-html-parser die folgenden Zeilen in die erste, und nur ein Spiel wurde gefunden. Deshalb wird die
+// Liste immer am Zeilenanfang geteilt, wenn das mehr Zeilen ergibt als die direkten Kinder.
 function zeilen(html: string, liste: HTMLElement): HTMLElement[] {
   const direkt = liste.childNodes.filter((n): n is HTMLElement => (n as HTMLElement).tagName === "DD");
-  if (direkt.some((d) => d.classList.contains("odd") || d.classList.contains("even"))) return direkt;
+  const geteilt = teilen(html);
+  const spielzeilen = (l: HTMLElement[]) => l.filter((d) => d.classList.contains("odd") || d.classList.contains("even")).length;
+  // Die Variante mit mehr erkannten Spielzeilen gewinnt (direkte Kinder bei sauber geschachteltem HTML, sonst geteilt)
+  return spielzeilen(direkt) >= spielzeilen(geteilt) && spielzeilen(direkt) > 0 ? direkt : geteilt;
+}
+
+function teilen(html: string): HTMLElement[] {
   const start = html.indexOf('id="fixtures-results-list"');
   const teile = html.slice(start).split(/(?=<dd class="(?:group|odd|even)[" ])/).slice(1);
   return teile.map((t) => {
