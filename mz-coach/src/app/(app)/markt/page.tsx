@@ -58,7 +58,7 @@ export default async function Markt(props: PageProps<"/markt">) {
         title="Transfermarkt"
         subtitle={suche ? `Suche vom ${datumZeit(suche.zeit)} · ${suche.spieler.length} Spieler geprüft` : "Transfermarkt-Scout"}
       />
-      <MarktReiter aktiv="/markt" anzahl={{ "/markt": alleVorschlaege.length, "/markt/watchlist": watch.length, "/markt/bietomat": auftraege.length }} />
+      <MarktReiter aktiv="/markt" anzahl={{ "/markt": alleVorschlaege.length, "/markt/watchlist": watch.length, "/markt/bietomat": auftraege.filter((a) => a.status === "aktiv").length }} />
       <div className="seite">
         <Section
           title="Vorschläge"

@@ -5,11 +5,10 @@ import { PageHeader } from "@/components/page-header";
 import { Badge, Card, List, Row, Section, Unavailable } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { ladeAuftraege, ladeProtokoll } from "@/lib/db/gebot";
-import { ladeMarktRahmen } from "@/lib/db/markt";
 import { datumZeit, euro } from "@/lib/format";
 import { auktionsErgebnis } from "@/lib/auktionsbericht";
 import { auftragLoeschen } from "./actions";
-import { Bietomat, GebotKarte } from "./formulare";
+import { GebotKarte } from "./formulare";
 import { ladeVerkaeufe } from "@/lib/db/verkauf";
 import { MarktReiter } from "@/components/markt-reiter";
 import { vorschlagAnzahl, watchlistAktuell } from "@/lib/watchlist";
@@ -27,7 +26,6 @@ export default async function BietomatSeite() {
     .filter((a) => a.status !== "aktiv")
     .sort((a, b) => (b.auktionEnde ?? b.geaendert).localeCompare(a.auktionEnde ?? a.geaendert));
   const log = ladeProtokoll(db, undefined, 30);
-  const saldo = ladeMarktRahmen(db)?.werte.kapital;
   const verkaeufe = ladeVerkaeufe(db);
   const namen = new Map(alleAuftraege.map((a) => [a.pid, a.name ?? String(a.pid)]));
   const watch = watchlistAktuell(db).liste;
@@ -44,15 +42,6 @@ export default async function BietomatSeite() {
         anzahl={{ "/markt": vorschlaege, "/markt/watchlist": watchAnzahl, "/markt/bietomat": auftraege.filter((a) => a.status === "aktiv").length }}
       />
       <div className="seite">
-        {/* Spieler selbst eintragen ganz oben (Marcus, 01.11.2026: war unter dem Protokoll nicht zu finden) */}
-        <div id="neu" className="scroll-mt-20">
-          <Section
-            title="Spieler selbst eintragen"
-            footer="Spielernummer oder Name eintippen: Suche über das Feld Name/ID von ManagerZone, sonst mit den Standardfiltern der Marktseite. Mehrere Treffer: aus der Liste wählen. Danach Endpreis eingeben, der Bietomat bietet dann automatisch."
-          >
-            <Bietomat saldo={saldo} />
-          </Section>
-        </div>
         {/* Deine Gebote als Spielerkarten wie in Vorschläge und Watchlist, dazu dein Gebot (Marcus, 31.10.2026) */}
         <Section title="Deine Gebote" footer="Der Bietomat bietet kurz vor Schluss Stufe für Stufe bis höchstens zum Endpreis, auch bei Verlängerung.">
           {auftraege.length ? (
@@ -107,7 +96,7 @@ export default async function BietomatSeite() {
           ) : (
             <Unavailable
               title="Gebote"
-              reason="Noch kein Gebot. Spieler auf der Watchlist mit einem Endpreis in den Bietomat geben oder oben per Nummer oder Name eintragen."
+              reason="Noch kein Gebot. Spieler auf der Watchlist mit einem Endpreis in den Bietomat geben oder im Reiter „+ Spieler eintragen“ per Nummer oder Name."
             />
           )}
         </Section>
