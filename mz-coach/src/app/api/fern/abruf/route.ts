@@ -51,6 +51,22 @@ export async function POST(request: Request) {
       .catch((e) => abrufBeenden(db, log, false, `${reiter}: ${e instanceof Error ? e.message : String(e)}`));
     return Response.json({ gestartet: true, art, reiter });
   }
+  // Reiter umbenennen (Marcus, 01.11.2026: „ändere die Namen, wie es passt“); Prüfung wie auf der Taktikseite
+  if (art === "umbenennen") {
+    const reiter = url.searchParams.get("reiter") ?? "";
+    const name = url.searchParams.get("name") ?? "";
+    if (!reiter || !name) return Response.json({ fehler: "reiter und name nötig" }, { status: 400 });
+    const db = getDb();
+    const bremse = fernAbrufFrei(db, `umbenennen-${reiter}`);
+    if (!bremse.frei) return Response.json({ gestartet: false, grund: `Bremse: nächster Abruf ab ${bremse.ab}` }, { status: 429 });
+    const { reiterUmbenennenFrei } = await import("@/lib/mz/abruf/liga");
+    const { abrufBeginnen, abrufBeenden } = await import("@/lib/db/abruf");
+    const log = abrufBeginnen(db, "fern-umbenennen");
+    void reiterUmbenennenFrei(db, reiter, name)
+      .then((r) => abrufBeenden(db, log, r.ok, `${reiter} → ${name}: ${r.meldung}`))
+      .catch((e) => abrufBeenden(db, log, false, `${reiter} → ${name}: ${e instanceof Error ? e.message : String(e)}`));
+    return Response.json({ gestartet: true, art, reiter, name });
+  }
   if (art === "taktik-uebernehmen" || art === "regeln-ergaenzen" || art === "alternativen" || art === "portfolio-uebernehmen") {
     const reiter = url.searchParams.get("reiter") ?? "";
     if (!reiter) return Response.json({ fehler: "reiter fehlt" }, { status: 400 });
