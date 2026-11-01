@@ -34,17 +34,17 @@ export async function POST(request: Request) {
       .catch((e) => abrufBeenden(db, log, false, e instanceof Error ? e.message : String(e)));
     return Response.json({ gestartet: true, art });
   }
-  if (art === "taktik-uebernehmen" || art === "regeln-ergaenzen") {
+  if (art === "taktik-uebernehmen" || art === "regeln-ergaenzen" || art === "alternativen") {
     const reiter = url.searchParams.get("reiter") ?? "";
     if (!reiter) return Response.json({ fehler: "reiter fehlt" }, { status: 400 });
     const db = getDb();
     const bremse = fernAbrufFrei(db, `${art}-${reiter}`);
     if (!bremse.frei) return Response.json({ gestartet: false, grund: `Bremse: nächster Abruf ab ${bremse.ab}` }, { status: 429 });
-    const { taktikUebernehmen, regelnErgaenzen } = await import("@/lib/mz/abruf/liga");
+    const { taktikUebernehmen, regelnErgaenzen, alternativenErgaenzen } = await import("@/lib/mz/abruf/liga");
     // Ergebnis immer ins Protokoll (auch eine Ablehnung der Prüfung oder „nichts geändert“)
     const { abrufBeginnen, abrufBeenden } = await import("@/lib/db/abruf");
     const log = abrufBeginnen(db, `fern-${art}`);
-    void (art === "regeln-ergaenzen" ? regelnErgaenzen(db, reiter) : taktikUebernehmen(db, reiter))
+    void (art === "regeln-ergaenzen" ? regelnErgaenzen(db, reiter) : art === "alternativen" ? alternativenErgaenzen(db, reiter) : taktikUebernehmen(db, reiter))
       .then((r) => abrufBeenden(db, log, r.ok, `${reiter}: ${r.meldung}`))
       .catch((e) => abrufBeenden(db, log, false, `${reiter}: ${e instanceof Error ? e.message : String(e)}`));
     return Response.json({ gestartet: true, art, reiter });

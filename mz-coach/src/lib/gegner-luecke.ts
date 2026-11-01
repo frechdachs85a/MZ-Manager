@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import { ladeKader } from "@/lib/db/kader";
-import { ladeEditorReiter } from "@/lib/db/taktik";
+import { ladeEditorReiter, ladeTaktiken } from "@/lib/db/taktik";
 import { heuteInBerlin } from "@/lib/format";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 import { erzeugeMitWechseln } from "@/lib/mz/taktik/mit-wechseln";
@@ -46,7 +46,7 @@ export function gegnerLuecke(db: Database.Database, klasse: string | undefined, 
       aggression: fehlend.haerte[0]?.[0],
       kader: ladeKader(db),
       spieltag: naechsterLigaspieltag(heuteInBerlin()),
-    });
+    }, "neu", ladeTaktiken(db));
   } catch {
     return null; // zu wenige aufstellbare Spieler
   }

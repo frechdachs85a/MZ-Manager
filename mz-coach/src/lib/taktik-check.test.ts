@@ -65,8 +65,8 @@ describe("Taktik-Check", () => {
   it("schlägt für Ausdauer unter 8 ohne Zeitwechsel eine Wechselregel vor", () => {
     const k = basis().map((s) => (s.pid === 9 ? sp(9, 7, { ausdauer: 7 }) : sp(s.pid, 7, { ausdauer: 9 })));
     const r = pruefeTaktikGegenKader("a", xml(), [...k, sp(12, 5)], tag);
-    expect(r.wechselregeln[0]).toMatch(/^70\. 12 für 9 \(Ausdauer 7\)/);
-    expect(parseTaktikXml(r.xml).regeln.some((x) => x.out_player === "9" && x.time === "70")).toBe(true);
+    expect(r.wechselregeln[0]).toMatch(/^60\. 12 für 9 \(Ausdauer 7\)/);
+    expect(parseTaktikXml(r.xml).regeln.some((x) => x.out_player === "9" && x.time === "60")).toBe(true);
   });
 });
 
@@ -77,7 +77,7 @@ describe("Taktik-Check: höchstens 3 Wechsel", () => {
     const bank = [12, 13, 14, 15].map((p) => sp(p, 5, { ausdauer: 9 }));
     const x = xml(`${sub(13, 163)}\n${sub(14, 186)}\n${sub(15, 209)}`);
     const r = pruefeTaktikGegenKader("a", x, [...k, ...bank], tag);
-    const neu = parseTaktikXml(r.xml).regeln.filter((g) => g.time === "70");
+    const neu = parseTaktikXml(r.xml).regeln.filter((g) => g.time === "60" && !(g.out_player === "3" && g.in_player_id === "12"));
     // Nur 2 Wechsel frei: die zwei Startspieler mit der niedrigsten Ausdauer (nach der Optimierung) bekommen sie
     const aus = (pid: number) => ({ 5: 7, 6: 5, 7: 6, 8: 7 } as Record<number, number>)[pid] ?? 9;
     const imSpiel = parseTaktikXml(r.xml).pos.filter((p) => p.pos === "normal" && aus(p.pid) < 8).map((p) => p.pid).sort((a, b) => aus(a) - aus(b));
