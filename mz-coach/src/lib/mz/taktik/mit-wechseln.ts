@@ -64,8 +64,8 @@ export function unpassendeRegelnEntfernen(xml: string): { xml: string; entfernt:
 
 // Mindestabstand halten (Prüfliste Regel 2: Feldspieler mindestens 47 auseinander, y mindestens 63). Aufstellungen von
 // Topteams aus der Stats-XML liegen nach dem Umrechnen manchmal knapp darunter (343kp, 01.11.2026: 46,1 und 46,7).
-// Je Aufstellung (x/y, x1/y1, x2/y2) wird der Spieler eines zu engen Paars, der nicht an der Grenze y = 63 steht, um das
-// Nötige vom anderen weggeschoben (Ziel 48, ganze Zahlen), bis alle Abstände passen. Torwart bleibt, wie er ist.
+// Je Aufstellung (x/y, x1/y1, x2/y2) werden alle zu engen Paare gleichzeitig auseinandergeschoben, bis alle Abstände passen
+// (ganze Zahlen, Feld x 8 bis 200, y ab 63). Torwart bleibt, wie er ist.
 export function abstaendeHalten(xml: string): { xml: string; verschoben: string[] } {
   const zeilen = [...xml.matchAll(/<Pos\b[^>]*\/?>/g)].map((m) => m[0]);
   const attr = (z: string, k: string) => Number(z.match(new RegExp(`\\s${k}="(-?\\d+)"`))?.[1]);
@@ -74,26 +74,38 @@ export function abstaendeHalten(xml: string): { xml: string; verschoben: string[
   const verschoben: string[] = [];
   for (const [kx, ky] of [["x", "y"], ["x1", "y1"], ["x2", "y2"]]) {
     const p = feld.map((z) => ({ z, x: attr(z, kx), y: attr(z, ky) })).filter((q) => Number.isFinite(q.x) && Number.isFinite(q.y));
-    for (let runde = 0; runde < 60; runde++) {
-      let paar: [number, number, number] | null = null;
+    // Alle zu engen Paare gleichzeitig auseinanderschieben, jeder um die Hälfte des Fehlbetrags (der an der vorderen Grenze
+    // y MIN_Y bleibt stehen, dann bewegt sich nur der andere). Bis 01.11.2026 wurde immer nur das engste Paar korrigiert;
+    // stand ein Spieler zwischen zwei anderen (433fl: Pinheiro zwischen Vranken und Chille), pendelte er hin und her.
+    const vorher = p.map((q) => ({ x: q.x, y: q.y }));
+    for (let runde = 0; runde < 200; runde++) {
+      const zug = p.map(() => ({ x: 0, y: 0 }));
+      let eng = false;
       for (let i = 0; i < p.length; i++)
         for (let j = i + 1; j < p.length; j++) {
           const d = Math.hypot(p[i].x - p[j].x, p[i].y - p[j].y);
-          if (d < MIN_ABSTAND && (!paar || d < paar[2])) paar = [i, j, d];
+          if (d >= MIN_ABSTAND + 0.5) continue;
+          eng = true;
+          const dx = (p[j].x - p[i].x) / (d || 1) || 1;
+          const dy = (p[j].y - p[i].y) / (d || 1);
+          const um = (MIN_ABSTAND + 1 - d) / 2;
+          const iFest = p[i].y <= MIN_Y && p[j].y > MIN_Y;
+          const jFest = p[j].y <= MIN_Y && p[i].y > MIN_Y;
+          if (!iFest) { zug[i].x -= dx * um * (jFest ? 2 : 1); zug[i].y -= dy * um * (jFest ? 2 : 1); }
+          if (!jFest) { zug[j].x += dx * um * (iFest ? 2 : 1); zug[j].y += dy * um * (iFest ? 2 : 1); }
         }
-      if (!paar) break;
-      const [i, j, d] = paar;
-      // Wer bewegt sich: nicht der an der vorderen Grenze; sonst der zweite
-      const [fest, los] = p[j].y <= MIN_Y && p[i].y > MIN_Y ? [j, i] : [i, j];
-      const dx = p[los].x - p[fest].x || 1;
-      const dy = p[los].y - p[fest].y;
-      const len = Math.hypot(dx, dy) || 1;
-      const um = 48 - d;
-      // Feld im Editor: x 8 bis 200 (seiten.ts); bis 01.11.2026 0 bis 208, damit landeten Spieler am Rand außerhalb
-      p[los].x = Math.max(8, Math.min(200, Math.round(p[los].x + (dx / len) * um)));
-      p[los].y = Math.max(MIN_Y, Math.round(p[los].y + (dy / len) * um));
-      verschoben.push(`${kx === "x" ? "Start" : kx === "x1" ? "Alternative 1" : "Alternative 2"}: pid ${p[los].z.match(/pid="(\d+)"/)?.[1]} → ${p[los].x}/${p[los].y}`);
+      if (!eng) break;
+      p.forEach((q, k) => {
+        q.x = Math.max(8, Math.min(200, q.x + zug[k].x));
+        q.y = Math.max(MIN_Y, q.y + zug[k].y);
+      });
     }
+    p.forEach((q, k) => {
+      q.x = Math.round(q.x);
+      q.y = Math.round(q.y);
+      if (q.x !== vorher[k].x || q.y !== vorher[k].y)
+        verschoben.push(`${kx === "x" ? "Start" : kx === "x1" ? "Alternative 1" : "Alternative 2"}: pid ${q.z.match(/pid="(\d+)"/)?.[1]} ${vorher[k].x}/${vorher[k].y} → ${q.x}/${q.y}`);
+    });
     for (const q of p) {
       const alt = neu.get(q.z)!;
       neu.set(q.z, alt.replace(new RegExp(`(\\s${kx}=")-?\\d+(")`), `$1${q.x}$2`).replace(new RegExp(`(\\s${ky}=")-?\\d+(")`), `$1${q.y}$2`));
