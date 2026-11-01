@@ -437,8 +437,10 @@ async function vollstaendigGeprueft(db: Database.Database, reiter: string, xml: 
   const kader = ladeKader(db);
   const p = pruefeTaktik(parseTaktikXml(xml), kader);
   if (!p.ok) return `Nicht geschrieben, Prüfliste nicht erfüllt: ${p.fehler.map((f) => f.text).join(" ")}`;
-  const { alterGrenze, reiterGegenAussen, stilGegenAussen } = await import("@/lib/taktik-check");
-  const kopfballInnen = reiterGegenAussen(db).has(reiter.toLowerCase()) || stilGegenAussen(db, xml);
+  const { alterGrenze, stilGegenAussen } = await import("@/lib/taktik-check");
+  // Maßgeblich ist der Stil der XML, die geschrieben wird (nicht der bisherige Inhalt des Reiters): wird 343flo durch 442flL
+  // ersetzt, gilt der Stil von 442flL. außenR und außenL immer (Faustregel).
+  const kopfballInnen = /^au(ß|ss)en[rl]$/i.test(reiter) || stilGegenAussen(db, xml);
   const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), { kopfballInnen });
   if (c.aenderbar) return `Nicht geschrieben, die tägliche Prüfung würde noch ändern: ${c.aenderungen.length ? "Besetzung, " : ""}${c.wechselregeln.join("; ")}`;
   return null;
@@ -449,9 +451,16 @@ export async function portfolioUebernehmen(db: Database.Database, reiter: string
   const { portfolioPlan } = await import("@/lib/portfolio-plan");
   const v = portfolioPlan(db).vorschlaege.find((x) => x.reiter === reiter);
   if (!v) return { ok: false, meldung: `Für Reiter „${reiter}“ gibt es keinen Portfolio-Vorschlag mehr.` };
-  const fehlt = await vollstaendigGeprueft(db, reiter, v.xml);
+  // Besetzung wie die tägliche Prüfung (bei Stilen gegen Gegner über außen mit Kopfball innen), dann volle Prüfung
+  const { pruefeTaktikGegenKader, stilGegenAussen } = await import("@/lib/taktik-check");
+  const { ladeKader } = await import("@/lib/db/kader");
+  const { heuteInBerlin } = await import("@/lib/format");
+  const { naechsterLigaspieltag } = await import("@/lib/wissen/startbasis");
+  const c = pruefeTaktikGegenKader(reiter, v.xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), undefined, { kopfballInnen: stilGegenAussen(db, v.xml) });
+  const xml = c.fehler ? v.xml : c.xml;
+  const fehlt = await vollstaendigGeprueft(db, reiter, xml);
   if (fehlt) return { ok: false, meldung: fehlt };
-  return xmlUebernehmen(db, reiter, v.xml, `Portfolio: ${v.stil} gegen ${v.klasse}`, v.name);
+  return xmlUebernehmen(db, reiter, xml, `Portfolio: ${v.stil} gegen ${v.klasse}`, v.name);
 }
 
 // Portfolio-Lücke gegen den nächsten Ligagegner übernehmen (Marcus, 31.10.2026): in den gewählten Reiter schreiben und nach
