@@ -12,6 +12,7 @@ import { FORMEL_SKILLS } from "@/lib/mz/skills";
 import { checkKurz, taktikCheck } from "@/lib/taktik-check";
 import { portfolioPlan, vorschlagText } from "@/lib/portfolio-plan";
 import { ladeEditorReiter, ladeTaktiken } from "@/lib/db/taktik";
+import { leistungJeRolle } from "@/lib/spieler-leistung";
 import { parseTaktikXml } from "@/lib/mz/taktik/xml";
 import { parse } from "node-html-parser";
 import { spieltagLage } from "@/lib/spieltag";
@@ -271,7 +272,16 @@ export function diagnose(db: Database.Database) {
   } catch (e) {
     regeln = { fehler: e instanceof Error ? e.message : String(e) };
   }
+  // Leistung je Spieler und Rolle aus gespeicherten Spielen (zur Prüfung von außen)
+  let leistung: unknown = null;
+  try {
+    const namen = new Map((db.prepare("SELECT pid, name FROM spieler").all() as { pid: number; name: string }[]).map((r) => [r.pid, r.name]));
+    leistung = [...leistungJeRolle(db).entries()].map(([pid, l]) => ({ pid, name: namen.get(pid), rollen: l }));
+  } catch (e) {
+    leistung = { fehler: e instanceof Error ? e.message : String(e) };
+  }
   return {
+    leistung,
     regeln,
     ligaTabelle,
     scoutspiele,

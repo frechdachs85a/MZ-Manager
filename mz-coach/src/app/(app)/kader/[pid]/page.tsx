@@ -5,6 +5,8 @@ import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { SkillKugeln } from "@/components/skill-kugeln";
 import { Card, List, Row, Section } from "@/components/ui";
+import { LeistungTabelle } from "@/components/leistung-tabelle";
+import { leistungJeRolle } from "@/lib/spieler-leistung";
 import { getDb } from "@/lib/db";
 import { ladeKader } from "@/lib/db/kader";
 import { datumZeit, euro, heuteInBerlin } from "@/lib/format";
@@ -90,6 +92,18 @@ export default async function SpielerSeite(props: PageProps<"/kader/[pid]">) {
         >
           <ScoutKarte s={s} e={scout} />
         </Section>
+
+        {(() => {
+          const l = leistungJeRolle(db).get(s.pid) ?? [];
+          return (
+            <Section
+              title="Leistung in Spielen je Rolle"
+              footer="Aus deinen gespeicherten Ligaspielen (L) und Scoutspielen (S) mit Stats-XML, je 90 Minuten. Rolle = Startplatz; Eingewechselte zählen auf der Rolle des Spielers, den sie ersetzen. Grau: unter 90 Minuten, wenig Daten."
+            >
+              {l.length ? <LeistungTabelle zeilen={l.map((x) => ({ l: x }))} /> : <p className="text-[14px] text-label-2">Noch in keinem gespeicherten Spiel eingesetzt.</p>}
+            </Section>
+          );
+        })()}
 
         <Section title="MZ-Wert je Position" footer="Formel aus mz-wissen.md, Abschnitt 6. Ohne alle gewichteten Skills kein Wert.">
           <List>
