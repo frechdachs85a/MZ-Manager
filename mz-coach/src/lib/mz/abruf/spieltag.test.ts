@@ -36,12 +36,12 @@ describe("Fälligkeit", () => {
     expect(spieltagFaellig(neueDb())).toEqual({});
   });
 
-  it("5 Stunden nach Spielende (Anstoß + 95 min + 5 h) mit Ziel, danach nicht mehr", () => {
+  it("3 Stunden nach Anstoß mit Ziel, danach nicht mehr", () => {
     const db = neueDb();
-    // Anstoß 28.10. 18:45 deutsche Zeit = 17:45 UTC, fällig ab 00:20 UTC
+    // Anstoß 28.10. 18:45 deutsche Zeit = 17:45 UTC, fällig ab 20:45 UTC
     lauf(db, "2026-10-28T08:00:00Z", true, { naechstesMid: 99, anstoss: "2026-10-28T17:45:00.000Z" });
-    expect(spieltagFaellig(db, new Date("2026-10-29T00:19:00Z"))).toBeNull();
-    expect(spieltagFaellig(db, new Date("2026-10-29T00:20:00Z"))).toEqual({ ziel: 99 });
+    expect(spieltagFaellig(db, new Date("2026-10-28T20:44:00Z"))).toBeNull();
+    expect(spieltagFaellig(db, new Date("2026-10-28T20:45:00Z"))).toEqual({ ziel: 99 });
     lauf(db, "2026-10-29T00:20:00Z", true, { letztesMid: 99, naechstesMid: 100, anstoss: "2026-11-01T11:00:00.000Z" });
     expect(spieltagFaellig(db, new Date("2026-10-29T01:00:00Z"))).toBeNull();
   });

@@ -35,7 +35,7 @@ export default async function Spieltag() {
 
   return (
     <>
-      <PageHeader title="Spieltag" subtitle={`Automatisch ${NACH_SPIEL_H} Stunden nach jedem Ligaspiel: nächster Gegner mit Taktikvorschlag, dazu der Bericht deines letzten Ligaspiels`} />
+      <PageHeader title="Spieltag" subtitle={`Automatisch ${NACH_SPIEL_H} Stunden nach jedem Anstoß: nächster Gegner mit Taktikvorschlag, dazu der Bericht deines letzten Ligaspiels`} />
       <div className="seite">
         <SpieltagReiter aktiv="gegner" />
 

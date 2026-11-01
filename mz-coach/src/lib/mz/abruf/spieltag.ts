@@ -14,7 +14,7 @@ import { holeStatsXml } from "./spiele";
 import { ligaElfenHolen, ligaTabelleHolen, ligaTeamsInSitzung } from "./tabelle";
 import { marke, mitMzSitzung, MzFehler, type MzSitzung } from "./sitzung";
 
-// Spieltag-Automatik (Auftrag Marcus, 26.10.2026): 5 Stunden nach jedem Ligaspiel
+// Spieltag-Automatik (Auftrag Marcus, 26.10.2026; seit 01.11.2026 3 Stunden nach Anstoß)
 // 1. Spielplan, eigene Spielliste und die Spielliste des nächsten Ligagegners eingeloggt holen,
 // 2. Stats-XML des eigenen Ligaspiels und der letzten 8 Ligaspiele des Gegners ohne Login holen
 //    (nacheinander mit Pause, gespeicherte nie erneut).
@@ -146,7 +146,7 @@ export async function spieltagAbrufen(db: Database.Database, opt: { manuell: boo
 }
 
 // Fällig (Rückgabe: was zu tun ist, sonst null):
-// - Das im letzten gelungenen Lauf angekündigte Ligaspiel ist seit 5 Stunden vorbei und noch nicht ausgewertet.
+// - Das im letzten gelungenen Lauf angekündigte Ligaspiel ist seit 3 Stunden (ab Anstoß) vorbei und noch nicht ausgewertet.
 // - Sonst einmal täglich, damit Spielplan und nächster Gegner aktuell sind (auch ganz ohne bisherigen Lauf).
 // Nach einem Fehlschlag frühestens nach 2 Stunden erneut; nach 3 Fehlschlägen in Folge nur noch einmal am Tag.
 export function spieltagFaellig(db: Database.Database, jetzt = new Date()): { ziel?: number } | null {

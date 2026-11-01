@@ -152,7 +152,7 @@ export function LigaTabelle({
           reason={
             gespeichert && stand
               ? `Tabellenseite vom ${datumZeit(stand)} gespeichert, aber keine Tabelle mit ${TEAM.name} darin erkannt.`
-              : "Wird mit der Spieltag-Analyse 5 Stunden nach jedem Ligaspiel geholt."
+              : "Wird mit der Spieltag-Analyse 3 Stunden nach jedem Anstoß geholt."
           }
         />
       )}

@@ -17,7 +17,7 @@ import { bietomatTakt } from "@/lib/mz/abruf/bietomat-lauf";
 // 5 Uhr: Kader (Spieler, Jugend, Status, Taktikseite)
 // 4 Uhr: Top 10 (Listen wöchentlich, Nachholen täglich), eigene Spiele, Tabelle
 // 6 Uhr: Transfermarkt
-// 5 Stunden nach jedem Ligaspiel: Spieltag (Spielbericht, nächster Gegner, Taktikvorschlag), sonst täglich der Spielplan
+// 3 Stunden nach jedem Anstoß: Spieltag (Spielbericht, nächster Gegner, Taktikvorschlag), sonst täglich der Spielplan
 // danach: Aufräumen täglich, Sicherung der Datenbank wöchentlich
 const TAKT_MS = 15 * 60 * 1000;
 
@@ -126,7 +126,7 @@ async function takt() {
 export function starteZeitplan() {
   if (gestartet) return;
   gestartet = true;
-  console.log("[zeitplan] aktiv: 5 h nach jedem Ligaspiel Spieltag, 4 Uhr Top 10 (Listen wöchentlich) und eigene Spiele, 6 Uhr Transfermarkt, täglich Aufräumen, wöchentlich Sicherung");
+  console.log("[zeitplan] aktiv: 3 h nach jedem Anstoß Spieltag, 4 Uhr Top 10 (Listen wöchentlich) und eigene Spiele, 6 Uhr Transfermarkt, täglich Aufräumen, wöchentlich Sicherung");
   setTimeout(takt, 60_000).unref();
   setInterval(takt, TAKT_MS).unref();
   // Bietomat: alle 20 Sekunden prüfen, ob eine Auktion mit aktivem Auftrag in die heiße Phase kommt

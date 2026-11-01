@@ -24,7 +24,7 @@ export function Matchplan({ l, mitLink }: { l: Lage; mitLink?: boolean }) {
       <Hero>
         <div className="kapitaelchen !text-tint-hell">Matchplan · Nächstes Ligaspiel</div>
         <div className="display mt-2 text-[30px] font-bold uppercase leading-none">Noch kein Spielplan abgerufen</div>
-        <p className="mt-3 text-[14px] text-label-2">Unter „Spieltag“ einmal „Jetzt abrufen“, danach läuft es automatisch 5 Stunden nach jedem Ligaspiel.</p>
+        <p className="mt-3 text-[14px] text-label-2">Unter „Spieltag“ einmal „Jetzt abrufen“, danach läuft es automatisch 3 Stunden nach jedem Anstoß.</p>
       </Hero>
     );
   }
