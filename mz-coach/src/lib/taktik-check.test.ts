@@ -100,4 +100,15 @@ describe("Taktik-Check: höchstens 3 Wechsel", () => {
     const r = pruefeTaktikGegenKader("a", xml(), [...basis(), sp(13, 5, { ausdauer: 9, nr: 120 })], tag);
     expect(r.ok).toBe(true);
   });
+  it("stellt gegen einen Gegner über außen den kopfballstärkeren Verteidiger in die Innenverteidigung (kopfballInnen)", () => {
+    const kopf = (s: SpielerDaten, wert: number) => ({ ...s, skills: { ...s.skills, kopfball: { wert } } }) as SpielerDaten;
+    const k = basis().map((s) => (s.pid === 3 ? kopf(s, 3) : s)); // Spieler 3 innen: gleich stark, Kopfball 3
+    const bank = kopf(sp(12, 7, { ausdauer: 9 }), 9); // Bank: gleich stark als VT, Kopfball 9
+    // Ohne Gegnerbezug: VT-Formel kennt keinen Kopfball, also bleibt alles
+    expect(pruefeTaktikGegenKader("a", xml(), [...k, bank], tag).ok).toBe(true);
+    const r = pruefeTaktikGegenKader("a", xml(), [...k, bank], tag, undefined, { kopfballInnen: true });
+    const t = parseTaktikXml(r.xml);
+    expect(t.pos.find((p) => p.start.x === 104 && p.start.y === 250)?.pid).toBe(12);
+    expect(r.aenderungen.find((a) => a.neu === "12")?.grund).toBe("Kopfball 9 statt 3 (er spielt über außen)");
+  });
 });

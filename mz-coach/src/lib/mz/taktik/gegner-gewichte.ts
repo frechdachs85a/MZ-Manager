@@ -26,6 +26,19 @@ export type GegnerGewichte = {
 
 const mio = (n: number) => `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`;
 
+// Spielt er über außen? Einstellung Flügel oder ein Angreifer außen vor der Abwehr (seine Angreifer in deiner Sicht)
+export function ueberAussenLage(gegner: GegnerFeld[], seinStil?: string) {
+  const angreifer = gegner
+    .filter((p) => !p.torwart && (p.y <= STURM_Y || (istAussen(p.x) && p.y < ABWEHR_Y)))
+    .map((p) => ({ ...p, x: spiegelX(p.x) }));
+  const fluegelStil = /^Flügel/i.test(seinStil ?? "");
+  const aussenAngreifer = angreifer.filter((p) => istAussen(p.x));
+  return { angreifer, fluegelStil, aussenAngreifer, ueberAussen: fluegelStil || aussenAngreifer.length > 0 };
+}
+
+// Innenverteidiger-Platz (für den Kopfball-Zuschlag): Abwehr, nicht außen, kein Torwart
+export const istInnenverteidigung = (x: number, y: number) => y >= ABWEHR_Y && !istAussen(x);
+
 // Gewichte je Platz gegen einen Gegner (Kopfball, Drohung, Seite)
 export function gegnerGewichte(opt: {
   feld: { x: number; y: number }[]; // deine 10 Feldspieler-Plätze (Editor)
@@ -35,12 +48,7 @@ export function gegnerGewichte(opt: {
 }): GegnerGewichte {
   const kurz: string[] = [];
   // Seine Angreifer in deiner Sicht: Sturm (y ≤ 110) und Außenspieler vor der Abwehr
-  const angreifer = opt.gegner
-    .filter((p) => !p.torwart && (p.y <= STURM_Y || (istAussen(p.x) && p.y < ABWEHR_Y)))
-    .map((p) => ({ ...p, x: spiegelX(p.x) }));
-  const fluegelStil = /^Flügel/i.test(opt.seinStil ?? "");
-  const aussenAngreifer = angreifer.filter((p) => istAussen(p.x));
-  const ueberAussen = fluegelStil || aussenAngreifer.length > 0;
+  const { angreifer, fluegelStil, aussenAngreifer, ueberAussen } = ueberAussenLage(opt.gegner, opt.seinStil);
   kurz.push(
     ueberAussen
       ? `Er spielt über außen (${[fluegelStil ? "Einstellung Flügel" : "", aussenAngreifer.length ? `${aussenAngreifer.length} Angreifer außen` : ""].filter(Boolean).join(", ")}) → Innenverteidiger nach Kopfball`
@@ -80,6 +88,6 @@ export function gegnerGewichte(opt: {
   }
   const staerkster = angreifer.filter((p) => p.wert !== undefined).sort((a, b) => b.wert! - a.wert!)[0];
   if (staerkster) kurz.push(`Sein stärkster Angreifer: ${staerkster.label ?? "?"} ${mio(staerkster.wert!)} → dort dein stärkster Verteidiger`);
-  const kopfball = feld.map((p) => ueberAussen && p.y >= ABWEHR_Y && !istAussen(p.x));
+  const kopfball = feld.map((p) => ueberAussen && istInnenverteidigung(p.x, p.y));
   return { feld, faktor, kopfball, ueberAussen, gespiegelt, kurz };
 }
