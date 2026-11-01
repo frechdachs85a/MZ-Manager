@@ -4,6 +4,7 @@ import { ladeFreundTeam } from "@/lib/db/freunde";
 import { ladeAblehnungen, ladeLetzteSuche, ladeMarktRahmen, startelfAusLetztemSpiel } from "@/lib/db/markt";
 import { bewerteMarkt } from "@/lib/mz/analyse/markt";
 import { schwachstellenMitZugaengen } from "@/lib/zugaenge";
+import { alsSchwachstellen, taktikLuecken } from "@/lib/taktik-luecken";
 import { mzWert } from "@/lib/mz/formel";
 import type { MarktSpieler } from "@/lib/mz/parser/transfer";
 
@@ -18,6 +19,8 @@ export function marktErgebnis(db: Database.Database) {
   const abgelehnt = ladeAblehnungen(db);
   // Gewonnene Transfers, die noch nicht im Kader sind, zählen schon mit (Marcus, 01.11.2026)
   const schwach = start ? schwachstellenMitZugaengen(db, start.elf, kader) : null;
+  // Fehlende Spielertypen für erfolgreiche Top-10-Taktiken als zusätzliche Ziele (Marcus, 01.11.2026)
+  const luecken = schwach?.liste.length ? taktikLuecken(db, schwach.kaderMitZugaengen, Math.min(...schwach.liste.map((x) => x.wert))) : [];
   const r = rahmen?.werte;
   // Ohne Rahmen trotzdem bewerten (Marcus 31.10.2026: es gibt sicher Verstärkungen), Grenzen dann als Vorbehalt
   const basis = { abgelehnt: new Set(abgelehnt.map((a) => a.pid)), eigene: new Set([...kader.map((s) => s.pid), ...(schwach?.zugaenge.map((z) => z.spieler.pid) ?? [])]), gesperrteTeams: new Set(freund ? [freund.tid] : []) };
@@ -25,11 +28,11 @@ export function marktErgebnis(db: Database.Database) {
     schwach && suche
       ? bewerteMarkt(
           suche.spieler,
-          schwach.liste,
+          [...schwach.liste, ...alsSchwachstellen(luecken)],
           r ? { ...basis, kapital: r.kapital, auslaenderFrei: r.auslaenderMax - r.auslaender, bewilligungenFrei: r.bewilligungenMax - r.bewilligungen } : { ...basis, ohneRahmen: true },
         )
       : null;
-  return { kader, start, suche, rahmen, freund, abgelehnt, schwach, r, ergebnis };
+  return { kader, start, suche, rahmen, freund, abgelehnt, schwach, luecken, r, ergebnis };
 }
 
 // Verbesserung eines einzelnen Spielers gegen deine Startelf (Watchlist und Gebote, Marcus 31.10.2026: dort alle Infos)

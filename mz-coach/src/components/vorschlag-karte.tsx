@@ -40,7 +40,7 @@ function AlterChip({ alter }: { alter?: number }) {
   );
 }
 
-export type Verbesserung = { rolle: string; statt: string; alt: number; neu: number; gewinn: number; preis?: number };
+export type Verbesserung = { rolle: string; statt: string; alt: number; neu: number; gewinn: number; preis?: number; fuer?: string };
 
 export function SpielerKarte({
   k,
@@ -71,7 +71,7 @@ export function SpielerKarte({
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-label-3">
             {rang !== undefined ? `#${rang} · ` : ""}
-            {v ? `als ${posDe(v.rolle)} statt ${v.statt.split(" ").at(-1)}` : "Rolle nicht bewertbar"}
+            {v ? `als ${posDe(v.rolle)}${v.fuer ? ` für ${v.fuer}` : ""} statt ${v.statt.split(" ").at(-1)}` : "Rolle nicht bewertbar"}
           </div>
           <a
             href={mzMarktLink(k.pid)}
@@ -112,7 +112,7 @@ export function SpielerKarte({
       {v && (
         <div className="space-y-1.5 px-4 pt-2">
           <div className="text-[11px] text-label-3">MZ-Wert als {posDe(v.rolle)} (0 bis 10)</div>
-          <Balken label={`Dein Spieler: ${v.statt.split(" ").at(-1)}`} wert={v.alt} ton="alt" />
+          <Balken label={`${v.fuer ? "Dein bester dort" : "Dein Spieler"}: ${v.statt.split(" ").at(-1)}`} wert={v.alt} ton="alt" />
           <Balken label={`Vorschlag: ${k.name.split(" ").at(-1)}`} wert={v.neu} ton="neu" />
           {p.plusEins !== undefined && p.plusEins > v.neu && <Balken label="Vorschlag nach Training" wert={p.plusEins} ton="pot" />}
           <div className="text-[12px] text-label-2">
@@ -156,7 +156,7 @@ export function VorschlagKarte({ b, verkauf, imBietomat, rang }: { b: Bewertung;
   return (
     <SpielerKarte
       k={k}
-      v={{ rolle: b.ziel.rolle, statt: b.ziel.spieler.name, alt: b.ziel.wert, neu: b.neu, gewinn: b.gewinn, preis: b.preis }}
+      v={{ rolle: b.ziel.rolle, statt: b.ziel.spieler.name, alt: b.ziel.wert, neu: b.neu, gewinn: b.gewinn, preis: b.preis, fuer: b.ziel.fuer }}
       verkauf={verkauf}
       rang={rang}
       badge={imBietomat ? "im Bietomat" : undefined}

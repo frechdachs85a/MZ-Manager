@@ -32,7 +32,7 @@ export function zugaenge(db: Database.Database, kader = ladeKader(db), jetzt = D
   return out;
 }
 
-const alsKader = (m: MarktSpieler): SpielerDaten => ({ pid: m.pid, name: m.name, alter: m.alter, skills: m.skills, marktwert: m.wert });
+export const alsKader = (m: MarktSpieler): SpielerDaten => ({ pid: m.pid, name: m.name, alter: m.alter, skills: m.skills, marktwert: m.wert });
 
 // Startelf mit Zugängen: jeder Zugang ersetzt (größter Gewinn zuerst) den Startplatz, den er am stärksten verbessert.
 // Gibt die neue Startelf, den erweiterten Kader und je Zugang den ersetzten Spieler zurück.
@@ -68,6 +68,6 @@ export function elfMitZugaengen(elf: Slot[], kader: SpielerDaten[], neu: MarktSp
 export function schwachstellenMitZugaengen(db: Database.Database, elf: Slot[], kader = ladeKader(db)) {
   const z = zugaenge(db, kader);
   const m = elfMitZugaengen(elf, kader, z.map((x) => x.spieler));
-  return { ...schwachstellen(m.elf, m.kader), zugaenge: z, ersetzt: m.ersetzt };
+  return { ...schwachstellen(m.elf, m.kader), zugaenge: z, ersetzt: m.ersetzt, kaderMitZugaengen: m.kader };
 }
 

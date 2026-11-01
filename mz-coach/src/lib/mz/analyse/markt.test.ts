@@ -100,3 +100,14 @@ describe("Schwachstellen und Marktbewertung", () => {
     expect(mindestpreis(markt(1, {}, { markt: { kasten: "" } }))).toBeUndefined();
   });
 });
+
+describe("Fehlender Spielertyp einer Taktik als Ziel", () => {
+  it("Kandidat für den Taktik-Platz bekommt den Vermerk, die Startelf-Summe bleibt die echte", () => {
+    const liste = schwachstellen(elf, kader).liste;
+    const fluegel = { slot: { pid: 3, x: 20, y: 150, torwart: false }, rolle: "Flügel" as const, spieler: kader[2], wert: 2, fuer: "4-3-3 Flügel/offensiv" };
+    const e = bewerteMarkt([markt(10, alle(9))], [...liste, fluegel], rahmen());
+    expect(e.empfehlung?.ziel.fuer).toBe("4-3-3 Flügel/offensiv");
+    expect(e.empfehlung?.elfVorher).toBe(Math.round(liste.reduce((n, s) => n + s.wert, 0) * 100) / 100);
+    expect(e.empfehlung?.gruende[0]).toContain("Fehlender Spielertyp");
+  });
+});
