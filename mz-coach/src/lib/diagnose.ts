@@ -9,7 +9,8 @@ import { letzterLauf } from "@/lib/db/spieltag";
 import { bewerteMarkt } from "@/lib/mz/analyse/markt";
 import { mzWert } from "@/lib/mz/formel";
 import { FORMEL_SKILLS } from "@/lib/mz/skills";
-import { checkKurz, taktikCheck } from "@/lib/taktik-check";
+import { checkKurz, reiterGegenAussen, taktikCheck } from "@/lib/taktik-check";
+import { istInnenverteidigung } from "@/lib/mz/taktik/gegner-gewichte";
 import { portfolioPlan, vorschlagText } from "@/lib/portfolio-plan";
 import { ladeEditorReiter, ladeTaktiken } from "@/lib/db/taktik";
 import { leistungJeRolle } from "@/lib/spieler-leistung";
@@ -273,6 +274,25 @@ export function diagnose(db: Database.Database) {
   } catch (e) {
     regeln = { fehler: e instanceof Error ? e.message : String(e) };
   }
+  // Reiter gegen Gegner über außen: Innenverteidiger mit Kopfball und Vorschlag der Prüfung (Marcus, 01.11.2026)
+  let gegenAussen: unknown = null;
+  try {
+    const aussen = reiterGegenAussen(db);
+    const kader = new Map(ladeKader(db).map((k) => [k.pid, k]));
+    gegenAussen = taktikCheck(db)
+      .filter((c) => aussen.has(c.reiter.toLowerCase()))
+      .map((c) => {
+        const innen = (xml: string) =>
+          [...xml.matchAll(/<Pos\b[^>]*>/g)]
+            .map((m) => ({ pos: m[0].match(/\spos="([^"]*)"/)?.[1], pid: Number(m[0].match(/\spid="(\d+)"/)?.[1]), x: Number(m[0].match(/\sx="([^"]*)"/)?.[1]), y: Number(m[0].match(/\sy="([^"]*)"/)?.[1]) }))
+            .filter((p) => p.pos === "normal" && istInnenverteidigung(p.x, p.y))
+            .map((p) => `${kader.get(p.pid)?.name.split(" ").at(-1) ?? p.pid} (Kopfball ${kader.get(p.pid)?.skills.kopfball?.wert ?? "?"})`);
+        const alt = ladeTaktiken(db).find((t) => t.reiter === c.reiter)?.xml ?? c.xml;
+        return { reiter: c.reiter, innenJetzt: innen(alt), innenVorschlag: c.aenderbar ? innen(c.xml) : null, aenderungen: checkKurz(c), fehler: c.fehler };
+      });
+  } catch (e) {
+    gegenAussen = { fehler: e instanceof Error ? e.message : String(e) };
+  }
   // Leistung je Spieler und Rolle aus gespeicherten Spielen (zur Prüfung von außen)
   let leistung: unknown = null;
   try {
@@ -282,6 +302,7 @@ export function diagnose(db: Database.Database) {
     leistung = { fehler: e instanceof Error ? e.message : String(e) };
   }
   return {
+    gegenAussen,
     leistung,
     regeln,
     ligaTabelle,

@@ -437,8 +437,8 @@ async function vollstaendigGeprueft(db: Database.Database, reiter: string, xml: 
   const kader = ladeKader(db);
   const p = pruefeTaktik(parseTaktikXml(xml), kader);
   if (!p.ok) return `Nicht geschrieben, Prüfliste nicht erfüllt: ${p.fehler.map((f) => f.text).join(" ")}`;
-  const { alterGrenze } = await import("@/lib/taktik-check");
-  const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter));
+  const { alterGrenze, reiterGegenAussen, reiterOptionen } = await import("@/lib/taktik-check");
+  const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), reiterOptionen(reiterGegenAussen(db), reiter));
   if (c.aenderbar) return `Nicht geschrieben, die tägliche Prüfung würde noch ändern: ${c.aenderungen.length ? "Besetzung, " : ""}${c.wechselregeln.join("; ")}`;
   return null;
 }
@@ -480,8 +480,8 @@ export async function regelnErgaenzen(db: Database.Database, reiter: string): Pr
   const a = abstaendeHalten(u.xml);
   const s = mitSpielstandRegeln(a.xml);
   // Altersreiter (U18): nur Spieler im Alter, keine Ausdauer-Wechsel (wie die tägliche Prüfung)
-  const { alterGrenze } = await import("@/lib/taktik-check");
-  const c = pruefeTaktikGegenKader(reiter, s.xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter));
+  const { alterGrenze, reiterGegenAussen, reiterOptionen } = await import("@/lib/taktik-check");
+  const c = pruefeTaktikGegenKader(reiter, s.xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), reiterOptionen(reiterGegenAussen(db), reiter));
   const xml = c.fehler ? s.xml : c.xml;
   if (xml === t.xml) return { ok: true, meldung: `Reiter „${reiter}“ hat schon alle Regeln, nichts geändert.` };
   const fehlt = await vollstaendigGeprueft(db, reiter, xml);
@@ -546,7 +546,8 @@ export async function alternativenErgaenzen(db: Database.Database, reiter: strin
   const ab = abstaendeHalten(xml);
   xml = ab.xml;
   text.push(...ab.verschoben);
-  const c = pruefeTaktikGegenKader(reiter, xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter));
+  const { reiterGegenAussen, reiterOptionen } = await import("@/lib/taktik-check");
+  const c = pruefeTaktikGegenKader(reiter, xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()), alterGrenze(db, reiter), reiterOptionen(reiterGegenAussen(db), reiter));
   if (!c.fehler) xml = c.xml;
   const fehlt = await vollstaendigGeprueft(db, reiter, xml);
   if (fehlt) return { ok: false, meldung: `${text.join("; ")}. ${fehlt}` };
