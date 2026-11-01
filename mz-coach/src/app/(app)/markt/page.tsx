@@ -85,18 +85,27 @@ export default async function Markt(props: PageProps<"/markt">) {
           )}
           {luecken.length > 0 && (
             <Card className="mb-3 border-l-4 border-orange p-3 text-[13.5px]">
-              <div className="font-semibold">Erfolgreiche Top-10-Taktiken, für die dir ein Spielertyp fehlt</div>
+              <div className="font-semibold">Taktiken, für die dir ein Spielertyp fehlt</div>
               <ul className="mt-1 space-y-1 text-label-2">
                 {luecken.map((l) => (
-                  <li key={l.stil.schluessel}>
-                    <b className="text-label">{stilDe(l.stil.schluessel)}</b> gegen „{l.klasse}“: {l.stil.S} S / {l.stil.U} U / {l.stil.N} N ({Math.round(l.stil.quote * 100)} %)
-                    {l.deinBester ? `, dein bester Stil dagegen ${stilDe(l.deinBester.schluessel)} ${Math.round(l.deinBester.quote * 100)} %` : ", du hast keinen bewährten Stil dagegen"}. Fehlt:{" "}
-                    {l.plaetze.map((p) => `${posDe(p.rolle)} (dein bester: ${p.spieler.name} ${p.wert.toFixed(2).replace(".", ",")})`).join(", ")}
+                  <li key={`${l.art}-${l.name}`}>
+                    {l.art === "reiter" ? (
+                      <>
+                        Dein Reiter <b className="text-label">{l.name}</b>
+                      </>
+                    ) : (
+                      <>
+                        <b className="text-label">{stilDe(l.name)}</b> gegen „{l.klasse}“
+                        {l.stil && `: ${l.stil.S} S / ${l.stil.U} U / ${l.stil.N} N (${Math.round(l.stil.quote * 100)} %)`}
+                        {l.deinBester ? `, dein bester Stil dagegen ${stilDe(l.deinBester.schluessel)} ${Math.round(l.deinBester.quote * 100)} %` : ", du hast keinen bewährten Stil dagegen"}
+                      </>
+                    )}
+                    . Fehlt: {l.plaetze.map((p) => `${posDe(p.rolle)} (dein bester: ${p.spieler.name} ${p.wert.toFixed(2).replace(".", ",")})`).join(", ")}
                   </li>
                 ))}
               </ul>
               <p className="mt-1 text-[12px] text-label-3">
-                „Fehlt“ = dein bester Spieler für diesen Platz ist schwächer als dein heute schwächster Startelf-Platz. Passende Kandidaten stehen unten mit „für …“.
+                „Fehlt“ = dein bester Spieler für diesen Platz ist schwächer als dein heute schwächster Startelf-Platz (alle als einsetzbar gerechnet, Trainingslager und Verletzungen zählen hier nicht). Geprüft: deine Reiter ohne Liga, freund und U18 sowie erfolgreichere Top-10-Stile, die du nicht hast. Passende Kandidaten stehen unten mit „für …“.
               </p>
             </Card>
           )}

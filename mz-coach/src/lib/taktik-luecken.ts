@@ -5,6 +5,10 @@ import type { SpielerDaten } from "@/lib/mz/spieler";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { heuteInBerlin } from "@/lib/format";
 import { portfolioAnalyse, type StilEintrag } from "@/lib/portfolio";
+import { JUGEND } from "@/lib/portfolio-plan";
+import { FREUND } from "@/lib/freund-check";
+import { istAltersreiter, ladeEditorReiter } from "@/lib/db/taktik";
+import { archivLaden } from "@/lib/taktik-archiv";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 
 // Fehlende Spielertypen für erfolgreiche Top-10-Taktiken (Marcus, 01.11.2026): Gibt es einen bei den Top 10 bewährten
@@ -13,16 +17,48 @@ import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
 // einem gewonnenen Spiel, wie beim Portfolio). Ein Platz, den dein bester Spieler dort schwächer besetzt als dein heute
 // schwächster Startelf-Platz, ist ein fehlender Spielertyp: zusätzliches Suchziel für den Transfermarkt.
 
+// art "top10": bewährter Top-10-Stil, den du nicht hast; art "reiter": einer deiner Reiter (ohne Liga, freund, U18/Jugend;
+// Marcus 01.11.2026: z. B. zu viele Abwehrspieler verkauft, dann fehlen sie für eine Fünferkette)
 export type TaktikLuecke = {
-  stil: StilEintrag;
-  klasse: string;
+  art: "top10" | "reiter";
+  name: string; // Stil-Schlüssel oder Reitername
+  titel: string; // Anzeige
+  stil?: StilEintrag;
+  klasse?: string;
   deinBester?: { schluessel: string; quote: number };
   plaetze: { rolle: Schwachstelle["rolle"]; x: number; y: number; spieler: SpielerDaten; wert: number }[];
 };
 
 export const MAX_STILE = 3;
 
-export function taktikLuecken(db: Database.Database, kader: SpielerDaten[], schwelle: number): TaktikLuecke[] {
+export function taktikLuecken(db: Database.Database, kaderEcht: SpielerDaten[], schwelle: number): TaktikLuecke[] {
+  // Ob dir ein Spielertyp fehlt, hängt nicht am Trainingslager oder einer Verletzung: alle als einsetzbar rechnen
+  const kader = kaderEcht.map((s) => ({ ...s, status: { ...s.status, trainingslager: false, verletzt: false, gesperrt: false, aufstellbar: true } }));
+  const spieltag = naechsterLigaspieltag(heuteInBerlin());
+  const besetzen = (feld: { x: number; y: number }[], torwart: { x: number; y: number } | undefined, tactics?: string, playstyle?: string) => {
+    try {
+      return erzeugeTaktik({ feld, torwart, tactics, playstyle, kader, spieltag })
+        .elf.filter((x) => x.wert < schwelle)
+        .map((x) => ({ rolle: x.rolle, x: x.platz.x, y: x.platz.y, spieler: kaderEcht.find((k) => k.pid === x.spieler.pid) ?? x.spieler, wert: x.wert }));
+    } catch {
+      return null;
+    }
+  };
+  const out: TaktikLuecke[] = [];
+
+  // 1. Deine Reiter (ohne Liga, freund und Altersreiter), nur die im Editor
+  const editor = ladeEditorReiter(db);
+  for (const a of archivLaden(db)) {
+    if (!a.taktik || /^liga$/i.test(a.reiter) || FREUND.test(a.reiter) || JUGEND.test(a.reiter)) continue;
+    const e = editor?.reiter.find((r) => r.name.toLowerCase() === a.reiter.toLowerCase());
+    if (editor && (!e || istAltersreiter(e))) continue;
+    const feld = a.taktik.pos.filter((p) => p.pos === "normal").map((p) => p.start);
+    const tw = a.taktik.pos.find((p) => p.pos === "goalie")?.start;
+    const plaetze = besetzen(feld, tw, a.taktik.team.tactics, a.taktik.team.playstyle);
+    if (plaetze?.length) out.push({ art: "reiter", name: a.reiter, titel: `deinen Reiter ${a.reiter}`, plaetze });
+  }
+
+  // 2. Bewährte Top-10-Stile, die du nicht hast und die besser sind als dein bester bewährter Stil gegen diesen Typ
   const kandidaten = new Map<string, { stil: StilEintrag; klasse: string; deinBester?: { schluessel: string; quote: number } }>();
   for (const k of portfolioAnalyse(db).klassen) {
     const bewaehrt = k.stile.filter((s) => s.bewaehrt);
@@ -33,21 +69,15 @@ export function taktikLuecken(db: Database.Database, kader: SpielerDaten[], schw
       if (!alt || s.quote > alt.stil.quote) kandidaten.set(s.schluessel, { stil: s, klasse: k.klasse, deinBester: dein ? { schluessel: dein.schluessel, quote: dein.quote } : undefined });
     }
   }
-  const spieltag = naechsterLigaspieltag(heuteInBerlin());
-  const out: TaktikLuecke[] = [];
+  let top = 0;
   for (const c of [...kandidaten.values()].sort((a, b) => b.stil.quote - a.stil.quote)) {
+    if (top >= MAX_STILE) break;
     const m = c.stil.schluessel.match(/^\S+ (\S+)\/(\S+)$/);
-    let e;
-    try {
-      e = erzeugeTaktik({ feld: c.stil.beispiel.feld, torwart: c.stil.beispiel.torwart, tactics: m?.[1], playstyle: m?.[2], kader, spieltag });
-    } catch {
-      continue;
+    const plaetze = besetzen(c.stil.beispiel.feld, c.stil.beispiel.torwart, m?.[1], m?.[2]);
+    if (plaetze?.length) {
+      out.push({ art: "top10", name: c.stil.schluessel, titel: `${stilDe(c.stil.schluessel)} (Top 10 gegen „${c.klasse}“)`, ...c, plaetze });
+      top++;
     }
-    const plaetze = e.elf
-      .filter((x) => x.wert < schwelle)
-      .map((x) => ({ rolle: x.rolle, x: x.platz.x, y: x.platz.y, spieler: x.spieler, wert: x.wert }));
-    if (plaetze.length) out.push({ ...c, plaetze });
-    if (out.length >= MAX_STILE) break;
   }
   return out;
 }
@@ -60,7 +90,7 @@ export function alsSchwachstellen(l: TaktikLuecke[]): Schwachstelle[] {
       rolle: p.rolle,
       spieler: p.spieler,
       wert: p.wert,
-      fuer: `${stilDe(t.stil.schluessel)} (Top 10 gegen „${t.klasse}“)`,
+      fuer: t.titel,
     })),
   );
 }
