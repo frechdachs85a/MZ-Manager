@@ -2,7 +2,8 @@ import type Database from "better-sqlite3";
 import { ladeKader } from "@/lib/db/kader";
 import { ladeFreundTeam } from "@/lib/db/freunde";
 import { ladeAblehnungen, ladeLetzteSuche, ladeMarktRahmen, startelfAusLetztemSpiel } from "@/lib/db/markt";
-import { bewerteMarkt, schwachstellen } from "@/lib/mz/analyse/markt";
+import { bewerteMarkt } from "@/lib/mz/analyse/markt";
+import { schwachstellenMitZugaengen } from "@/lib/zugaenge";
 import { mzWert } from "@/lib/mz/formel";
 import type { MarktSpieler } from "@/lib/mz/parser/transfer";
 
@@ -15,10 +16,11 @@ export function marktErgebnis(db: Database.Database) {
   const rahmen = ladeMarktRahmen(db);
   const freund = ladeFreundTeam(db);
   const abgelehnt = ladeAblehnungen(db);
-  const schwach = start ? schwachstellen(start.elf, kader) : null;
+  // Gewonnene Transfers, die noch nicht im Kader sind, zählen schon mit (Marcus, 01.11.2026)
+  const schwach = start ? schwachstellenMitZugaengen(db, start.elf, kader) : null;
   const r = rahmen?.werte;
   // Ohne Rahmen trotzdem bewerten (Marcus 31.10.2026: es gibt sicher Verstärkungen), Grenzen dann als Vorbehalt
-  const basis = { abgelehnt: new Set(abgelehnt.map((a) => a.pid)), eigene: new Set(kader.map((s) => s.pid)), gesperrteTeams: new Set(freund ? [freund.tid] : []) };
+  const basis = { abgelehnt: new Set(abgelehnt.map((a) => a.pid)), eigene: new Set([...kader.map((s) => s.pid), ...(schwach?.zugaenge.map((z) => z.spieler.pid) ?? [])]), gesperrteTeams: new Set(freund ? [freund.tid] : []) };
   const ergebnis =
     schwach && suche
       ? bewerteMarkt(
@@ -34,7 +36,7 @@ export function marktErgebnis(db: Database.Database) {
 export function verbesserungFuer(db: Database.Database, s: MarktSpieler): { rolle: string; statt: string; alt: number; neu: number; gewinn: number } | null {
   const start = startelfAusLetztemSpiel(db);
   if (!start) return null;
-  const liste = schwachstellen(start.elf, ladeKader(db)).liste;
+  const liste = schwachstellenMitZugaengen(db, start.elf).liste;
   let best: { rolle: string; statt: string; alt: number; neu: number; gewinn: number } | null = null;
   for (const x of liste) {
     const w = mzWert(s.skills, x.rolle);
