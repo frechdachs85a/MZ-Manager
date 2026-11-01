@@ -97,7 +97,8 @@ describe("Taktik-Check: höchstens 3 Wechsel", () => {
   });
 
   it("ohne Altersgrenze kein Vorrang für Nr. 100 bis 150", () => {
-    const r = pruefeTaktikGegenKader("a", xml(), [...basis(), sp(13, 5, { ausdauer: 9, nr: 120 })], tag);
+    // Einwechsler 12 ist im Kader und stärker als die Nr. 120: nichts zu ändern
+    const r = pruefeTaktikGegenKader("a", xml(), [...basis(), sp(12, 6, { ausdauer: 9 }), sp(13, 5, { ausdauer: 9, nr: 120 })], tag);
     expect(r.ok).toBe(true);
   });
   it("stellt gegen einen Gegner über außen den kopfballstärkeren Verteidiger in die Innenverteidigung (kopfballInnen)", () => {
@@ -110,5 +111,17 @@ describe("Taktik-Check: höchstens 3 Wechsel", () => {
     const t = parseTaktikXml(r.xml);
     expect(t.pos.find((p) => p.start.x === 104 && p.start.y === 250)?.pid).toBe(12);
     expect(r.aenderungen.find((a) => a.neu === "12")?.grund).toBe("Kopfball 9 statt 3 (gegen Gegner über außen)");
+  });
+
+  it("Bank: stärkerer Rückkehrer wird Einwechsler der Wechselregel, nicht aufstellbarer Einwechsler wird ersetzt", () => {
+    // Regel „60. 12 für 3“; 12 ist schwach, 14 ist stärker und aufstellbar
+    const r = pruefeTaktikGegenKader("a", xml(), [...basis(), sp(12, 5, { ausdauer: 9 }), sp(14, 7, { ausdauer: 9 })], tag);
+    const t = parseTaktikXml(r.xml);
+    expect(t.regeln[0].in_player_id).toBe("14");
+    expect(t.subs.map((x) => x.pid)).toEqual([14]);
+    expect(r.bank.some((b) => b.includes("→ Test 14") || b.includes("→ 14"))).toBe(true);
+    // 12 nicht aufstellbar (Kegel): wird auch ohne Mindestgewinn ersetzt
+    const r2 = pruefeTaktikGegenKader("a", xml(), [...basis(), sp(12, 7, { ausdauer: 9, kegel: true }), sp(15, 6, { ausdauer: 9 })], tag);
+    expect(parseTaktikXml(r2.xml).regeln[0].in_player_id).toBe("15");
   });
 });

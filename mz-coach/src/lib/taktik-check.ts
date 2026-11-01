@@ -46,6 +46,7 @@ export type TaktikCheck = {
   aenderbar: boolean; // die XML ändert sich, also gibt es etwas zu übernehmen (Hinweise allein zählen nicht)
   aenderungen: PlatzAenderung[];
   wechselregeln: string[];
+  bank: string[]; // Änderungen auf der Bank (Ersatztorwart, Einwechsler der Wechselregeln, übrige Plätze)
   gewinn: number; // Summe MZ-Wert der Elf neu minus alt (kann bei erzwungenem Ersatz auch negativ sein)
   xml: string; // angepasste XML (gleich der alten, wenn ok)
   fehler?: string;
@@ -93,7 +94,7 @@ export function pruefeTaktikGegenKader(
   const plaetze = t.pos.map((p) => ({ pid: p.pid, x: p.start.x, y: p.start.y, rolle: rolle({ pid: p.pid, x: p.start.x, y: p.start.y, torwart: p.pos === "goalie" }) }));
   // Kandidaten: aufstellbar und mit bekannten Skills
   const kandidaten = ja.filter((s) => plaetze.some((p) => wertIn(s, p.rolle) !== undefined));
-  if (kandidaten.length < plaetze.length) return { reiter, ok: true, aenderbar: false, aenderungen: [], wechselregeln: [], gewinn: 0, xml, fehler: "Zu wenige aufstellbare Spieler mit bekannten Skills." };
+  if (kandidaten.length < plaetze.length) return { reiter, ok: true, aenderbar: false, aenderungen: [], wechselregeln: [], bank: [], gewinn: 0, xml, fehler: "Zu wenige aufstellbare Spieler mit bekannten Skills." };
   const prio = (s: SpielerDaten) => (alter && istPrio(s) ? PRIO_BONUS : 0);
   const innen = plaetze.map((p) => !!opt.kopfballInnen && p.rolle === "VT" && istInnenverteidigung(p.x, p.y));
   const kopf = (s: SpielerDaten | undefined, i: number) => (innen[i] && s ? KOPFBALL_GEWICHT * (s.skills.kopfball?.wert ?? 0) : 0);
@@ -150,6 +151,102 @@ export function pruefeTaktikGegenKader(
     });
   }
 
+  // Bank (Marcus, 01.11.2026: „wenn neue Spieler reinkommen, aus dem Trainingslager oder gekauft, muss alles geprüft werden …
+  // alle Möglichkeiten, die zur Verfügung stehen“): aus allen aufstellbaren Spielern außerhalb der Elf
+  // 1. je Wechselregel (Zeit, raus/rein) der beste Einwechsler für die Rolle des Platzes, den er übernimmt (innen mit
+  //    Kopfball-Zuschlag wie oben); getauscht wird, wenn der bisherige nicht aufstellbar ist oder einer um MIN_GEWINN besser ist
+  // 2. Ersatztorwart (subgoalie): bester Torwart
+  // 3. übrige Bankplätze: bisheriger Spieler bleibt, außer er ist nicht aufstellbar oder ein anderer ist in seiner besten Rolle
+  //    um MIN_GEWINN besser
+  const bank: string[] = [];
+  {
+    const tB = parseTaktikXml(out);
+    const elf = new Set(tB.pos.map((x) => x.pid));
+    const pool = ja.filter((s) => !elf.has(s.pid));
+    const vergeben = new Set<number>();
+    const besteRolle = (s?: SpielerDaten) => Math.max(...(["VT", "Anchorman", "MF", "Flügel", "Sturm"] as Position[]).map((r) => wertIn(s, r) ?? -100));
+    // 1. Einwechsler der Wechselregeln (Reihenfolge der Regeln)
+    const neuRein = new Map<number, number>(); // Index der Regel -> neuer Einwechsler
+    tB.regeln.forEach((r, ri) => {
+      if (r.check_time !== "true" || !/^\d+$/.test(r.out_player ?? "") || !/^\d+$/.test(r.in_player_id ?? "")) return;
+      const raus = Number(r.out_player);
+      const rein = Number(r.in_player_id);
+      const platz = tB.pos.find((x) => x.pid === raus);
+      if (!platz) return;
+      const ro = rolle({ pid: raus, x: platz.start.x, y: platz.start.y, torwart: false });
+      const innenP = !!opt.kopfballInnen && ro === "VT" && istInnenverteidigung(platz.start.x, platz.start.y);
+      const w = (s?: SpielerDaten) => (wertIn(s, ro) ?? -100) + (innenP && s ? KOPFBALL_GEWICHT * (s.skills.kopfball?.wert ?? 0) : 0);
+      const jetzt = nachPid.get(rein);
+      const jetztOk = !!jetzt && verfuegbarPids.has(rein) && !elf.has(rein) && !vergeben.has(rein);
+      const kand = pool.filter((s) => !vergeben.has(s.pid)).sort((a, b) => w(b) - w(a))[0];
+      if (kand && kand.pid !== rein && (!jetztOk || w(kand) >= w(jetzt) + MIN_GEWINN)) {
+        neuRein.set(ri, kand.pid);
+        vergeben.add(kand.pid);
+        bank.push(`${r.time}. für ${kurz(nachPid.get(raus), raus)}: ${kurz(jetzt, rein)}${jetzt ? ` ${komma(w(jetzt))}` : ""} → ${kurz(kand)} ${komma(w(kand))}${jetztOk ? "" : ` (${kurz(jetzt, rein)} ${ausfallGrund(jetzt)})`}`);
+      } else if (jetztOk) vergeben.add(rein);
+    });
+    // 2. und 3. Bankplätze in Reihenfolge der XML
+    const plaetzeBank = tB.subs.map((b) => ({ pos: b.pos, pid: b.pid }));
+    const neuBank = plaetzeBank.map((b) => b.pid);
+    // Einwechsler der Regeln müssen auf der Bank sitzen (nicht auf subgoalie)
+    const pflicht = [...vergeben].filter((pid) => !neuBank.includes(pid) || plaetzeBank.find((b) => b.pid === pid)?.pos === "subgoalie");
+    // Wer raus muss: nicht aufstellbar, in der Elf, oder ein alter Einwechsler, der ersetzt wurde
+    const ersetzt = new Set<number>();
+    tB.regeln.forEach((r, ri) => {
+      if (neuRein.has(ri)) ersetzt.add(Number(r.in_player_id));
+    });
+    const frei = (i: number) => {
+      const pid = neuBank[i];
+      return !verfuegbarPids.has(pid) || elf.has(pid) || (ersetzt.has(pid) && !vergeben.has(pid));
+    };
+    // Ersatztorwart
+    const gi = plaetzeBank.findIndex((b) => b.pos === "subgoalie");
+    if (gi >= 0) {
+      const tw = (s?: SpielerDaten) => wertIn(s, "TW") ?? -100;
+      const jetzt = nachPid.get(neuBank[gi]);
+      const kand = pool.filter((s) => !vergeben.has(s.pid) && !neuBank.includes(s.pid)).sort((a, b) => tw(b) - tw(a))[0];
+      if (kand && (frei(gi) || tw(kand) >= tw(jetzt) + MIN_GEWINN)) {
+        bank.push(`Ersatztorwart: ${kurz(jetzt, neuBank[gi])} ${komma(tw(jetzt))} → ${kurz(kand)} ${komma(tw(kand))}`);
+        neuBank[gi] = kand.pid;
+      }
+      vergeben.add(neuBank[gi]);
+    }
+    // Pflicht-Einwechsler auf freie bzw. schwächste Feld-Bankplätze
+    for (const pid of pflicht) {
+      const idx = neuBank
+        .map((b, i) => ({ b, i }))
+        .filter(({ i, b }) => plaetzeBank[i].pos !== "subgoalie" && !(vergeben.has(b) && b !== pid))
+        .sort((a, b) => Number(frei(b.i)) - Number(frei(a.i)) || besteRolle(nachPid.get(a.b)) - besteRolle(nachPid.get(b.b)))[0];
+      if (!idx) continue;
+      neuBank[idx.i] = pid;
+    }
+    // Übrige Feld-Bankplätze
+    neuBank.forEach((pid, i) => {
+      if (plaetzeBank[i].pos === "subgoalie" || vergeben.has(pid)) return;
+      const jetzt = nachPid.get(pid);
+      const kand = pool.filter((s) => !vergeben.has(s.pid) && !neuBank.includes(s.pid)).sort((a, b) => besteRolle(b) - besteRolle(a))[0];
+      if (kand && (frei(i) || besteRolle(kand) >= besteRolle(jetzt) + MIN_GEWINN)) {
+        bank.push(`Bank: ${kurz(jetzt, pid)}${jetzt ? ` ${komma(besteRolle(jetzt))}` : ""} → ${kurz(kand)} ${komma(besteRolle(kand))}`);
+        neuBank[i] = kand.pid;
+      }
+      vergeben.add(neuBank[i]);
+    });
+    // In die XML schreiben: Sub-Zeilen der Reihe nach, in_player_id der geänderten Regeln
+    if (neuBank.some((pid, i) => pid !== plaetzeBank[i].pid) || neuRein.size) {
+      let bi = -1;
+      out = out.replace(/<Sub\b[^>]*\/?>/g, (z) => {
+        bi++;
+        return neuBank[bi] !== undefined ? z.replace(/(\spid=")\d+(")/, `$1${neuBank[bi]}$2`) : z;
+      });
+      let ri = -1;
+      out = out.replace(/<TacticRule\b[^>]*\/?>/g, (z) => {
+        ri++;
+        const n = neuRein.get(ri);
+        return n !== undefined ? z.replace(/(\sin_player_id=")\d+(")/, `$1${n}$2`) : z;
+      });
+    }
+  }
+
   // Ausdauer: Startspieler unter der Grenze ohne Zeitwechsel bekommen eine Wechselregel mit dem besten Bankspieler
   const tNeu = parseTaktikXml(out);
   const wechselregeln: string[] = [];
@@ -181,7 +278,7 @@ export function pruefeTaktikGegenKader(
   }
   if (neueRegeln.length) out = out.replace(/<\/SoccerTactics>/, `${neueRegeln.join("\n")}\n</SoccerTactics>`);
 
-  return { reiter, ok: !aenderungen.length && !neueRegeln.length && !wechselregeln.length, aenderbar: out !== xml, aenderungen, wechselregeln, gewinn: umstellen ? gewinn : 0, xml: out };
+  return { reiter, ok: !aenderungen.length && !neueRegeln.length && !wechselregeln.length && !bank.length, aenderbar: out !== xml, aenderungen, wechselregeln, bank, gewinn: umstellen ? gewinn : 0, xml: out };
 }
 
 // Altersgrenze eines Reiters: Altersregler aus dem Editor; ohne Editor-Stand bei Namen U18/U21/U23 bis zu diesem Alter
@@ -242,7 +339,7 @@ export function taktikCheck(db: Database.Database): TaktikCheck[] {
     try {
       return pruefeTaktikGegenKader(t.reiter, t.xml, kader, spieltag, alterGrenze(db, t.reiter), reiterOptionen(aussen, t.reiter));
     } catch (e) {
-      return { reiter: t.reiter, ok: true, aenderbar: false, aenderungen: [], wechselregeln: [], gewinn: 0, xml: t.xml, fehler: e instanceof Error ? e.message : String(e) };
+      return { reiter: t.reiter, ok: true, aenderbar: false, aenderungen: [], wechselregeln: [], bank: [], gewinn: 0, xml: t.xml, fehler: e instanceof Error ? e.message : String(e) };
     }
   });
 }
@@ -250,4 +347,5 @@ export function taktikCheck(db: Database.Database): TaktikCheck[] {
 export const checkKurz = (c: TaktikCheck) => [
   ...c.aenderungen.map((a) => `${a.rolle} x ${a.x}: ${a.alt}${a.altWert !== undefined ? ` ${komma(a.altWert)}` : ""} → ${a.neu} ${komma(a.neuWert)}${a.grund ? ` (${a.alt} ${a.grund})` : ""}`),
   ...c.wechselregeln.map((w) => `Wechsel: ${w}`),
+  ...(c.bank ?? []).map((b) => `Bank: ${b.replace(/^Bank: /, "")}`),
 ];
