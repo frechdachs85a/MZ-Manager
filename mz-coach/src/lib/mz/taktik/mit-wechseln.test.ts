@@ -60,3 +60,13 @@ describe("Mindestabstand halten", () => {
     expect(abstaendeHalten(r.xml).verschoben).toEqual([]);
   });
 });
+
+describe("Spielstand-Regeln einzeln ergänzen", () => {
+  it("ergänzt nur fehlende Bedingungen, bestehende bleiben", () => {
+    const xml = `<SoccerTactics>\n<Team tactics="wings" playstyle="offensive" aggression="normal" captain="2" />\n<TacticRule name="Taktikregel" check_time="true" time="55" check_goal_condition="true" goal_condition="down_by_at_least" goals="1" check_player_event="false" player_event_player_type="anyone" player_event="receives_yellow" out_player="no_change" in_player_id="NULL" tactics="no_change" playstyle="no_change" aggression="aggressive" formation="no_change" />\n</SoccerTactics>`;
+    const r = mitSpielstandRegeln(xml);
+    expect(r.regeln.map((x) => x.split(":")[0])).toEqual(["ab 65. bei 2 Toren Rückstand", "ab 70. bei Führung", "ab 80. bei Gleichstand"]);
+    expect(r.xml).toContain('time="55"');
+    expect(mitSpielstandRegeln(r.xml).regeln).toEqual([]);
+  });
+});
