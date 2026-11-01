@@ -40,3 +40,23 @@ describe("ligaAusArchiv", () => {
     expect(t.pos.find((p) => p.pid === 10)!.start.x).toBe(28);
   });
 });
+
+describe("Stärkster Verteidiger gegen den stärksten Angreifer (eins zu eins)", () => {
+  it("Angreifer halb rechts: nur der nächste Abwehrplatz zählt, nicht auch der äußere", async () => {
+    const { gegnerGewichte } = await import("./gegner-gewichte");
+    const feld = [
+      { x: 33, y: 222 }, { x: 79, y: 235 }, { x: 127, y: 235 }, { x: 175, y: 222 },
+      { x: 79, y: 186 }, { x: 127, y: 186 }, { x: 103, y: 142 }, { x: 72, y: 100 }, { x: 134, y: 100 }, { x: 103, y: 63 },
+    ];
+    // Gegner in seiner Sicht; gespiegelt (208 − x) stehen die Stürmer bei x 140 und x 80
+    const gegner = [
+      { x: 68, y: 80, wert: 1_160_000, label: "Stark" },
+      { x: 128, y: 85, wert: 1_100_000, label: "Zweiter" },
+    ];
+    const g = gegnerGewichte({ feld, gegner });
+    expect(g.faktor[2]).toBeGreaterThan(1); // x 127 gegen „Stark“
+    expect(g.faktor[3]).toBe(1); // x 175 bekommt nichts mehr
+    expect(g.faktor[1]).toBeGreaterThan(1); // x 79 gegen „Zweiter“
+    expect(g.faktor[2]).toBeGreaterThan(g.faktor[1]);
+  });
+});
