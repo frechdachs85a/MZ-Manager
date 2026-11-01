@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SpielMuster, Stil } from "@/lib/mz/analyse/muster";
-import { getrennt } from "./angriff-abwehr";
+import { datenWahl, getrennt } from "./angriff-abwehr";
 
 // Erfundene Spiele (keine echten Daten)
 const stil = (tactic: string, hinten: number, aussen: boolean): Stil =>
@@ -26,5 +26,18 @@ describe("Angriff und Abwehr getrennt", () => {
     expect(r.abwehr.find((z) => z.schluessel === "Viererkette gegen eng")).toMatchObject({ spiele: 1, gegentore: 0, zuNull: 1 });
     expect(r.abwehr.find((z) => z.schluessel === "Viererkette gegen über außen")).toMatchObject({ spiele: 1, gegentore: 2 });
     expect(r.abwehr.find((z) => z.schluessel === "Fünferkette gegen über außen")).toMatchObject({ spiele: 1, gegentore: 0 });
+  });
+
+  it("wählt Angriff nach seiner Kette und Abwehr nach seinem Angriff, nur Zellen mit genug Spielen", () => {
+    const viele = (n: number, e: Stil, g: Stil, t: number, gt: number) => Array.from({ length: n }, () => spiel(e, g, t, gt));
+    const r = getrennt([
+      ...viele(8, stil("wings", 5, true), stil("wings", 3, true), 4, 1), // Flügel gegen 3er: 4 Tore; 5er gegen außen: 1 Gegentor
+      ...viele(8, stil("shortpass", 4, false), stil("wings", 3, true), 2, 3), // Kurzpass gegen 3er: 2 Tore; 4er gegen außen: 3
+      ...viele(3, stil("longball", 3, false), stil("wings", 3, true), 9, 0), // zu wenige Spiele
+    ]);
+    const w = datenWahl(r, "3er-Kette", "über außen")!;
+    expect(w.angriff).toMatchObject({ art: "Flügel", tore: 4 });
+    expect(w.abwehr).toMatchObject({ kette: "Fünferkette", gegentore: 1 });
+    expect(datenWahl(r, "Fünferkette", "über außen")).toBeNull();
   });
 });

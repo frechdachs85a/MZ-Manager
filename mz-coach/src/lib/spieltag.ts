@@ -31,6 +31,7 @@ import { ladeTaktiken } from "@/lib/db/taktik";
 import { anpassen } from "@/lib/mz/taktik/anpassen";
 import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
 import { gegnerGewichte, istInnenverteidigung, ueberAussenLage } from "@/lib/mz/taktik/gegner-gewichte";
+import { angriffAbwehrGetrennt, angriffsArtVon, datenWahl, ketteName } from "@/lib/angriff-abwehr";
 import { ligaAusArchiv } from "@/lib/mz/taktik/liga-anpassen";
 import { scoutAuswertung } from "@/lib/scout-auswertung";
 import { vorhersage } from "@/lib/vorhersage";
@@ -114,15 +115,44 @@ export function spieltagLage(db: Database.Database) {
 
   // Faustregel (Abschnitt 10) auf die erwartete Aufstellung anwenden, nicht auf sein neuestes Spiel
   const bezugAusw = neuestes && gegner?.analyse ? gegner.analyse.spiele.find((x) => x.mid === neuestes.mid) : undefined;
-  const bezugTaktik = bezugAusw ? (bezugAusw.formation.abwehr >= 5 || bezugAusw.engeMitte ? "kupass" : "außenR") : undefined;
+  const bezugTaktikAlt = bezugAusw ? (bezugAusw.formation.abwehr >= 5 || bezugAusw.engeMitte ? "kupass" : "außenR") : undefined;
+  // Angriff und Abwehr getrennt nach den Top 10 (Marcus, 01.11.2026: „mein Angriff schaut auf seine Abwehr, meine Abwehr auf
+  // seinen Angriff“; „die Werte der Top-Teams sind federführend“): Angriffsstil nach seiner Kette, eigene Kette nach seinem
+  // Angriff. Gewählt wird dein Reiter mit genau diesem Stil und dieser Kette (ohne Liga, freund, Altersreiter); gibt es keinen
+  // oder zu wenige Top-10-Spiele, gilt die alte Faustregel.
+  const wahl = (() => {
+    if (!bezugAusw) return null;
+    try {
+      const w = datenWahl(angriffAbwehrGetrennt(db), ketteName(bezugAusw.formation.abwehr), bezugAusw.engeMitte ? "eng" : "über außen");
+      if (!w) return null;
+      const passend = archiv.filter((a) => {
+        if (!a.taktik || /^liga$/i.test(a.reiter) || /^freund/i.test(a.reiter) || /^u(18|21|23)\b/i.test(a.reiter)) return false;
+        const hinten = a.taktik.pos.filter((p) => p.pos === "normal" && p.start.y >= ABWEHR_Y).length;
+        return angriffsArtVon(a.taktik.team.tactics) === w.angriff.art && ketteName(hinten) === w.abwehr.kette;
+      });
+      // außenR vor außenL (die Seitenwahl tauscht danach), sonst der erste passende
+      const r = passend.find((a) => /^au(ß|ss)enr$/i.test(a.reiter)) ?? passend[0];
+      return r ? { ...w, reiter: r.reiter } : { ...w, reiter: undefined };
+    } catch {
+      return null;
+    }
+  })();
+  const bezugTaktik = wahl?.reiter ?? bezugTaktikAlt;
   const empfehlung = gegner?.analyse?.empfehlung
     ? {
         ...gegner.analyse.empfehlung,
         ...(bezugAusw && bezugTaktik
           ? {
-              taktik: bezugTaktik as "kupass" | "außenR",
-              gruende: [
+              taktik: bezugTaktik,
+              gruende: wahl?.reiter
+                ? [
+                    ...(vh ? [vh.text] : []),
+                    ...wahl.text,
+                    `Dein Reiter mit ${wahl.angriff.art} und ${wahl.abwehr.kette}: ${wahl.reiter}.`,
+                  ]
+                : [
                 ...(vh ? [vh.text] : []),
+                ...(wahl ? [...wahl.text, `Kein Reiter mit ${wahl.angriff.art} und ${wahl.abwehr.kette} → alte Faustregel.`] : []),
                 bezugAusw.formation.abwehr >= 5
                   ? `Fünferkette in der erwarteten Aufstellung (${bezugAusw.formation.text}) → kupass.`
                   : bezugAusw.engeMitte
@@ -149,8 +179,9 @@ export function spieltagLage(db: Database.Database) {
     const eng = a.spiele.filter((x) => x.engeMitte).length;
     return [
       vh?.grund === "trend" ? "Trend erkannt → so erwartet" : vh?.grund === "wie-du" ? `Gegen Gegner wie dich → ${neu.formation.text} erwartet` : a.urteil === "duenn" ? "Wenig Daten → Standard" : "Häufigste Aufstellung erwartet",
-      ...(neu.engeMitte ? ["Enge Mitte erwartet"] : []),
-      ...(neu.formation.abwehr >= 5 ? [`Fünferkette (${neu.formation.text})`] : []),
+      ...(wahl?.reiter
+        ? [`Angriff: ${wahl.angriff.art} gegen seine ${ketteName(neu.formation.abwehr)}`, `Abwehr: ${wahl.abwehr.kette} gegen seinen Angriff ${neu.engeMitte ? "eng" : "über außen"}`]
+        : [...(neu.engeMitte ? ["Enge Mitte erwartet"] : []), ...(neu.formation.abwehr >= 5 ? [`Fünferkette (${neu.formation.text})`] : [])]),
       `Enge Mitte in ${eng} von ${a.spiele.length} Spielen`,
       `→ ${empfehlung.taktik}`,
     ];

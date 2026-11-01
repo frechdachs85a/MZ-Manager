@@ -17,7 +17,8 @@ export const kette = (s: Stil) => {
   const n = s.feld.filter((p) => p.y >= ABWEHR_Y).length;
   return n >= 5 ? "Fünferkette" : n === 4 ? "Viererkette" : `${n}er-Kette`;
 };
-export const angriffsArt = (s: Stil) => ART[s.tactic ?? ""] ?? s.tactic ?? "?";
+export const angriffsArtVon = (tactic?: string) => ART[tactic ?? ""] ?? tactic ?? "?";
+export const angriffsArt = (s: Stil) => angriffsArtVon(s.tactic);
 export const seinAngriff = (s: Stil) => (s.engeMitte ? "eng" : "über außen");
 
 export type Zelle = { schluessel: string; spiele: number; tore: number; gegentore: number; zuNull: number; S: number; U: number; N: number };
@@ -55,4 +56,38 @@ export function getrennt(spiele: SpielMuster[]) {
 export function angriffAbwehrGetrennt(db: Database.Database) {
   const { teams } = topAuswertung(db);
   return getrennt(teams.flatMap((t) => [...t.liga.spiele, ...t.weltliga.spiele]));
+}
+
+// Mindestzahl Spiele je Zelle, damit eine Zelle zählt (eigene Setzung; darunter entscheidet der Zufall zu viel)
+export const MIN_SPIELE_ZELLE = 8;
+export const ketteName = (n: number) => (n >= 5 ? "Fünferkette" : n === 4 ? "Viererkette" : `${n}er-Kette`);
+
+export type DatenWahl = {
+  angriff: { art: string; tore: number; spiele: number };
+  abwehr: { kette: string; gegentore: number; spiele: number };
+  text: string[];
+};
+
+// Datengeführte Wahl (Marcus, 01.11.2026: „die Werte von den Top-Teams sind federführend“): Angriffsstil mit den meisten
+// Toren gegen seine Kette, eigene Kette mit den wenigsten Gegentoren gegen seinen Angriff, je Zelle mindestens
+// MIN_SPIELE_ZELLE Spiele.
+export function datenWahl(g: ReturnType<typeof getrennt>, seineKette: string, seinAngriffArt: string): DatenWahl | null {
+  const a = g.angriff
+    .filter((z) => z.schluessel.endsWith(` gegen ${seineKette}`) && z.spiele >= MIN_SPIELE_ZELLE)
+    .sort((x, y) => y.tore - x.tore);
+  const b = g.abwehr
+    .filter((z) => z.schluessel.endsWith(` gegen ${seinAngriffArt}`) && z.spiele >= MIN_SPIELE_ZELLE)
+    .sort((x, y) => x.gegentore - y.gegentore);
+  if (!a.length || !b.length) return null;
+  const komma = (n: number) => n.toFixed(2).replace(".", ",");
+  const art = a[0].schluessel.replace(` gegen ${seineKette}`, "");
+  const kette = b[0].schluessel.replace(` gegen ${seinAngriffArt}`, "");
+  return {
+    angriff: { art, tore: a[0].tore, spiele: a[0].spiele },
+    abwehr: { kette, gegentore: b[0].gegentore, spiele: b[0].spiele },
+    text: [
+      `Angriff gegen seine ${seineKette} (Top 10): ${a.map((z) => `${z.schluessel.replace(` gegen ${seineKette}`, "")} ${komma(z.tore)} Tore (${z.spiele} Spiele)`).join(", ")} → ${art}`,
+      `Abwehr gegen seinen Angriff ${seinAngriffArt} (Top 10): ${b.map((z) => `${z.schluessel.replace(` gegen ${seinAngriffArt}`, "")} ${komma(z.gegentore)} Gegentore (${z.spiele} Spiele)`).join(", ")} → ${kette}`,
+    ],
+  };
 }

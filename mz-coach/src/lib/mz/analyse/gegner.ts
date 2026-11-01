@@ -180,7 +180,7 @@ export type GegnerAnalyse = {
   urteilText: string;
   begruendung: { mid: number; text: string }[]; // je Spiel, verglichen mit dem neuesten
   konstant: string[];
-  empfehlung: { taktik: "außenR" | "kupass"; regel: string; gruende: string[]; vorbehalte: string[] };
+  empfehlung: { taktik: string; regel: string; gruende: string[]; vorbehalte: string[] };
   bilanz: { siege: number; remis: number; niederlagen: number; tore: number; gegentore: number };
 };
 
