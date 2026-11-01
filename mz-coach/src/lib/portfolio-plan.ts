@@ -229,13 +229,20 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   // 3. Freie Reiter mit Lücken und klar besseren Stilen füllen. Zuerst leere Reiter im Editor (Marcus, 01.11.2026: „du darfst
   // passende Taktiken vorschlagen und ins Portfolio aufnehmen“; so wird nichts überschrieben), danach doppelte (keine Jugend).
   const leer = (ladeEditorReiter(db)?.reiter ?? []).filter((r) => r.spieler === 0 && r.slot.toLowerCase() <= LETZTER_REITER).map((r) => r.name);
-  const frei: { reiter: string; wie: string; art: PortfolioPlan["doppelt"][number]["art"] | "leer" }[] = [
+  const frei: { reiter: string; wie: string; art: PortfolioPlan["doppelt"][number]["art"] | "leer" | "schwach" }[] = [
     ...leer.map((r) => ({ reiter: r, wie: "", art: "leer" as const })),
     ...doppelt
       .filter((d) => d.art !== "gespiegelt" && !FEST.test(d.reiter))
       .sort((a, b) => Number(ZWECK.test(a.reiter)) - Number(ZWECK.test(b.reiter)) || (a.art === b.art ? 0 : a.art === "identisch" ? -1 : 1)),
   ];
-  const grundFrei = (d: (typeof frei)[number]) => (d.art === "leer" ? "leerer Reiter im Editor" : d.art === "identisch" ? `identisch mit ${d.wie}` : `gleicher Stil wie ${d.wie}`);
+  const grundFrei = (d: (typeof frei)[number]) =>
+    d.art === "leer"
+      ? "leerer Reiter im Editor"
+      : d.art === "schwach"
+        ? `Stil ${d.wie} bei den Top 10 nicht bewährt`
+        : d.art === "identisch"
+          ? `identisch mit ${d.wie}`
+          : `gleicher Stil wie ${d.wie}`;
   const kandidaten = abdeckung
     .map((a) => ({
       a,
@@ -263,7 +270,6 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   // zu können“): jeder Stil (Formation, Taktik, Spielweise), den die Topteams über alle Gegner zusammen mindestens
   // MIN_SPIELE_BREITE-mal spielten und mit mindestens MIN_QUOTE Punktquote, kommt in einen leeren Reiter, wenn du ihn noch
   // nicht hast. Meistgespielte zuerst. Nur leere Reiter, damit nichts überschrieben wird.
-  const leereFrei = frei.filter((d) => d.art === "leer").length;
   const gesamt = new Map<string, StilEintrag & { klasse: string }>();
   for (const k of p.klassen)
     for (const st of k.stile) {
@@ -301,11 +307,20 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
     return !!g && g.spiele >= MIN_SPIELE_BREITE && g.quote >= MIN_QUOTE;
   };
   const spiegelWichtig = ohneGegenstueck.filter((a) => bewaehrtGesamt(stilJe.get(a.reiter)));
+  // Reiter mit einem Stil, der bei den Top 10 nicht bewährt ist (unter MIN_SPIELE_BREITE Spielen oder unter MIN_QUOTE), dürfen
+  // durch einen bewährten Stil ersetzt werden (Marcus, 01.11.2026: „Liga, freund und U18 sind fix, den Rest kannst du bauen,
+  // wie es nötig ist“). Sie kommen nach den leeren Reitern dran; ihre Seitenvariante entfällt dann.
+  const schwach = archiv
+    .filter((a) => !/^liga$/i.test(a.reiter) && !ZWECK.test(a.reiter) && !JUGEND.test(a.reiter) && !bewaehrtGesamt(stilJe.get(a.reiter)))
+    .filter((a) => !frei.some((f) => f.reiter === a.reiter))
+    .map((a) => ({ reiter: a.reiter, wie: stilJe.get(a.reiter) ?? "?", art: "schwach" as const }));
+  frei.splice(leer.length, 0, ...schwach);
+  const ersetzbar = leer.length + schwach.length;
   const breite = [...gesamt.values()]
     .filter((x) => x.spiele >= MIN_SPIELE_BREITE && x.quote >= MIN_QUOTE && !x.imArchiv.length && !stileDrin.has(x.schluessel))
     .sort((a, b) => b.spiele - a.spiele || b.quote - a.quote);
   for (const b of breite) {
-    if (luecken.length >= leereFrei - spiegelWichtig.length) break;
+    if (luecken.length >= ersetzbar - spiegelWichtig.filter((a) => !schwach.some((x) => x.reiter === a.reiter)).length) break;
     luecken.push({ ...b, klasse: `alle Gegner (${b.S}/${b.U}/${b.N})` });
     stileDrin.add(b.schluessel);
   }
@@ -355,9 +370,10 @@ export function portfolioPlan(db: Database.Database): PortfolioPlan {
   }
 
   const belegt = new Set(vorschlaege.map((v) => v.reiter));
-  const nochFrei = frei.filter((d) => !belegt.has(d.reiter) && !ohneGegenstueck.some((o) => o.reiter === d.reiter));
-  // Zuerst die Seitenvarianten bewährter Stile, danach die übrigen
-  const spiegelReihe = [...spiegelWichtig, ...ohneGegenstueck.filter((o) => !spiegelWichtig.includes(o))];
+  const istSchwach = (r: string) => schwach.some((x) => x.reiter === r);
+  const nochFrei = frei.filter((d) => !belegt.has(d.reiter) && (istSchwach(d.reiter) || !ohneGegenstueck.some((o) => o.reiter === d.reiter)));
+  // Zuerst die Seitenvarianten bewährter Stile, danach die übrigen; ersetzbare (schwache) Reiter bekommen keine Seitenvariante
+  const spiegelReihe = [...spiegelWichtig, ...ohneGegenstueck.filter((o) => !spiegelWichtig.includes(o))].filter((o) => !istSchwach(o.reiter));
   for (const [i, o] of spiegelReihe.entries()) {
     const d = nochFrei[i];
     if (!d) break;
