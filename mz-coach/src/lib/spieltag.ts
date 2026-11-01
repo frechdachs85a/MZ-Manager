@@ -199,10 +199,11 @@ export function spieltagLage(db: Database.Database) {
     });
   }
   if (empfehlung && gegner?.analyse && vorschlag) {
-    const gleich = empfehlung.taktik === vorschlag.taktik;
+    // Seitenvariante zählt als dieselbe Empfehlung (außenR → außenL nur wegen seiner schwächeren Seite)
+    const gleich = empfehlung.taktik === vorschlag.taktik || zwilling(empfehlung.taktik) === vorschlag.taktik;
     belege.push({
       quelle: "Faustregel (mz-wissen.md, Abschnitt 10)",
-      text: regelKurz().join(" · ") + (gleich ? "" : ` (Scoutspiele wiegen schwerer)`),
+      text: (scoutWahl ? regelKurz() : vorschlag.kurz).join(" · ") + (scoutWahl && !gleich ? ` (Scoutspiele wiegen schwerer)` : ""),
       stuetzt: scoutWahl ? gleich : undefined,
     });
     // Taktik-Einstellung des vorgeschlagenen Reiters aus deinem Archiv

@@ -10,6 +10,7 @@ export type SeitenSpieler = { name: string; x: number; y: number; wert?: number;
 export type Seite = { seite: "links" | "mitte" | "rechts"; abwehr: SeitenSpieler[]; alle: SeitenSpieler[]; abwehrSchnitt?: number; alleSumme: number };
 
 const seiteVon = (x: number): Seite["seite"] => (x < LINKS_BIS ? "links" : x > RECHTS_AB ? "rechts" : "mitte");
+const namen = (s: Seite) => s.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ");
 const mio = (n?: number) => (n === undefined ? "Wert n. v." : `${(n / 1_000_000).toFixed(2).replace(".", ",")} Mio`);
 
 // Seine schwächere Abwehrseite und deine Angriffsseite
@@ -37,14 +38,15 @@ export function seitenVergleich(elf: SeitenSpieler[]): { seiten: Seite[]; text?:
   return {
     seiten,
     angriff: schwach.seite === "links" ? "rechts" : "links",
+    // Texte aus deiner Sicht (Marcus, 01.11.2026: „Schwächer: rechts“ aus seiner Sicht las sich wie „rechts angreifen“)
     kurz: [
-      `Schwächer: ${schwach.seite} (${schwach.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")})`,
-      `Stärker: ${stark.seite} (${stark.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")})`,
+      `Deine ${deine} Seite gegen ${namen(schwach)} → schwächer`,
+      `Deine ${stark.seite === "links" ? "rechte" : "linke"} Seite gegen ${namen(stark)} → stärker`,
       `→ Über deine ${deine} Seite angreifen`,
     ],
     text:
-      `Seine schwächere Abwehrseite ist ${schwach.seite} (${schwach.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")}), ` +
-      `${unterschied} % weniger wert als ${stark.seite} (${stark.abwehr.map((p) => `${p.name} ${mio(p.wert)}`).join(", ")}). ` +
-      `Ihr gegenüber liegt deine ${deine} Angriffsseite.`,
+      `Deiner ${deine}n Angriffsseite gegenüber steht seine schwächere Abwehr (${namen(schwach)}), ` +
+      `${unterschied} % weniger wert als auf deiner anderen Seite (${namen(stark)}). ` +
+      `(Aus seiner Sicht ist das seine ${schwach.seite === "links" ? "linke" : "rechte"} Seite.)`,
   };
 }

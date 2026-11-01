@@ -12,8 +12,10 @@ describe("Seitenvergleich", () => {
       { name: "Reifer", x: 62, y: 168, wert: 947764 },
     ]);
     expect(r.seiten.map((s) => s.abwehr.map((p) => p.name))).toEqual([["Roos"], ["Knapp"], ["Zhou"]]);
-    expect(r.text).toContain("schwächere Abwehrseite ist links (Roos 0,85 Mio)");
-    expect(r.text).toContain("26 % weniger wert als rechts (Zhou 1,15 Mio)");
-    expect(r.text).toContain("deine rechte Angriffsseite");
+    expect(r.angriff).toBe("rechts");
+    expect(r.text).toContain("Deiner rechten Angriffsseite gegenüber steht seine schwächere Abwehr (Roos 0,85 Mio)");
+    expect(r.text).toContain("26 % weniger wert als auf deiner anderen Seite (Zhou 1,15 Mio)");
+    expect(r.text).toContain("seine linke Seite");
+    expect(r.kurz).toEqual(["Deine rechte Seite gegen Roos 0,85 Mio → schwächer", "Deine linke Seite gegen Zhou 1,15 Mio → stärker", "→ Über deine rechte Seite angreifen"]);
   });
 });
