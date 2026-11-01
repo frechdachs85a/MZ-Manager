@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SpielMuster, Stil } from "@/lib/mz/analyse/muster";
-import { datenWahl, direkteAntwort, getrennt, teamWechsel } from "./angriff-abwehr";
+import { datenWahl, direkteAntwort, getrennt, stileGegenAussen, teamWechsel } from "./angriff-abwehr";
 
 // Erfundene Spiele (keine echten Daten)
 const stil = (tactic: string, hinten: number, aussen: boolean): Stil =>
@@ -52,5 +52,12 @@ describe("Angriff und Abwehr getrennt", () => {
     const t = teamWechsel([{ name: "A", rang: 1, spiele: sp }, { name: "B", rang: 2, spiele: viele(5, stil("wings", 4, true), gegner, 2, 0) }]);
     expect(t[0].stelltUm).toBe(true);
     expect(t[1].stelltUm).toBe(false);
+  });
+
+  it("Stil gilt als gegen außen, wenn die Topteams ihn überwiegend gegen Gegner über außen spielen", () => {
+    const fl = stil("wings", 5, true);
+    const kp = stil("shortpass", 3, false);
+    const sp = [spiel(fl, stil("wings", 4, true), 2, 0), spiel(fl, stil("wings", 4, true), 2, 0), spiel(fl, stil("shortpass", 3, false), 1, 0), spiel(kp, stil("shortpass", 3, false), 2, 0), spiel(kp, stil("wings", 4, true), 2, 0), spiel(kp, stil("shortpass", 4, false), 1, 1)];
+    expect([...stileGegenAussen(sp)]).toEqual(["5-3-2 Flügel/?"]);
   });
 });
