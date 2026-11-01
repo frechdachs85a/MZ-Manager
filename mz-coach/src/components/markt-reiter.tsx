@@ -22,6 +22,13 @@ export function MarktReiter({ aktiv, anzahl = {} }: { aktiv: (typeof REITER)[num
           {anzahl[r.href] !== undefined && <span className="ml-1.5 rounded-full bg-fill px-1.5 text-[12px] tabular-nums text-label-2">{anzahl[r.href]}</span>}
         </Link>
       ))}
+      {/* Immer erreichbar: eigenen Spieler per Nummer oder Name eintragen (Marcus, 01.11.2026) */}
+      <Link
+        href="/markt/bietomat#neu"
+        className="mb-1.5 ml-auto self-center rounded-full bg-tint px-3 py-1 text-[13px] font-semibold text-auf-akzent hover:opacity-90"
+      >
+        + Spieler eintragen
+      </Link>
     </nav>
   );
 }
