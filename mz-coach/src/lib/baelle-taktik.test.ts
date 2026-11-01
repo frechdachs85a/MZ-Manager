@@ -1,41 +1,42 @@
 import { describe, expect, it } from "vitest";
+import { FORMEL_SKILLS, type Skills } from "@/lib/mz/skills";
+import type { SpielerDaten } from "@/lib/mz/spieler";
 import { taktikFolgen } from "./baelle-taktik";
-import type { TaktikCheck } from "./taktik-check";
 
-// Erfundene Testdaten
-const xml = (...pids: number[]) => pids.map((p) => `<Pos pos="normal" pid="${p}" x="1" y="1" />`).join("\n") + `\n<Sub pid="9" />`;
-const check = (reiter: string, neu: string, aenderungen: TaktikCheck["aenderungen"] = []): TaktikCheck => ({
-  reiter,
-  ok: false,
-  aenderbar: true,
-  aenderungen,
-  wechselregeln: [],
-  gewinn: 0,
-  xml: neu,
-});
+// Erfundene Spieler und Taktik (keine echten Daten)
+const sk = (w: number): Skills => Object.fromEntries(FORMEL_SKILLS.map((s) => [s, { wert: s === "ausdauer" ? 9 : w }])) as Skills;
+const sp = (pid: number, w: number, status: SpielerDaten["status"] = { aufstellbar: true }) =>
+  ({ pid, name: `Test ${pid}`, alter: 25, status, skills: sk(w) }) as SpielerDaten;
+const pos = (pid: number, x: number, y: number, art = "normal") => `\t<Pos pos="${art}" pid="${pid}" x="${x}" y="${y}" x1="${x}" y1="${y}" x2="${x}" y2="${y}" pt="1" fk="1" />`;
+const xml = [
+  `<?xml version="1.0" ?>`,
+  `<SoccerTactics>`,
+  `\t<Team tactics="wings" playstyle="normal" aggression="normal" captain="2" />`,
+  pos(1, 103, 315, "goalie"),
+  pos(2, 50, 250), pos(3, 104, 250), pos(4, 158, 250),
+  pos(5, 60, 180), pos(6, 104, 180), pos(7, 148, 180), pos(8, 104, 140),
+  pos(9, 104, 60), pos(10, 60, 80), pos(11, 150, 80),
+  `</SoccerTactics>`,
+].join("\n");
+const tag = new Date("2026-11-01T00:00:00Z");
+const reiter = [{ reiter: "a", xml }];
+const basis = () => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((p) => sp(p, 7));
 
 describe("Taktik-Folgen der Bälle", () => {
-  it("erkennt neu drin, raus mit Grund und Stammplatz", () => {
-    const checks = [
-      check("A", xml(1, 2), [{ rolle: "MF", x: 1, y: 1, alt: "Meier", neu: "Muster", neuWert: 8 }]),
-      check("B", xml(3, 4), [{ rolle: "MF", x: 1, y: 1, alt: "Muster", neu: "Schulz", neuWert: 8 }]),
-      check("C", xml(5, 6)),
-    ];
-    const aktuell = [
-      { reiter: "A", xml: xml(7, 2) },
-      { reiter: "B", xml: xml(1, 4) },
-      { reiter: "C", xml: xml(1, 6) },
-    ];
-    const f = taktikFolgen(checks, aktuell, { jetzt: xml(1), vorher: xml(2) }, { pid: 1, name: "Max Muster", schlechter: false });
-    expect(f).toEqual([
-      { reiter: "A", art: "neu", grund: "statt Meier" },
-      { reiter: "B", art: "raus", grund: "Schulz ist besser" },
-      { reiter: "C", art: "raus", grund: undefined },
-      { reiter: "Liga", art: "liga-neu" },
-    ]);
+  it("durch die Bälle in der Startelf: vorher schwächer als alle, jetzt deutlich besser", () => {
+    const neu = sp(12, 9);
+    const f = taktikFolgen(reiter, [...basis(), neu], neu, sk(5), tag);
+    expect(f).toEqual([{ reiter: "a", art: "neu", nachAusfall: undefined, statt: expect.any(String) }]);
   });
-  it("Bank zählt nicht als Startelf", () => {
-    const f = taktikFolgen([check("A", xml(1))], [{ reiter: "A", xml: xml(1) }], {}, { pid: 9, name: "Bank Spieler", schlechter: false });
-    expect(f).toEqual([]);
+  it("wäre auch ohne die Bälle drin: kein „durch die Bälle“", () => {
+    const k = basis();
+    k[2] = sp(3, 9);
+    const f = taktikFolgen(reiter, k, k[2], sk(8.5), tag);
+    expect(f).toEqual([{ reiter: "a", art: "drin", nachAusfall: undefined }]);
+  });
+  it("im Trainingslager: gerechnet, als wäre er einsetzbar, mit Hinweis", () => {
+    const neu = sp(12, 9, { aufstellbar: false, trainingslager: true });
+    const f = taktikFolgen(reiter, [...basis(), neu], neu, sk(5), tag);
+    expect(f[0]).toMatchObject({ reiter: "a", art: "neu", nachAusfall: "nach dem Trainingslager" });
   });
 });
