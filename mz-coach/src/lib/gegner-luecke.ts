@@ -3,7 +3,7 @@ import { ladeKader } from "@/lib/db/kader";
 import { ladeEditorReiter } from "@/lib/db/taktik";
 import { heuteInBerlin } from "@/lib/format";
 import { naechsterLigaspieltag } from "@/lib/wissen/startbasis";
-import { erzeugeTaktik } from "@/lib/mz/taktik/erzeugen";
+import { erzeugeMitWechseln } from "@/lib/mz/taktik/mit-wechseln";
 import { JUGEND, nameFuer } from "@/lib/portfolio-plan";
 import type { StilEintrag } from "@/lib/portfolio";
 import { archivLaden } from "@/lib/taktik-archiv";
@@ -38,7 +38,7 @@ export function gegnerLuecke(db: Database.Database, klasse: string | undefined, 
   const m = fehlend.schluessel.match(/^\S+ (\S+)\/(\S+)$/);
   let e;
   try {
-    e = erzeugeTaktik({
+    e = erzeugeMitWechseln({
       feld: fehlend.beispiel.feld,
       torwart: fehlend.beispiel.torwart,
       tactics: m?.[1],

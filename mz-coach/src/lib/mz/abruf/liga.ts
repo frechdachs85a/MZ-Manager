@@ -424,11 +424,31 @@ export async function taktikUebernehmen(db: Database.Database, reiter: string): 
   return xmlUebernehmen(db, reiter, c.xml, "Vorschlag des Taktik-Checks");
 }
 
+// Neu erzeugte Taktik vor dem Schreiben vollständig prüfen (Marcus, 01.11.2026: „die Taktiken müssen immer komplett
+// durchdacht sein und zum Erfolg führen“): Prüfliste aus mz-wissen.md (11 Spieler, 1 Torwart, Stürmer, Abstände, Bank,
+// Rot-Regel …) und Ausdauer-Wechsel. Bei einem Fehler wird nichts geschrieben.
+async function vollstaendigGeprueft(db: Database.Database, reiter: string, xml: string): Promise<string | null> {
+  const { pruefeTaktik } = await import("@/lib/mz/taktik/pruefer");
+  const { parseTaktikXml } = await import("@/lib/mz/taktik/xml");
+  const { ladeKader } = await import("@/lib/db/kader");
+  const { pruefeTaktikGegenKader } = await import("@/lib/taktik-check");
+  const { heuteInBerlin } = await import("@/lib/format");
+  const { naechsterLigaspieltag } = await import("@/lib/wissen/startbasis");
+  const kader = ladeKader(db);
+  const p = pruefeTaktik(parseTaktikXml(xml), kader);
+  if (!p.ok) return `Nicht geschrieben, Prüfliste nicht erfüllt: ${p.fehler.map((f) => f.text).join(" ")}`;
+  const c = pruefeTaktikGegenKader(reiter, xml, kader, naechsterLigaspieltag(heuteInBerlin()));
+  if (c.aenderbar) return `Nicht geschrieben, die tägliche Prüfung würde noch ändern: ${c.aenderungen.length ? "Besetzung, " : ""}${c.wechselregeln.join("; ")}`;
+  return null;
+}
+
 // Vorschlag des Portfolio-Plans übernehmen: Reiter mit dem neuen Stil überschreiben und nach dem Inhalt benennen
 export async function portfolioUebernehmen(db: Database.Database, reiter: string): Promise<Ergebnis> {
   const { portfolioPlan } = await import("@/lib/portfolio-plan");
   const v = portfolioPlan(db).vorschlaege.find((x) => x.reiter === reiter);
   if (!v) return { ok: false, meldung: `Für Reiter „${reiter}“ gibt es keinen Portfolio-Vorschlag mehr.` };
+  const fehlt = await vollstaendigGeprueft(db, reiter, v.xml);
+  if (fehlt) return { ok: false, meldung: fehlt };
   return xmlUebernehmen(db, reiter, v.xml, `Portfolio: ${v.stil} gegen ${v.klasse}`, v.name);
 }
 
@@ -439,5 +459,7 @@ export async function lueckeUebernehmen(db: Database.Database, reiter: string): 
   const l = spieltagLage(db).luecke;
   if (!l) return { ok: false, meldung: "Kein fehlender bewährter Stil gegen den nächsten Gegner mehr." };
   if (!l.reiter.some((r) => r.name === reiter)) return { ok: false, meldung: `Reiter „${reiter}“ darf hierfür nicht überschrieben werden.` };
+  const fehlt = await vollstaendigGeprueft(db, reiter, l.xml);
+  if (fehlt) return { ok: false, meldung: fehlt };
   return xmlUebernehmen(db, reiter, l.xml, `Portfolio gegen ${l.klasse}: ${l.stil.schluessel}`, l.name);
 }
