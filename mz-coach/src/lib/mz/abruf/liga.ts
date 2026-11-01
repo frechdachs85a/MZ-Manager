@@ -463,3 +463,23 @@ export async function lueckeUebernehmen(db: Database.Database, reiter: string): 
   if (fehlt) return { ok: false, meldung: fehlt };
   return xmlUebernehmen(db, reiter, l.xml, `Portfolio gegen ${l.klasse}: ${l.stil.schluessel}`, l.name);
 }
+
+// Spielstand-Regeln und Ausdauer-Wechsel in einem bestehenden Reiter ergänzen (auf ausdrücklichen Wunsch, Marcus
+// 01.11.2026 für 343kp). Nur wenn der Reiter noch keine Spielstand-Regeln hat; danach volle Prüfung, erst dann schreiben.
+export async function regelnErgaenzen(db: Database.Database, reiter: string): Promise<Ergebnis> {
+  const { ladeTaktiken } = await import("@/lib/db/taktik");
+  const { mitSpielstandRegeln } = await import("@/lib/mz/taktik/mit-wechseln");
+  const { pruefeTaktikGegenKader } = await import("@/lib/taktik-check");
+  const { ladeKader } = await import("@/lib/db/kader");
+  const { heuteInBerlin } = await import("@/lib/format");
+  const { naechsterLigaspieltag } = await import("@/lib/wissen/startbasis");
+  const t = ladeTaktiken(db).find((x) => x.reiter === reiter);
+  if (!t) return { ok: false, meldung: `Reiter „${reiter}“ nicht im Archiv.` };
+  const s = mitSpielstandRegeln(t.xml);
+  const c = pruefeTaktikGegenKader(reiter, s.xml, ladeKader(db), naechsterLigaspieltag(heuteInBerlin()));
+  const xml = c.fehler ? s.xml : c.xml;
+  if (xml === t.xml) return { ok: true, meldung: `Reiter „${reiter}“ hat schon alle Regeln, nichts geändert.` };
+  const fehlt = await vollstaendigGeprueft(db, reiter, xml);
+  if (fehlt) return { ok: false, meldung: fehlt };
+  return xmlUebernehmen(db, reiter, xml, `Regeln ergänzt: ${[...s.regeln, ...c.wechselregeln].join("; ")}`);
+}

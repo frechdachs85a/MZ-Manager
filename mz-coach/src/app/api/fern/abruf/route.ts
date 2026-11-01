@@ -22,14 +22,14 @@ export async function POST(request: Request) {
   const art = url.searchParams.get("art") ?? "";
   // Vorschlag der täglichen Prüfung für einen Reiter übernehmen (nur auf ausdrücklichen Wunsch von Marcus, z. B. 01.11.2026
   // „zieh I nun bitte nach“). Schreibt ausschließlich die von der Prüfung berechnete XML, keine fremde.
-  if (art === "taktik-uebernehmen") {
+  if (art === "taktik-uebernehmen" || art === "regeln-ergaenzen") {
     const reiter = url.searchParams.get("reiter") ?? "";
     if (!reiter) return Response.json({ fehler: "reiter fehlt" }, { status: 400 });
     const db = getDb();
-    const bremse = fernAbrufFrei(db, `taktik-uebernehmen-${reiter}`);
+    const bremse = fernAbrufFrei(db, `${art}-${reiter}`);
     if (!bremse.frei) return Response.json({ gestartet: false, grund: `Bremse: nächster Abruf ab ${bremse.ab}` }, { status: 429 });
-    const { taktikUebernehmen } = await import("@/lib/mz/abruf/liga");
-    void taktikUebernehmen(db, reiter).catch(() => {});
+    const { taktikUebernehmen, regelnErgaenzen } = await import("@/lib/mz/abruf/liga");
+    void (art === "regeln-ergaenzen" ? regelnErgaenzen(db, reiter) : taktikUebernehmen(db, reiter)).catch(() => {});
     return Response.json({ gestartet: true, art, reiter });
   }
   if (!(art in ABRUFE)) return Response.json({ fehler: "art muss kader, markt, top, spieltag, wertscan, liga, gebotsformular, scoutspiele, tabelle oder gebotsuebersicht sein" }, { status: 400 });
