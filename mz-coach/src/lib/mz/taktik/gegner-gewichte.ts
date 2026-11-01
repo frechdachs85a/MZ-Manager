@@ -62,12 +62,22 @@ export function gegnerGewichte(opt: {
     } else kurz.push(`Angriff schon über deine ${lastig === "rechts" ? "rechte" : "linke"} Seite (seine schwächere)`);
   }
 
-  // Bedrohung je Abwehrplatz: Wert seines nächsten Angreifers (gespiegelt)
-  const faktor = feld.map((p) => {
-    if (p.y < ABWEHR_Y || !angreifer.length) return 1;
-    const naechster = [...angreifer].sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x))[0];
-    return 1 + DROHUNG_PLUS * Math.min(1, (naechster.wert ?? 0) / MAX_WERT);
-  });
+  // Bedrohung je Abwehrplatz: jeder Angreifer gehört genau zu EINEM Abwehrplatz, dem ihm nächsten (eins zu eins, kürzeste
+  // Abstände zuerst). Fehler bis 01.11.2026: jeder Platz bekam den Wert seines nächsten Angreifers; so zählten gegen Biene
+  // Maja zwei Plätze (x 127 und x 175) für Galvan gleich, und Nazarov landete außen, wo niemand angriff.
+  const faktor = feld.map(() => 1);
+  const abwehrIdx = feld.map((p, i) => ({ p, i })).filter(({ p }) => p.y >= ABWEHR_Y);
+  const paare = angreifer
+    .flatMap((a, ai) => abwehrIdx.map(({ p, i }) => ({ ai, i, d: Math.abs(a.x - p.x) })))
+    .sort((a, b) => a.d - b.d);
+  const angreiferVergeben = new Set<number>();
+  const platzVergeben = new Set<number>();
+  for (const z of paare) {
+    if (angreiferVergeben.has(z.ai) || platzVergeben.has(z.i)) continue;
+    angreiferVergeben.add(z.ai);
+    platzVergeben.add(z.i);
+    faktor[z.i] = 1 + DROHUNG_PLUS * Math.min(1, (angreifer[z.ai].wert ?? 0) / MAX_WERT);
+  }
   const staerkster = angreifer.filter((p) => p.wert !== undefined).sort((a, b) => b.wert! - a.wert!)[0];
   if (staerkster) kurz.push(`Sein stärkster Angreifer: ${staerkster.label ?? "?"} ${mio(staerkster.wert!)} → dort dein stärkster Verteidiger`);
   const kopfball = feld.map((p) => ueberAussen && p.y >= ABWEHR_Y && !istAussen(p.x));

@@ -27,7 +27,7 @@ export type Steckbrief = {
   vorlagen: [string, number][];
   // Häufigste Startelf (gleiche Spieler auf gleichen Plätzen, ±2 Punkte) und in wie vielen Spielen sie stand
   // positionen = Spiele mit denselben Plätzen (egal wer dort stand), spiele = zusätzlich dieselben Spieler
-  stammElf: { spiele: number; positionen: number; von: number; elf: SteckbriefSpiel["elf"]; abweichungen: { mid: number; datum?: string; text: string }[] } | null;
+  stammElf: { spiele: number; positionen: number; von: number; trend?: number; elf: SteckbriefSpiel["elf"]; abweichungen: { mid: number; datum?: string; text: string }[] } | null;
   breite?: { min: number; max: number }; // äußerste x der Feldspieler in der Stammelf
 };
 
@@ -91,15 +91,25 @@ export function steckbrief(tid: number, stats: StatsSpiel[]): Steckbrief {
     }
   }
 
-  // Stammelf: die Startelf, die in den meisten Spielen gleich war
+  // Erwartete Elf (Marcus, 01.11.2026: „wenn der Trend zu erkennen ist, sollten wir danach gehen“): hat er zuletzt mindestens
+  // zweimal hintereinander gleich aufgestellt, gilt diese neueste Elf. Sonst die Elf, die am häufigsten gleich war; bei
+  // Gleichstand die neueste (vorher die älteste).
+  const neuesteZuerst = [...spiele].reverse();
+  let serie = 0;
+  for (const s of neuesteZuerst) {
+    if (neuesteZuerst[0] && gleichePlaetze(s.elf, neuesteZuerst[0].elf)) serie++;
+    else break;
+  }
+  const kandidaten = serie >= 2 ? [neuesteZuerst[0]] : neuesteZuerst;
   let stammElf: Steckbrief["stammElf"] = null;
-  for (const kandidat of spiele) {
+  for (const kandidat of kandidaten) {
     const gleiche = spiele.filter((s) => gleich(s.elf, kandidat.elf));
     if (!stammElf || gleiche.length > stammElf.spiele) {
       stammElf = {
         spiele: gleiche.length,
         positionen: spiele.filter((s) => gleichePlaetze(s.elf, kandidat.elf)).length,
         von: spiele.length,
+        trend: serie >= 2 ? serie : undefined,
         elf: kandidat.elf,
         abweichungen: spiele
           .filter((s) => !gleich(s.elf, kandidat.elf))

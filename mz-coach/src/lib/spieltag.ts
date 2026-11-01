@@ -292,7 +292,9 @@ export function spieltagLage(db: Database.Database) {
         titel: "Erwartete Formation",
         punkte: [
           `${st.formation} · ${st.einstellung}`,
-          `So in ${brief.stammElf.positionen} von ${brief.stammElf.von} Spielen`,
+          brief.stammElf.trend
+            ? `Trend: die letzten ${brief.stammElf.trend} Spiele genau so (insgesamt ${brief.stammElf.positionen} von ${brief.stammElf.von})`
+            : `So in ${brief.stammElf.positionen} von ${brief.stammElf.von} Spielen`,
           ...(brief.breite && brief.breite.min > 40 && brief.breite.max < 170 ? [`Flügel leer (x ${brief.breite.min} bis ${brief.breite.max})`] : []),
           ...(abw.length > 2
             ? [`${abw.length}-mal umgestellt, zuletzt ${abw.slice(-2).map((x) => datumKurz(x.datum)).join(" und ")}`]
