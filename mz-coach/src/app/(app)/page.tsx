@@ -246,7 +246,7 @@ export default async function Uebersicht() {
       <div className="seite">
         <Section
           title="Bälle der letzten 14 Tage"
-          footer="Aus den Kaderabrufen: gewonnene (grün) und verlorene (rot) Skill-Bälle je Spieler, ohne Form; meiste Zugewinne zuerst. MZ-Wert vorher → jetzt auf seiner heute besten Position (vorher = heutige Skills ohne die Änderungen). Taktik: Startelf deiner Reiter jetzt gegen den Vorschlag der täglichen Prüfung; Liga: letzte gegen vorletzte geschriebene Formation. Name anklicken: alle Skills."
+          footer="Aus den Kaderabrufen: gewonnene (grün) und verlorene (rot) Skill-Bälle je Spieler, ohne Form; meiste Zugewinne zuerst. MZ-Wert vorher → jetzt auf seiner heute besten Position (vorher = heutige Skills ohne die Änderungen). Taktik: die tägliche Prüfung je Reiter einmal mit den heutigen und einmal mit den Skills von vor 14 Tagen; „durch die Bälle“ nur, wenn er ohne sie nicht in der Startelf wäre. Spieler im Trainingslager, verletzt oder gesperrt: so gerechnet, als wären sie wieder einsetzbar. Liga (schreibt die Seite selbst) und freund (wichtige Spieler bewusst auf der Bank) werden nicht bewertet. Name anklicken: alle Skills."
         >
           {bilanz.length ? (
             <List>
@@ -339,18 +339,28 @@ export default async function Uebersicht() {
 
 const komma2 = (n: number) => n.toFixed(2).replace(".", ",");
 
-// Taktik-Folgen einer Skill-Änderung in Worten (neu drin, fällt raus, steht drin)
+// Taktik-Folgen der Bälle in Worten (Marcus, 01.11.2026): nur „durch die Bälle“, wenn er ohne sie nicht drin wäre;
+// bei Ausfall (Trainingslager usw.) „nach dem Trainingslager …“; freund wird nicht bewertet
 function FolgenText({ f }: { f: TaktikFolge[] }) {
-  const neu = f.filter((x) => x.art === "neu" || x.art === "liga-neu");
-  const raus = f.filter((x) => x.art === "raus" || x.art === "liga-raus");
+  const neu = f.filter((x) => x.art === "neu");
+  const raus = f.filter((x) => x.art === "raus");
   const drin = f.filter((x) => x.art === "drin");
-  const mit = (x: TaktikFolge) => `${x.reiter}${x.grund ? ` (${x.grund})` : ""}`;
+  const nach = f.find((x) => x.nachAusfall)?.nachAusfall;
+  const vor = nach ? `${nach[0].toUpperCase()}${nach.slice(1)} ` : "";
   return (
     <>
-      {neu.length > 0 && <span className="mr-2 font-semibold text-green">schafft es in: {neu.map(mit).join(", ")}</span>}
-      {raus.length > 0 && <span className="mr-2 font-semibold text-red">fällt raus in: {raus.map(mit).join(", ")}</span>}
-      {drin.length > 0 && <span className="mr-2">Stammplatz in: {drin.map((x) => x.reiter).join(", ")}</span>}
-      {!f.length && <span className="text-label-3">in keiner Taktik in der Startelf</span>}
+      {neu.length > 0 && (
+        <span className="mr-2 font-semibold text-green">
+          {vor}durch die Bälle in der Startelf: {neu.map((x) => `${x.reiter}${x.statt ? ` (statt ${x.statt})` : ""}`).join(", ")}
+        </span>
+      )}
+      {raus.length > 0 && <span className="mr-2 font-semibold text-red">{vor}durch den Verlust raus aus: {raus.map((x) => x.reiter).join(", ")}</span>}
+      {drin.length > 0 && (
+        <span className="mr-2">
+          {nach ? `${vor}in der Startelf` : "Auch ohne die Bälle in der Startelf"}: {drin.map((x) => x.reiter).join(", ")}
+        </span>
+      )}
+      {!f.length && <span className="text-label-3">{vor}in keiner Startelf (freund nicht bewertet)</span>}
     </>
   );
 }
